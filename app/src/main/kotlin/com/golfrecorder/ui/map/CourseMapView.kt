@@ -116,24 +116,13 @@ internal fun drawOverlays(
 
     labelLayer.removeAll()
 
-    val toGreenStyles = map.labelManager?.addLabelStyles(
-        LabelStyles.from("shot-to-green", LabelStyle.from(R.drawable.ic_dot_red).setAnchorPoint(0.5f, 0.5f))
-    )
-    val shortGameStyles = map.labelManager?.addLabelStyles(
-        LabelStyles.from("shot-short-game", LabelStyle.from(R.drawable.ic_dot_blue).setAnchorPoint(0.5f, 0.5f))
-    )
-    val puttStyles = map.labelManager?.addLabelStyles(
-        LabelStyles.from("shot-putt", LabelStyle.from(R.drawable.ic_dot_yellow).setAnchorPoint(0.5f, 0.5f))
-    )
-    shots.forEach { shot ->
-        val styles = when (shot.phase) {
-            ShotPhase.TO_GREEN -> toGreenStyles
-            ShotPhase.SHORT_GAME -> shortGameStyles
-            ShotPhase.PUTT -> puttStyles
-        }
-        labelLayer.addLabel(LabelOptions.from(LatLng.from(shot.lat, shot.lng)).setStyles(styles))
-    }
-
+    // 거리 라벨을 샷/벌타 점보다 먼저(=더 아래 레이어로) 그린다. 나중에 추가된
+    // 라벨이 위에 그려지는데, 숏어프로치→퍼팅처럼 두 지점이 몇 m 안으로 가까우면
+    // 거리 텍스트(굵은 글씨 + 외곽선)가 그 사이의 작은 점 아이콘을 통째로 가려버려
+    // "분명 기록은 있는데 지도에 점이 안 보인다"는 문제가 생긴다 — 실제로 무등산
+    // 8홀(퍼팅 2개가 숏어프로치 마지막 지점과 7m 안쪽으로 붙어있던 사례)에서 노란
+    // 퍼팅 점이 "7m"/"49m" 거리 라벨에 완전히 가려졌던 게 확인됐다. 점이 거리
+    // 텍스트보다 항상 위에 그려져야 이런 경우에도 가려지지 않는다.
     if (segments.isNotEmpty()) {
         val distanceLabelStyles = map.labelManager?.addLabelStyles(
             LabelStyles.from(
@@ -153,6 +142,24 @@ internal fun drawOverlays(
                     .setTexts(LabelTextBuilder().setTexts("${distanceMeters.roundToInt()}m"))
             )
         }
+    }
+
+    val toGreenStyles = map.labelManager?.addLabelStyles(
+        LabelStyles.from("shot-to-green", LabelStyle.from(R.drawable.ic_dot_red).setAnchorPoint(0.5f, 0.5f))
+    )
+    val shortGameStyles = map.labelManager?.addLabelStyles(
+        LabelStyles.from("shot-short-game", LabelStyle.from(R.drawable.ic_dot_blue).setAnchorPoint(0.5f, 0.5f))
+    )
+    val puttStyles = map.labelManager?.addLabelStyles(
+        LabelStyles.from("shot-putt", LabelStyle.from(R.drawable.ic_dot_yellow).setAnchorPoint(0.5f, 0.5f))
+    )
+    shots.forEach { shot ->
+        val styles = when (shot.phase) {
+            ShotPhase.TO_GREEN -> toGreenStyles
+            ShotPhase.SHORT_GAME -> shortGameStyles
+            ShotPhase.PUTT -> puttStyles
+        }
+        labelLayer.addLabel(LabelOptions.from(LatLng.from(shot.lat, shot.lng)).setStyles(styles))
     }
 
     val obStyles = map.labelManager?.addLabelStyles(
