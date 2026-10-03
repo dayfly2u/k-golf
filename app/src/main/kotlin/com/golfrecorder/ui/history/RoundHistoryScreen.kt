@@ -88,14 +88,21 @@ private fun formatRoundPeriod(playedAt: Long, finishedAt: Long?): String {
 
 private val STROKE_LIGHT_BLUE = Color(0xFFBBDEFB)
 private val STROKE_LIGHT_GREEN = Color(0xFFC8E6C9)
-private val STROKE_LIGHT_RED = Color(0xFFFFCDD2)
+private val STROKE_LIGHT_RED = Color(0xFFFFCDD2) // 연한 빨강 — RoundSummaryScreen의 DOUBLE_BOGEY_COLOR와 동일 톤
+private val STROKE_DARK_RED = Color(0xFFC62828) // 진한 빨강 — RoundSummaryScreen의 GIR_MISS_BG_COLOR와 동일 톤
 
 private fun strokeScoreColor(strokes: Int): Color? = when {
     strokes in 80..89 -> STROKE_LIGHT_BLUE
     strokes in 90..94 -> STROKE_LIGHT_GREEN
-    strokes >= 100 -> STROKE_LIGHT_RED
+    strokes in 95..99 -> STROKE_LIGHT_RED
+    strokes >= 100 -> STROKE_DARK_RED
     else -> null
 }
+
+// 진한 빨강 배경은 검정 텍스트로는 대비가 약해서 흰 글자로 바꾼다 — RoundSummaryScreen의
+// scoreRowTextColor와 동일한 패턴.
+private fun strokeScoreTextColor(strokes: Int): Color =
+    if (strokes >= 100) Color.White else Color.Unspecified
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -225,6 +232,7 @@ fun RoundHistoryScreen(
                         "${round.totalStrokes}",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
+                        color = strokeScoreTextColor(round.totalStrokes),
                         modifier = (
                             if (backgroundColor != null) {
                                 Modifier.background(backgroundColor, RoundedCornerShape(8.dp))
