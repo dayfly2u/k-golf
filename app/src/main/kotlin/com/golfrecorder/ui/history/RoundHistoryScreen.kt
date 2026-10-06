@@ -9,6 +9,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -47,6 +49,7 @@ import androidx.lifecycle.viewModelScope
 import com.golfrecorder.backup.BackupManager
 import com.golfrecorder.data.local.dto.RoundSummary
 import com.golfrecorder.data.repository.RoundRepository
+import com.golfrecorder.ui.common.MoreBelowIndicator
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -200,81 +203,88 @@ fun RoundHistoryScreen(
             )
             return@Scaffold
         }
-        LazyColumn(modifier = Modifier.padding(padding).fillMaxSize()) {
-            items(rounds, key = { it.roundId }) { round ->
-                val expanded = round.roundId in expandedRoundIds
-                Column(
-                    modifier = Modifier.fillMaxWidth()
-                        .clickable {
-                            expandedRoundIds = if (expanded) {
-                                expandedRoundIds - round.roundId
-                            } else {
-                                expandedRoundIds + round.roundId
+        val listState = rememberLazyListState()
+        Box(modifier = Modifier.padding(padding).fillMaxSize()) {
+            LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
+                items(rounds, key = { it.roundId }) { round ->
+                    val expanded = round.roundId in expandedRoundIds
+                    Column(
+                        modifier = Modifier.fillMaxWidth()
+                            .clickable {
+                                expandedRoundIds = if (expanded) {
+                                    expandedRoundIds - round.roundId
+                                } else {
+                                    expandedRoundIds + round.roundId
+                                }
                             }
-                        }
-                        .padding(16.dp),
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
+                            .padding(16.dp),
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Row {
-                                Text(round.courseName, fontWeight = FontWeight.Bold)
-                                if (round.courseId == null) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Row {
+                                    Text(round.courseName, fontWeight = FontWeight.Bold)
+                                    if (round.courseId == null) {
+                                        Text(
+                                            " (삭제됨)",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.outline,
+                                        )
+                                    }
+                                }
+                                Text(
+                                    formatRoundPeriod(round.playedAt, round.finishedAt),
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                                val infoLine = listOfNotNull(
+                                    round.price?.let { "${priceFormat.format(it)}원" },
+                                    round.companions?.takeIf { it.isNotBlank() },
+                                ).joinToString(" | ")
+                                if (infoLine.isNotBlank()) {
+                                    Text(infoLine, style = MaterialTheme.typography.bodySmall)
+                                }
+                            }
+                            val backgroundColor = strokeScoreColor(round.totalStrokes)
+                            Text(
+                                "${round.totalStrokes}",
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = strokeScoreTextColor(round.totalStrokes),
+                                modifier = (
+                                    if (backgroundColor != null) {
+                                        Modifier.background(backgroundColor, RoundedCornerShape(8.dp))
+                                    } else {
+                                        Modifier
+                                    }
+                                ).padding(horizontal = 8.dp, vertical = 2.dp),
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            TextButton(onClick = { onRoundClick(round) }) { Text("리뷰") }
+                        }
+                        if (expanded) {
+                            Column(modifier = Modifier.padding(top = 12.dp)) {
+                                if (round.review.isNullOrBlank()) {
                                     Text(
-                                        " (삭제됨)",
+                                        "작성된 라운딩 리뷰가 없습니다. \"리뷰\"에서 추가할 수 있습니다.",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.outline,
                                     )
-                                }
-                            }
-                            Text(
-                                formatRoundPeriod(round.playedAt, round.finishedAt),
-                                style = MaterialTheme.typography.bodySmall,
-                            )
-                            val infoLine = listOfNotNull(
-                                round.price?.let { "${priceFormat.format(it)}원" },
-                                round.companions?.takeIf { it.isNotBlank() },
-                            ).joinToString(" | ")
-                            if (infoLine.isNotBlank()) {
-                                Text(infoLine, style = MaterialTheme.typography.bodySmall)
-                            }
-                        }
-                        val backgroundColor = strokeScoreColor(round.totalStrokes)
-                        Text(
-                            "${round.totalStrokes}",
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = strokeScoreTextColor(round.totalStrokes),
-                            modifier = (
-                                if (backgroundColor != null) {
-                                    Modifier.background(backgroundColor, RoundedCornerShape(8.dp))
                                 } else {
-                                    Modifier
+                                    Text(round.review, style = MaterialTheme.typography.bodySmall)
                                 }
-                            ).padding(horizontal = 8.dp, vertical = 2.dp),
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        TextButton(onClick = { onRoundClick(round) }) { Text("리뷰") }
-                    }
-                    if (expanded) {
-                        Column(modifier = Modifier.padding(top = 12.dp)) {
-                            if (round.review.isNullOrBlank()) {
-                                Text(
-                                    "작성된 라운딩 리뷰가 없습니다. \"리뷰\"에서 추가할 수 있습니다.",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.outline,
-                                )
-                            } else {
-                                Text(round.review, style = MaterialTheme.typography.bodySmall)
                             }
                         }
                     }
+                    HorizontalDivider()
                 }
-                HorizontalDivider()
             }
+            MoreBelowIndicator(
+                listState = listState,
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 8.dp),
+            )
         }
     }
 }
