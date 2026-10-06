@@ -114,7 +114,7 @@ private fun AppRoot(container: AppContainer, mapSlotState: MapSlotState) {
         when (val screen = current) {
             is Screen.Home -> {
                 val vm = viewModel<RoundHistoryViewModel>(
-                    factory = RoundHistoryViewModelFactory(container.roundRepository),
+                    factory = RoundHistoryViewModelFactory(container.roundRepository, container.shotRepository),
                 )
                 RoundHistoryScreen(
                     viewModel = vm,
@@ -202,6 +202,7 @@ private fun AppRoot(container: AppContainer, mapSlotState: MapSlotState) {
                     factory = RoundSummaryViewModelFactory(
                         container.roundRepository,
                         container.courseRepository,
+                        container.shotRepository,
                         screen.roundId,
                         screen.courseId,
                     ),

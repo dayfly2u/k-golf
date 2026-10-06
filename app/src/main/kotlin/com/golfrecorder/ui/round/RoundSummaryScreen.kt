@@ -43,7 +43,12 @@ import com.golfrecorder.data.local.relation.CourseWithHoles
 import com.golfrecorder.service.RoundRecordingService
 import com.golfrecorder.data.repository.CourseRepository
 import com.golfrecorder.data.repository.RoundRepository
+import com.golfrecorder.data.repository.ShotRepository
+import com.golfrecorder.domain.model.DriverDistanceStats
 import com.golfrecorder.domain.model.HoleResult
+import com.golfrecorder.domain.model.calculateDriverDistanceStats
+import com.golfrecorder.ui.common.GirSummaryLines
+import com.golfrecorder.ui.common.RoundStatsLine
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -52,11 +57,11 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlin.math.roundToInt
 
 class RoundSummaryViewModel(
     private val roundRepository: RoundRepository,
     courseRepository: CourseRepository,
+    shotRepository: ShotRepository,
     val roundId: Long,
     /** null이면 이 라운드를 기록한 코스가 이미 삭제된 것 — 홀 수정은 코스의 그린 위치
      * 등 홀 정보가 필요해서 코스가 남아있을 때만 가능하다. */
@@ -128,6 +133,11 @@ class RoundSummaryViewModel(
             }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val driverDistanceStats: StateFlow<DriverDistanceStats> =
+        combine(shotRepository.getShotsForRound(roundId), holeResults) { shots, holes ->
+            calculateDriverDistanceStats(shots, holes.associate { it.holeNumber to it.par })
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DriverDistanceStats(null, null))
+
     val courseName: StateFlow<String> = combine(roundWithRecords, liveCourse) { round, course ->
         course?.course?.name ?: round?.round?.courseName.orEmpty()
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
@@ -136,12 +146,13 @@ class RoundSummaryViewModel(
 class RoundSummaryViewModelFactory(
     private val roundRepository: RoundRepository,
     private val courseRepository: CourseRepository,
+    private val shotRepository: ShotRepository,
     private val roundId: Long,
     private val courseId: Long?,
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T =
-        RoundSummaryViewModel(roundRepository, courseRepository, roundId, courseId) as T
+        RoundSummaryViewModel(roundRepository, courseRepository, shotRepository, roundId, courseId) as T
 }
 
 private fun formatToPar(scoreToPar: Int): String = when {
@@ -196,14 +207,15 @@ fun RoundSummaryScreen(
 ) {
     val holeResults by viewModel.holeResults.collectAsStateWithLifecycle()
     val courseName by viewModel.courseName.collectAsStateWithLifecycle()
+    val driverStats by viewModel.driverDistanceStats.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var showDeleteConfirm by remember { mutableStateOf(false) }
     val totalStrokes = holeResults.sumOf { it.totalStrokes }
     val totalScoreToPar = holeResults.sumOf { it.scoreToPar }
     val girCount = holeResults.count { it.isGreenInRegulation }
     val strictGirCount = holeResults.count { it.isStrictGreenInRegulation }
-    fun girPercent(count: Int): Int =
-        if (holeResults.isEmpty()) 0 else (count * 100.0 / holeResults.size).roundToInt()
+    val totalPutts = holeResults.sumOf { it.strokesPutt }
+    val avgPutts = if (holeResults.isEmpty()) 0.0 else totalPutts.toDouble() / holeResults.size
     val frontNineStrokes = holeResults.take(9).sumOf { it.totalStrokes }
     val frontNineScoreToPar = holeResults.take(9).sumOf { it.scoreToPar }
     val backNineStrokes = holeResults.drop(9).sumOf { it.totalStrokes }
@@ -263,21 +275,19 @@ fun RoundSummaryScreen(
                     "총 ${totalStrokes}타 (${formatToPar(totalScoreToPar)})",
                     style = MaterialTheme.typography.titleLarge,
                 )
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        "GIR ${girCount}/${holeResults.size} (${girPercent(girCount)}%)",
-                        style = MaterialTheme.typography.titleMedium,
-                    )
-                    // 일반 GIR은 strokesToGreen만으로 판정해 숏어프로치가 있었어도
-                    // 성공으로 잡힐 수 있다 — 숏어프로치가 전혀 없었던 엄격 기준도
-                    // 눈에 띄게 빨간색으로 같이 보여준다.
-                    Text(
-                        "엄격 GIR ${strictGirCount}/${holeResults.size} (${girPercent(strictGirCount)}%)",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Red,
-                    )
-                }
+                GirSummaryLines(
+                    girCount = girCount,
+                    strictGirCount = strictGirCount,
+                    totalHoles = holeResults.size,
+                    horizontalAlignment = Alignment.End,
+                )
             }
+            RoundStatsLine(
+                driverStats = driverStats,
+                avgPutts = avgPutts,
+                totalPutts = totalPutts,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+            )
             HorizontalDivider()
             LazyColumn(modifier = Modifier.weight(1f)) {
                 itemsIndexed(holeResults, key = { _, hole -> hole.holeNumber }) { index, hole ->

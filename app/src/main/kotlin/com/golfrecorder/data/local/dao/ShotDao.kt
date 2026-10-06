@@ -31,4 +31,14 @@ interface ShotDao {
             "shotIndex"
     )
     fun getShots(roundId: Long, holeNumber: Int): Flow<List<ShotEntity>>
+
+    // 라운드 결과 화면의 드라이버 비거리 통계용 — 홀별 순서는 getShots와 동일한
+    // CASE phase 순서를 유지하고, 그 바깥을 holeNumber로 한 번 더 묶는다.
+    @Query(
+        "SELECT * FROM shots WHERE roundId = :roundId " +
+            "ORDER BY holeNumber, " +
+            "CASE phase WHEN 'TO_GREEN' THEN 0 WHEN 'SHORT_GAME' THEN 1 WHEN 'PUTT' THEN 2 ELSE 3 END, " +
+            "shotIndex"
+    )
+    fun getShotsForRound(roundId: Long): Flow<List<ShotEntity>>
 }

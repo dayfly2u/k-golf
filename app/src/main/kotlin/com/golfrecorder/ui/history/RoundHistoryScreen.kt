@@ -13,8 +13,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -38,7 +40,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -47,9 +52,18 @@ import androidx.lifecycle.viewModelScope
 import com.golfrecorder.backup.BackupManager
 import com.golfrecorder.data.local.dto.RoundSummary
 import com.golfrecorder.data.repository.RoundRepository
+import com.golfrecorder.data.repository.ShotRepository
+import com.golfrecorder.domain.model.DriverDistanceStats
+import com.golfrecorder.domain.model.HoleResult
+import com.golfrecorder.domain.model.calculateDriverDistanceStats
+import com.golfrecorder.ui.common.GirSummaryLines
 import com.golfrecorder.ui.common.MoreBelowIndicator
+import com.golfrecorder.ui.common.RoundStatsLine
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
@@ -57,17 +71,40 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-class RoundHistoryViewModel(private val roundRepository: RoundRepository) : ViewModel() {
+class RoundHistoryViewModel(
+    private val roundRepository: RoundRepository,
+    private val shotRepository: ShotRepository,
+) : ViewModel() {
     val rounds: StateFlow<List<RoundSummary>> = roundRepository.getRoundSummaries()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // 리스트 행을 펼쳤을 때만(remember(round.roundId) 스코프) 구독되는 홀별/샷별
+    // 상세 데이터 — 리스트 전체를 미리 불러오지 않고 펼친 라운드만 조회한다.
+    fun getHoleResults(roundId: Long): Flow<List<HoleResult>> =
+        roundRepository.getRoundWithHoleRecords(roundId).map { round ->
+            round?.holeRecords.orEmpty()
+                .sortedBy { it.holeNumber }
+                .map { record ->
+                    HoleResult(
+                        record.holeNumber, record.par, record.strokesToGreen, record.strokesGreenToHoleOut,
+                        strokesPutt = record.strokesPutt,
+                    )
+                }
+        }
+
+    fun getDriverDistanceStats(roundId: Long): Flow<DriverDistanceStats> =
+        combine(shotRepository.getShotsForRound(roundId), getHoleResults(roundId)) { shots, holes ->
+            calculateDriverDistanceStats(shots, holes.associate { it.holeNumber to it.par })
+        }
 }
 
 class RoundHistoryViewModelFactory(
     private val roundRepository: RoundRepository,
+    private val shotRepository: ShotRepository,
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T =
-        RoundHistoryViewModel(roundRepository) as T
+        RoundHistoryViewModel(roundRepository, shotRepository) as T
 }
 
 private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.KOREA)
@@ -270,16 +307,46 @@ fun RoundHistoryScreen(
                             )
                         }
                         if (expanded) {
+                            val holeResults by remember(round.roundId) { viewModel.getHoleResults(round.roundId) }
+                                .collectAsStateWithLifecycle(initialValue = emptyList())
+                            val driverStats by remember(round.roundId) { viewModel.getDriverDistanceStats(round.roundId) }
+                                .collectAsStateWithLifecycle(initialValue = DriverDistanceStats(null, null))
+                            val expandedGirCount = holeResults.count { it.isGreenInRegulation }
+                            val expandedStrictGirCount = holeResults.count { it.isStrictGreenInRegulation }
+                            val expandedTotalPutts = holeResults.sumOf { it.strokesPutt }
+                            val expandedAvgPutts = if (holeResults.isEmpty()) {
+                                0.0
+                            } else {
+                                expandedTotalPutts.toDouble() / holeResults.size
+                            }
                             Column(modifier = Modifier.padding(top = 12.dp)) {
-                                if (round.review.isNullOrBlank()) {
-                                    Text(
-                                        "작성된 라운딩 리뷰가 없습니다. \"리뷰\"에서 추가할 수 있습니다.",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.outline,
+                                if (holeResults.isNotEmpty()) {
+                                    GirSummaryLines(
+                                        girCount = expandedGirCount,
+                                        strictGirCount = expandedStrictGirCount,
+                                        totalHoles = holeResults.size,
+                                        singleLine = true,
                                     )
-                                } else {
-                                    Text(round.review, style = MaterialTheme.typography.bodySmall)
+                                    RoundStatsLine(
+                                        driverStats = driverStats,
+                                        avgPutts = expandedAvgPutts,
+                                        totalPutts = expandedTotalPutts,
+                                        modifier = Modifier.padding(top = 4.dp),
+                                    )
+                                    Spacer(Modifier.height(8.dp))
                                 }
+                                val reviewText = buildAnnotatedString {
+                                    withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append("리뷰: ") }
+                                    val reviewContent = round.review?.takeIf { it.isNotBlank() }
+                                    if (reviewContent != null) {
+                                        append(reviewContent)
+                                    } else {
+                                        withStyle(SpanStyle(color = MaterialTheme.colorScheme.outline)) {
+                                            append("작성된 라운딩 리뷰가 없습니다. \"✏️\"에서 추가할 수 있습니다.")
+                                        }
+                                    }
+                                }
+                                Text(reviewText, style = MaterialTheme.typography.bodySmall)
                             }
                         }
                     }
