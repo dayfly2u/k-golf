@@ -52,6 +52,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 class RoundSummaryViewModel(
     private val roundRepository: RoundRepository,
@@ -200,6 +201,9 @@ fun RoundSummaryScreen(
     val totalStrokes = holeResults.sumOf { it.totalStrokes }
     val totalScoreToPar = holeResults.sumOf { it.scoreToPar }
     val girCount = holeResults.count { it.isGreenInRegulation }
+    val strictGirCount = holeResults.count { it.isStrictGreenInRegulation }
+    fun girPercent(count: Int): Int =
+        if (holeResults.isEmpty()) 0 else (count * 100.0 / holeResults.size).roundToInt()
     val frontNineStrokes = holeResults.take(9).sumOf { it.totalStrokes }
     val frontNineScoreToPar = holeResults.take(9).sumOf { it.scoreToPar }
     val backNineStrokes = holeResults.drop(9).sumOf { it.totalStrokes }
@@ -259,7 +263,20 @@ fun RoundSummaryScreen(
                     "총 ${totalStrokes}타 (${formatToPar(totalScoreToPar)})",
                     style = MaterialTheme.typography.titleLarge,
                 )
-                Text("GIR ${girCount}/${holeResults.size}", style = MaterialTheme.typography.titleMedium)
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        "GIR ${girCount}/${holeResults.size} (${girPercent(girCount)}%)",
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    // 일반 GIR은 strokesToGreen만으로 판정해 숏어프로치가 있었어도
+                    // 성공으로 잡힐 수 있다 — 숏어프로치가 전혀 없었던 엄격 기준도
+                    // 눈에 띄게 빨간색으로 같이 보여준다.
+                    Text(
+                        "엄격 GIR ${strictGirCount}/${holeResults.size} (${girPercent(strictGirCount)}%)",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Red,
+                    )
+                }
             }
             HorizontalDivider()
             LazyColumn(modifier = Modifier.weight(1f)) {
