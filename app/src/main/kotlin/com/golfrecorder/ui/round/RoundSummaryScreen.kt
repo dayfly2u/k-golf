@@ -1,7 +1,6 @@
 package com.golfrecorder.ui.round
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.Arrangement
@@ -155,36 +154,23 @@ private val BIRDIE_OR_BETTER_COLOR = Color(0xFFBBDEFB) // 연한 파랑
 private val DOUBLE_BOGEY_COLOR = Color(0xFFFFCDD2) // 연한 빨강
 private val WORSE_THAN_DOUBLE_BOGEY_COLOR = Color(0xFFB71C1C) // 진한 빨강
 
-// GIR(그린 적중) 실패 — 그린까지 타수가 (파-2)를 넘긴 홀의 "그린 N" 표기를 눈에 띄게 강조.
-// 원래 방식 그대로 꽉 찬 배경 유지 — 앰버 테두리로 낮춘 건 숏/3퍼팅 쪽만.
-private val GIR_MISS_BG_COLOR = Color(0xFFC62828) // 진한 빨강
-private val GIR_MISS_TEXT_COLOR = Color.White
-
-@Composable
-private fun GirMissBadge(text: String) {
-    Text(
-        text,
-        color = GIR_MISS_TEXT_COLOR,
-        fontWeight = FontWeight.Bold,
-        modifier = Modifier
-            .background(GIR_MISS_BG_COLOR, RoundedCornerShape(4.dp))
-            .padding(horizontal = 6.dp, vertical = 1.dp),
-    )
-}
-
-// 숏어프로치 발생("숏 N", 50m 이하 숏은 곧 그린을 놓쳤다는 뜻), 3퍼팅 이상("퍼팅 N")
-// 경고 스타일. 꽉 찬 빨강 배경 + 흰 글씨는 리스트에 여러 개 겹치면 눈이 아프다는
-// 피드백을 받아, 테두리만 있는 앰버(주황) 칩으로 바꿔 "에러"보다 "주의" 느낌으로 낮췄다.
+// GIR(그린 적중) 실패("그린 N"), 숏어프로치 발생("숏 N", 50m 이하 숏은 곧 그린을 놓쳤다는
+// 뜻), 3퍼팅 이상("퍼팅 N") 공통 경고 스타일. 전부 꽉 찬 빨강 배경 + 흰 글씨였던 적도,
+// 테두리만 있는 앰버 칩이었던 적도 있었다 — 빨강 계열은 더블보기+2타 이상 홀의 진한
+// 빨강 행 배경과 겹치면(배지든 테두리든) 거의 안 보였고, 빨강을 쓰는 한 행 배경이 뭐든
+// 피할 수 없는 문제였다. 행 배경과 겹치지 않는 앰버로, 그리고 테두리가 아니라 꽉 채워서
+// 행 배경과 무관하게 항상 대비가 보장되게 했다.
 private val WARNING_COLOR = Color(0xFFE65100) // 진한 앰버
+private val WARNING_TEXT_COLOR = Color.White
 
 @Composable
 private fun WarningBadge(text: String) {
     Text(
         text,
-        color = WARNING_COLOR,
+        color = WARNING_TEXT_COLOR,
         fontWeight = FontWeight.Bold,
         modifier = Modifier
-            .border(1.dp, WARNING_COLOR, RoundedCornerShape(4.dp))
+            .background(WARNING_COLOR, RoundedCornerShape(4.dp))
             .padding(horizontal = 6.dp, vertical = 1.dp),
     )
 }
@@ -326,7 +312,7 @@ fun RoundSummaryScreen(
                             if (hole.isGreenInRegulation) {
                                 Text("그린 ${hole.strokesToGreen}", color = textColor)
                             } else {
-                                GirMissBadge("그린 ${hole.strokesToGreen}")
+                                WarningBadge("그린 ${hole.strokesToGreen}")
                             }
                             // 숏어프로치를 실제로 입력한 홀만 나눠서 보여준다 — 대부분의
                             // 홀은 전부 퍼팅이라, 매번 "숏 0 · 퍼팅 N"으로 보이면 오히려
