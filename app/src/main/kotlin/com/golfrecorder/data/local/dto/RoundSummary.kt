@@ -8,5 +8,6 @@ data class RoundSummary(
     val courseName: String,
     val price: Int?,
     val companions: String?,
+    val review: String?,
     val totalStrokes: Int
 )
