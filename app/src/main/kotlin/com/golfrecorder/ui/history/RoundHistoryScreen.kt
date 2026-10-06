@@ -13,11 +13,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -261,8 +259,15 @@ fun RoundHistoryScreen(
                                     }
                                 ).padding(horizontal = 8.dp, vertical = 2.dp),
                             )
-                            Spacer(Modifier.width(8.dp))
-                            TextButton(onClick = { onRoundClick(round) }) { Text("리뷰") }
+                            // TextButton은 M3 기본 최소 터치 영역(가로 58dp)을 강제해서
+                            // 글자(연필)와 화면 끝 사이에 안 보이는 여백이 생긴다 —
+                            // 배지 바로 옆에 붙이려고 clickable Text로 직접 만든다.
+                            Text(
+                                "✏️",
+                                modifier = Modifier
+                                    .clickable { onRoundClick(round) }
+                                    .padding(4.dp),
+                            )
                         }
                         if (expanded) {
                             Column(modifier = Modifier.padding(top = 12.dp)) {

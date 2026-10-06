@@ -197,7 +197,7 @@ fun CourseManageScreen(
                                 }
                             }
                             Row {
-                                TextButton(onClick = { onEditCourse(course.id) }) { Text("수정") }
+                                TextButton(onClick = { onEditCourse(course.id) }) { Text("✏️") }
                             }
                         }
                         if (expanded) {
