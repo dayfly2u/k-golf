@@ -310,7 +310,15 @@ fun RoundPlayScreen(
     val shotMutex = remember { Mutex() }
 
     LaunchedEffect(Unit) {
-        if (!viewModel.isReview) {
+        if (viewModel.isReview) {
+            // 녹화 서비스는 특정 라운드에 묶이지 않고 앱 전체에 하나만 떠서, 예전에
+            // "완료"를 안 누르고 나온 다른 라운드가 있으면 백그라운드에서 계속
+            // GPS를 추적하고 워치와도 계속 동기화된다 — 그 상태에서 전혀 무관한
+            // (이미 끝난) 라운드를 리뷰만 해도 워치에 알림이 뜨는 문제가 있었다.
+            // 골프는 한 번에 한 라운드만 플레이하므로, 리뷰 화면을 여는 시점엔
+            // 실제로 진행 중인 라운드가 없다고 보고 안전하게 서비스를 끈다.
+            RoundRecordingService.stop(context)
+        } else {
             RoundRecordingService.start(context, viewModel.roundId, viewModel.courseId)
         }
     }
