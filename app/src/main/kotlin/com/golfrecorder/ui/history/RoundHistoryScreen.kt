@@ -297,10 +297,10 @@ fun RoundHistoryScreen(
                                 ).padding(horizontal = 8.dp, vertical = 2.dp),
                             )
                             // TextButton은 M3 기본 최소 터치 영역(가로 58dp)을 강제해서
-                            // 글자(연필)와 화면 끝 사이에 안 보이는 여백이 생긴다 —
+                            // 글자(돋보기)와 화면 끝 사이에 안 보이는 여백이 생긴다 —
                             // 배지 바로 옆에 붙이려고 clickable Text로 직접 만든다.
                             Text(
-                                "✏️",
+                                "🔍",
                                 modifier = Modifier
                                     .clickable { onRoundClick(round) }
                                     .padding(4.dp),
