@@ -16,3 +16,7 @@
 4. `exportSchema = true`이므로 `app/schemas/`에 버전별 스키마 JSON이 쌓인다 — 마이그레이션 작성 시 이전 버전 스키마 JSON을 참고해서 정확한 컬럼/타입을 맞춘다.
 
 **절대 하면 안 되는 것**: "테스트 데이터 몇 개 정도야 괜찮겠지"라는 판단으로 `fallbackToDestructiveMigration`을 그대로 두고 버전만 올리는 것. 데이터 보존이 필요 없다고 확신이 서는 예외적 상황이라도, 사용자에게 먼저 명시적으로 확인 받은 뒤에만 destructive migration을 고려한다.
+
+## UX 작업 시 참고 스킬
+
+화면 UI/UX를 새로 만들거나 고치는 작업이면 `ux-conventions-commercial` 스킬을 `ux-conventions`보다 먼저 참조한다 — 이 프로젝트는 상용화 트랙이라 그 스킬에 이 프로젝트에서만 다른 규칙(뒤로가기 아이콘 버튼, GolfTokens 색상 우선순위, 카드 탭→펼침→상세 링크 패턴 등)이 정리돼 있다. 그 외(버튼 배치, TopAppBar, 삭제 확인 다이얼로그 등)는 `ux-conventions`를 그대로 따른다.
