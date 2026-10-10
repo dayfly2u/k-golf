@@ -635,23 +635,30 @@ fun RoundPlayScreen(
                         recenterSignal = recenterSignal,
                         preferCurrentLocation = !viewModel.isReview,
                     )
-                    // provider를 아직 못 읽어온 온라인 상태 — 아래 오프라인 분기들과 섞이지
+                    // provider를 아직 못 읽어온 온라인 상태 — 아래 오프라인 분기와 섞이지
                     // 않도록 별도 분기로 빼서 로딩이 끝날 때까지 빈 자리로 둔다.
                     online -> {}
-                    greenLocation != null && fixedLocation != null -> {
-                        val distance = haversineMeters(
-                            fixedLocation.lat, fixedLocation.lng, greenLocation.lat, greenLocation.lng,
-                        )
-                        Text(
-                            "오프라인 - 그린까지 약 ${distance.toInt()}m",
-                            color = GolfTokens.CardBackground,
-                            modifier = Modifier.padding(16.dp),
-                        )
-                    }
                     else -> Text(
                         "오프라인 상태입니다.",
                         color = GolfTokens.CardBackground,
                         modifier = Modifier.padding(16.dp),
+                    )
+                }
+                // 온라인 여부와 무관하게 늘 보여준다(redesign-spec.md 4.7) — 기존엔
+                // 오프라인일 때만 텍스트로 노출됐다.
+                if (greenLocation != null && fixedLocation != null) {
+                    val distance = haversineMeters(
+                        fixedLocation.lat, fixedLocation.lng, greenLocation.lat, greenLocation.lng,
+                    )
+                    Text(
+                        "그린까지 약 ${distance.toInt()}m",
+                        color = GolfTokens.CardBackground,
+                        fontFamily = com.golfrecorder.ui.theme.GolfFonts.NumberFontFamily,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .background(GolfTokens.FieldGreen, RoundedCornerShape(GolfTokens.ChipCorner))
+                            .padding(horizontal = 10.dp, vertical = 4.dp),
                     )
                 }
             }
