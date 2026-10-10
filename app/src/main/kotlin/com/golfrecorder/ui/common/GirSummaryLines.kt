@@ -12,9 +12,10 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import kotlin.math.roundToInt
 
-/** GIR N/M (P%) + 엄격 GIR N/M (P%, 빨강). RoundSummaryScreen(상세, 기본 두 줄
- * titleMedium/bodyMedium)과 RoundHistoryScreen(첫 화면 리스트 펼침, [singleLine]=true
- * 한 줄 bodyMedium)이 같은 계산 로직을 공유한다. */
+/** L-GIR N/M (P%) + GIR N/M (P%, 빨강) — 표시명은 코드명과 반대다(girCount는 "L-GIR",
+ * strictGirCount는 "GIR", redesign-spec.md 4.1). 지금은 RoundHistoryScreen(첫 화면 리스트
+ * 펼침, [singleLine]=true 한 줄 bodyMedium)만 쓴다 — 결과 화면은 6칸 StatGrid로 바뀌었다.
+ * 기본 두 줄 분기는 현재 호출처가 없다. */
 @Composable
 fun GirSummaryLines(
     girCount: Int,
@@ -27,27 +28,30 @@ fun GirSummaryLines(
     val percent: (Int) -> Int = { count -> if (totalHoles == 0) 0 else (count * 100.0 / totalHoles).roundToInt() }
     if (singleLine) {
         val text = buildAnnotatedString {
+            // 표시명과 코드명이 반대다 — girCount(isGreenInRegulation 기준)는 화면에
+            // "L-GIR"로, strictGirCount(isStrictGreenInRegulation 기준)는 화면에
+            // "GIR"로 보여준다(redesign-spec.md 4.1, 의미를 바꾸는 게 아니라 표시만 교체).
             withStyle(SpanStyle(color = Color.Black)) {
-                append("GIR $girCount/$totalHoles (${percent(girCount)}%)")
+                append("L-GIR $girCount/$totalHoles (${percent(girCount)}%)")
             }
             append(" / ")
-            // 일반 GIR은 strokesToGreen만으로 판정해 숏어프로치가 있었어도 성공으로
-            // 잡힐 수 있다 — 숏어프로치가 전혀 없었던 엄격 기준도 눈에 띄게 빨간색으로
-            // 같이 보여준다.
+            // 숏어프로치가 전혀 없었던 엄격 기준(화면 표시명 "GIR")을 눈에 띄게
+            // 빨간색으로 같이 보여준다.
             withStyle(SpanStyle(color = Color.Red)) {
-                append("엄격 GIR $strictGirCount/$totalHoles (${percent(strictGirCount)}%)")
+                append("GIR $strictGirCount/$totalHoles (${percent(strictGirCount)}%)")
             }
         }
         Text(text, style = MaterialTheme.typography.bodyMedium, modifier = modifier)
         return
     }
     Column(modifier = modifier, horizontalAlignment = horizontalAlignment) {
+        // 표시명과 코드명이 반대다 — 위 singleLine 분기와 동일(redesign-spec.md 4.1).
         Text(
-            "GIR $girCount/$totalHoles (${percent(girCount)}%)",
+            "L-GIR $girCount/$totalHoles (${percent(girCount)}%)",
             style = MaterialTheme.typography.titleMedium,
         )
         Text(
-            "엄격 GIR $strictGirCount/$totalHoles (${percent(strictGirCount)}%)",
+            "GIR $strictGirCount/$totalHoles (${percent(strictGirCount)}%)",
             style = MaterialTheme.typography.bodyMedium,
             color = Color.Red,
         )

@@ -15,8 +15,8 @@ import kotlin.math.roundToInt
 // 드라이버/퍼팅 통계 한 줄 — 눈에 띄게 짙은 파랑, 평균 수치는 굵게.
 private val ROUND_STATS_COLOR = Color(0xFF0D47A1)
 
-/** "드라이버 평균 Nm (최대 Nm) / 퍼팅 평균 N.N (총 N)" 한 줄. RoundSummaryScreen과
- * RoundHistoryScreen(첫 화면 리스트 펼침)이 같은 스타일을 공유한다. */
+/** "드라이버 평균 Nm (최대 Nm) / 퍼팅 평균 N.N (총 N)" 한 줄. 지금은
+ * RoundHistoryScreen(첫 화면 리스트 펼침)만 쓴다 — 결과 화면은 6칸 StatGrid로 바뀌었다. */
 @Composable
 fun RoundStatsLine(driverStats: DriverDistanceStats, avgPutts: Double, totalPutts: Int, modifier: Modifier = Modifier) {
     val driverAvg = driverStats.avgMeters?.let { "${it.roundToInt()}m" } ?: "-"

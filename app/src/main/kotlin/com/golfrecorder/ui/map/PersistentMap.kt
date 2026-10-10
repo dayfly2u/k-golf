@@ -338,4 +338,6 @@ fun PersistentKakaoMap(state: MapSlotState) {
 fun PersistentCourseMap(state: MapSlotState) {
     PersistentKakaoMap(state)
     PersistentGoogleMap(state)
+    // 두 지도보다 나중에 그려야 지도 위에 보인다.
+    GreenDistanceOverlay(state)
 }

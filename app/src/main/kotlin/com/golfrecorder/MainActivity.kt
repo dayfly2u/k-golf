@@ -6,8 +6,8 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import com.golfrecorder.ui.theme.GolfTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateListOf
@@ -48,7 +48,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val container = AppContainer.getInstance(applicationContext)
         setContent {
-            MaterialTheme {
+            GolfTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     // 지도(MapView)는 화면마다 새로 만들지 않고 여기서 딱 하나만 만들어
                     // 앱이 살아있는 내내 유지한다. 화면 전환 시에는 위치만 옮긴다.
@@ -203,6 +203,7 @@ private fun AppRoot(container: AppContainer, mapSlotState: MapSlotState) {
                         container.roundRepository,
                         container.courseRepository,
                         container.shotRepository,
+                        container.penaltyRepository,
                         screen.roundId,
                         screen.courseId,
                     ),

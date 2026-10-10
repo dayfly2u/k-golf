@@ -20,6 +20,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -36,7 +38,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -184,19 +189,24 @@ fun CourseManageScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                 ) {
                                     Row(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            "≡",
+                                        Icon(
+                                            Icons.Filled.Menu,
+                                            contentDescription = "길게 눌러 순서 변경",
                                             modifier = Modifier.dragHandle(index, dragState).padding(end = 12.dp),
-                                            style = MaterialTheme.typography.titleLarge,
-                                            color = GolfTokens.TextSecondary,
+                                            tint = GolfTokens.TextSecondary,
                                         )
                                         Column {
                                             Text(course.name, fontWeight = FontWeight.Bold, color = GolfTokens.TextPrimary)
                                             Row(verticalAlignment = Alignment.CenterVertically) {
                                                 if (course.rating != null) {
+                                                    // 노란 Accent는 흰 카드 위에서 글자색으로 쓰기엔 대비가 너무 낮아
+                                                    // (~1.7:1) 별만 노랗게, 숫자는 본문색으로 둔다.
                                                     Text(
-                                                        "★ ${"%.1f".format(course.rating)}  ",
-                                                        color = GolfTokens.FieldGreen,
+                                                        buildAnnotatedString {
+                                                            withStyle(SpanStyle(color = GolfTokens.Accent)) { append("★") }
+                                                            append(" ${"%.1f".format(course.rating)}  ")
+                                                        },
+                                                        color = GolfTokens.TextPrimary,
                                                         fontWeight = FontWeight.Bold,
                                                         style = MaterialTheme.typography.bodySmall,
                                                     )
@@ -230,8 +240,10 @@ fun CourseManageScreen(
                                             }
                                         }
                                     }
-                                    Text(
-                                        "✏️",
+                                    Icon(
+                                        Icons.Filled.Edit,
+                                        contentDescription = "코스 수정",
+                                        tint = GolfTokens.TextSecondary,
                                         modifier = Modifier
                                             .clickable { onEditCourse(course.id) }
                                             .padding(4.dp),
@@ -244,7 +256,7 @@ fun CourseManageScreen(
                                             !course.courseInfo.isNullOrBlank()
                                         if (!hasDetail) {
                                             Text(
-                                                "입력된 리뷰 상세 정보가 없습니다. \"✏️\"에서 추가할 수 있습니다.",
+                                                "입력된 리뷰 상세 정보가 없습니다. 수정 아이콘에서 추가할 수 있습니다.",
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = GolfTokens.TextSecondary,
                                             )

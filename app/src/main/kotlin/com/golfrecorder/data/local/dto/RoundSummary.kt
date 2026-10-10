@@ -9,5 +9,7 @@ data class RoundSummary(
     val price: Int?,
     val companions: String?,
     val review: String?,
-    val totalStrokes: Int
+    val totalStrokes: Int,
+    val totalPar: Int = 0,
+    val totalPutts: Int = 0,
 )
