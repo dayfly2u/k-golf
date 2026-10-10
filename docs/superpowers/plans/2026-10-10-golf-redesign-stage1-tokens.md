@@ -607,7 +607,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.OutlinedButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -664,7 +663,7 @@ fun StepperRow(
                 modifier = Modifier.size(STEPPER_BUTTON_SIZE_DP.dp),
                 shape = RoundedCornerShape(14.dp),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
-                colors = OutlinedButtonDefaults.outlinedButtonColors(contentColor = GolfTokens.TextPrimary),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = GolfTokens.TextPrimary),
                 border = androidx.compose.foundation.BorderStroke(1.5.dp, GolfTokens.Border),
             ) { Text("−", fontSize = 20.sp) }
             Text(
@@ -737,8 +736,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -765,7 +764,10 @@ fun PenaltyButton(text: String, color: PenaltyColor, onClick: () -> Unit, modifi
         onClick = onClick,
         modifier = modifier,
         shape = RoundedCornerShape(12.dp),
-        colors = OutlinedButtonDefaults.outlinedButtonColors(
+        // ButtonDefaults(OutlinedButtonDefaults가 아님)가 buttonColors()/outlinedButtonColors()/
+        // textButtonColors() 등을 전부 제공하는 단일 객체다 — Task 7에서 같은 실수로 한 번
+        // 고친 적 있음(OutlinedButtonDefaults는 실제로 존재하지 않는 클래스).
+        colors = ButtonDefaults.outlinedButtonColors(
             containerColor = palette.background,
             contentColor = palette.text,
         ),
