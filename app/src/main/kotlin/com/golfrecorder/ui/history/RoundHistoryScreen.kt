@@ -60,6 +60,7 @@ import com.golfrecorder.domain.model.HoleResult
 import com.golfrecorder.domain.model.calculateDriverDistanceStats
 import com.golfrecorder.domain.model.computeRoundAggregates
 import com.golfrecorder.domain.model.formatToPar
+import com.golfrecorder.domain.model.strokeScoreTier
 import com.golfrecorder.ui.common.GirSummaryLines
 import com.golfrecorder.ui.common.GolfCard
 import com.golfrecorder.ui.common.MoreBelowIndicator
@@ -69,6 +70,8 @@ import com.golfrecorder.ui.common.StatGrid
 import com.golfrecorder.ui.common.StatItem
 import com.golfrecorder.ui.theme.GolfFonts
 import com.golfrecorder.ui.theme.GolfTokens
+import com.golfrecorder.ui.theme.scoreTierColor
+import com.golfrecorder.ui.theme.scoreTierTextColor
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -136,24 +139,12 @@ private fun formatRoundPeriod(playedAt: Long, finishedAt: Long?): String {
     return "$date $start~$end (${formatDuration(playedAt, finishedAt)})"
 }
 
-// 총 타수 배지는 GolfTokens의 3단계 대신 4단계 색(80대 진녹색 / 90~94 연초록 /
-// 95~99 연빨강 / 100+ 진빨강)을 쓴다 — 구간을 한눈에 구분하려는 사용자 요청으로
-// 토큰화(v0.8.37)를 되돌렸다. 80대는 앱의 진녹색 토큰(FieldGreen) + 흰 글자.
-private val STROKE_LIGHT_GREEN = Color(0xFFC8E6C9)
-private val STROKE_LIGHT_RED = Color(0xFFFFCDD2)
-private val STROKE_DARK_RED = Color(0xFFC62828)
+// 총 타수 배지는 점수 레벨 4구간 색(80대 진녹색 / 90~94 연초록 / 95~99 연빨강 / 100+ 진빨강)을
+// 쓴다 — 결과 화면 스코어카드·홀 결과 비율 막대와 같은 scoreTierColor.
+private fun strokeScoreColor(strokes: Int): Color? = strokeScoreTier(strokes)?.let { scoreTierColor(it) }
 
-private fun strokeScoreColor(strokes: Int): Color? = when {
-    strokes in 80..89 -> GolfTokens.FieldGreen
-    strokes in 90..94 -> STROKE_LIGHT_GREEN
-    strokes in 95..99 -> STROKE_LIGHT_RED
-    strokes >= 100 -> STROKE_DARK_RED
-    else -> null
-}
-
-// 진한 배경(80대 진녹색, 100+ 진빨강)은 어두운 글자로는 대비가 약해 흰 글자로 바꾼다.
 private fun strokeScoreTextColor(strokes: Int): Color =
-    if (strokes in 80..89 || strokes >= 100) GolfTokens.CardBackground else GolfTokens.TextPrimary
+    strokeScoreTier(strokes)?.let { scoreTierTextColor(it) } ?: GolfTokens.TextPrimary
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

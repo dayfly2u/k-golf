@@ -36,10 +36,12 @@ object GolfTokens {
     val ScoreBogeyBackground = Color(0xFFDCE6F1)
     val ScoreDoubleOrWorseBackground = Color(0xFF6B8FB8) // 흰 글자
 
-    // 라운드 결과 "홀 결과 비율" 막대의 보기/트리플+ 구간(시안 Summary.dc.html) — 버디 이하는
-    // Accent, 파는 FieldGreen, 더블은 ScoreDoubleOrWorseBackground를 그대로 쓴다.
-    val RatioBogey = Color(0xFF9DB8D6)
-    val RatioTriple = Color(0xFF34506F)
+    // 점수 레벨 4구간 색 — 홈 총타수 배지와 결과 화면 스코어카드·홀 결과 비율 막대가 같이 쓴다
+    // (1=가장 좋음 진녹색 → 4=가장 나쁨 진빨강). 어느 구간인지는 holeScoreTier/strokeScoreTier.
+    val ScoreTier1 = FieldGreen
+    val ScoreTier2 = Color(0xFFC8E6C9)
+    val ScoreTier3 = Color(0xFFFFCDD2)
+    val ScoreTier4 = Color(0xFFC62828)
 
     // 18홀 진행바 — 아직 안 지나온 홀
     val ProgressRemaining = Color(0xFFDADFD4)

@@ -1,7 +1,6 @@
 package com.golfrecorder.ui.round
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -41,10 +40,12 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.golfrecorder.domain.model.HoleResult
-import com.golfrecorder.domain.model.scoreGradeLabel
+import com.golfrecorder.domain.model.holeScoreTier
 import com.golfrecorder.ui.common.GolfCard
 import com.golfrecorder.ui.theme.GolfFonts
 import com.golfrecorder.ui.theme.GolfTokens
+import com.golfrecorder.ui.theme.scoreTierColor
+import com.golfrecorder.ui.theme.scoreTierTextColor
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -61,30 +62,20 @@ internal fun formatRoundPeriod(playedAt: Long, finishedAt: Long?): String {
     return "$start~${periodTimeFormat.format(Date(finishedAt))} (${totalMinutes / 60}시간 ${totalMinutes % 60}분)"
 }
 
-private val GRADE_ORDER = listOf("버디 이하", "파", "보기", "더블", "트리플+")
-
-private val GRADE_COLOR = mapOf(
-    "버디 이하" to GolfTokens.Accent,
-    "파" to GolfTokens.FieldGreen,
-    "보기" to GolfTokens.RatioBogey,
-    "더블" to GolfTokens.ScoreDoubleOrWorseBackground,
-    "트리플+" to GolfTokens.RatioTriple,
-)
-
-// 밝은 구간(버디 이하 노랑, 보기 연블루)은 어두운 글자, 나머지는 흰 글자(시안 그대로).
-private val LIGHT_GRADES = setOf("버디 이하", "보기")
+// 점수 레벨 4구간 이름(인덱스 = holeScoreTier - 1). 색은 홈 총타수 배지와 같은 scoreTierColor.
+private val TIER_LABELS = listOf("파 이하", "보기", "더블", "트리플+")
 
 private fun percent(count: Int, total: Int): Int = if (total == 0) 0 else (count * 100.0 / total).roundToInt()
 
 /** 시안 "홀 결과 비율" 카드 — 한 줄 100% 막대(구간마다 퍼센트 표시) + 색 칩이 붙은 범례(홀 수).
- * 구간은 [scoreGradeLabel]로 나누고 순서는 항상 [GRADE_ORDER]. 홀 수가 0인 구간은 막대에서
+ * 구간은 [holeScoreTier]로 나누고 순서는 항상 1~4구간. 홀 수가 0인 구간은 막대에서
  * 뺀다(Compose weight()는 0을 허용하지 않는다). */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun HoleResultRatioCard(holeResults: List<HoleResult>, modifier: Modifier = Modifier) {
     if (holeResults.isEmpty()) return
     val total = holeResults.size
-    val counts = GRADE_ORDER.associateWith { grade -> holeResults.count { scoreGradeLabel(it.scoreToPar) == grade } }
+    val tierCounts = (1..4).associateWith { tier -> holeResults.count { holeScoreTier(it.scoreToPar) == tier } }
     GolfCard(modifier = modifier) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -101,13 +92,13 @@ internal fun HoleResultRatioCard(holeResults: List<HoleResult>, modifier: Modifi
                 .clip(RoundedCornerShape(8.dp)),
             horizontalArrangement = Arrangement.spacedBy(2.dp),
         ) {
-            GRADE_ORDER.filter { grade -> (counts[grade] ?: 0) > 0 }.forEach { grade ->
-                val count = counts[grade] ?: 0
+            (1..4).filter { tier -> (tierCounts[tier] ?: 0) > 0 }.forEach { tier ->
+                val count = tierCounts[tier] ?: 0
                 Box(
                     modifier = Modifier
                         .weight(count.toFloat())
                         .fillMaxHeight()
-                        .background(GRADE_COLOR.getValue(grade))
+                        .background(scoreTierColor(tier))
                         .clipToBounds(),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -118,7 +109,7 @@ internal fun HoleResultRatioCard(holeResults: List<HoleResult>, modifier: Modifi
                         fontSize = 13.sp,
                         maxLines = 1,
                         softWrap = false,
-                        color = if (grade in LIGHT_GRADES) GolfTokens.TextPrimary else GolfTokens.CardBackground,
+                        color = scoreTierTextColor(tier),
                     )
                 }
             }
@@ -128,15 +119,19 @@ internal fun HoleResultRatioCard(holeResults: List<HoleResult>, modifier: Modifi
             horizontalArrangement = Arrangement.spacedBy(14.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            GRADE_ORDER.forEach { grade ->
+            (1..4).forEach { tier ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         Modifier.size(9.dp)
                             .clip(RoundedCornerShape(3.dp))
-                            .background(GRADE_COLOR.getValue(grade)),
+                            .background(scoreTierColor(tier)),
                     )
                     Spacer(Modifier.width(5.dp))
-                    Text("$grade ${counts[grade] ?: 0}", fontSize = 12.sp, color = GolfTokens.TextPrimary)
+                    Text(
+                        "${TIER_LABELS[tier - 1]} ${tierCounts[tier] ?: 0}",
+                        fontSize = 12.sp,
+                        color = GolfTokens.TextPrimary,
+                    )
                 }
             }
         }
@@ -167,25 +162,18 @@ private fun SmallGridText(text: String, size: Int = 12, color: Color = GolfToken
     Text(text, fontSize = size.sp, color = color)
 }
 
-/** 타수 칸 — 파 대비로 색을 정한다(시안 그대로): 파 이하는 흰 바탕 + 테두리, 보기는 연한
- * 블루, 더블 이상은 진한 블루 + 흰 글자. 폭은 칸에 맞춰 줄어들고 최대 28dp. */
+/** 타수 칸 — 파 대비 점수 레벨 4구간 색(홈 총타수 배지와 같은 색): 파 이하 진녹색, 보기 연초록,
+ * 더블 연빨강, 트리플 이상 진빨강. 폭은 칸에 맞춰 줄어들고 최대 28dp. */
 @Composable
 private fun StrokeCell(hole: HoleResult, enabled: Boolean, onClick: () -> Unit) {
-    val diff = hole.scoreToPar
-    val fill = when {
-        diff <= 0 -> GolfTokens.CardBackground
-        diff == 1 -> GolfTokens.ScoreBogeyBackground
-        else -> GolfTokens.ScoreDoubleOrWorseBackground
-    }
-    val textColor = if (diff >= 2) GolfTokens.CardBackground else GolfTokens.TextPrimary
+    val tier = holeScoreTier(hole.scoreToPar)
     Box(
         modifier = Modifier
             .widthIn(max = 28.dp)
             .fillMaxWidth()
             .aspectRatio(1f)
             .clip(CELL_SHAPE)
-            .background(fill)
-            .then(if (diff <= 0) Modifier.border(1.5.dp, GolfTokens.ScoreUnderParBorder, CELL_SHAPE) else Modifier)
+            .background(scoreTierColor(tier))
             .clickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
@@ -194,7 +182,7 @@ private fun StrokeCell(hole: HoleResult, enabled: Boolean, onClick: () -> Unit) 
             fontFamily = GolfFonts.NumberFontFamily,
             fontWeight = FontWeight.Bold,
             fontSize = 17.sp,
-            color = textColor,
+            color = scoreTierTextColor(tier),
         )
     }
 }

@@ -20,6 +20,38 @@ class ScoreFormattingTest {
     }
 
     @Test
+    fun `holeScoreTier 파 이하는 1구간`() {
+        assertEquals(1, holeScoreTier(-2))
+        assertEquals(1, holeScoreTier(-1))
+        assertEquals(1, holeScoreTier(0))
+    }
+
+    @Test
+    fun `holeScoreTier 보기는 2구간, 더블은 3구간`() {
+        assertEquals(2, holeScoreTier(1))
+        assertEquals(3, holeScoreTier(2))
+    }
+
+    @Test
+    fun `holeScoreTier 트리플 이상은 4구간`() {
+        assertEquals(4, holeScoreTier(3))
+        assertEquals(4, holeScoreTier(7))
+    }
+
+    @Test
+    fun `strokeScoreTier 총타수 구간 경계`() {
+        assertEquals(null, strokeScoreTier(79))
+        assertEquals(1, strokeScoreTier(80))
+        assertEquals(1, strokeScoreTier(89))
+        assertEquals(2, strokeScoreTier(90))
+        assertEquals(2, strokeScoreTier(94))
+        assertEquals(3, strokeScoreTier(95))
+        assertEquals(3, strokeScoreTier(99))
+        assertEquals(4, strokeScoreTier(100))
+        assertEquals(4, strokeScoreTier(130))
+    }
+
+    @Test
     fun `scoreGradeLabel 버디 이하는 이글도 포함한다`() {
         assertEquals("버디 이하", scoreGradeLabel(-2))
         assertEquals("버디 이하", scoreGradeLabel(-1))
