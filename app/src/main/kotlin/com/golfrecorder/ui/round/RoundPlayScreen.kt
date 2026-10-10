@@ -79,6 +79,7 @@ import com.golfrecorder.ui.common.PenaltyDisplayChip
 import com.golfrecorder.ui.common.ReadOnlyStepperRow
 import com.golfrecorder.ui.common.StepperRow
 import com.golfrecorder.ui.map.CourseMapSlot
+import com.golfrecorder.ui.map.GreenDistanceChip
 import com.golfrecorder.ui.map.MapSlotState
 import com.golfrecorder.ui.map.PenaltyPoint
 import com.golfrecorder.ui.map.ShotPoint
@@ -644,21 +645,17 @@ fun RoundPlayScreen(
                         modifier = Modifier.padding(16.dp),
                     )
                 }
-                // 온라인 여부와 무관하게 늘 보여준다(redesign-spec.md 4.7) — 기존엔
-                // 오프라인일 때만 텍스트로 노출됐다.
-                if (greenLocation != null && fixedLocation != null) {
+                // 거리 칩(redesign-spec.md 4.7). 온라인일 땐 실제 지도 뷰가 액티비티 루트에서
+                // 이 화면 위에 겹쳐 그려져 여기 둔 요소가 가려지므로, 온라인용은
+                // PersistentCourseMap의 GreenDistanceOverlay가 맡고 여기선 지도가 아예 없는
+                // 오프라인일 때만 같은 칩을 그린다. 둘 다 라이브 플레이에서만 보인다.
+                if (!online && !viewModel.isReview && greenLocation != null && fixedLocation != null) {
                     val distance = haversineMeters(
                         fixedLocation.lat, fixedLocation.lng, greenLocation.lat, greenLocation.lng,
                     )
-                    Text(
-                        "그린까지 약 ${distance.toInt()}m",
-                        color = GolfTokens.CardBackground,
-                        fontFamily = com.golfrecorder.ui.theme.GolfFonts.NumberFontFamily,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier
-                            .align(Alignment.TopStart)
-                            .background(GolfTokens.FieldGreen, RoundedCornerShape(GolfTokens.ChipCorner))
-                            .padding(horizontal = 10.dp, vertical = 4.dp),
+                    GreenDistanceChip(
+                        distanceMeters = distance.toInt(),
+                        modifier = Modifier.align(Alignment.TopStart).padding(8.dp),
                     )
                 }
             }
