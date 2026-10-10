@@ -136,7 +136,7 @@ val NumberFontFamily = FontFamily(Font(R.font.barlow_condensed_medium, FontWeigh
 - **이전 홀/다음 홀 버튼 위치**: 3.2에 "하단 고정"이라고 명시했지만 실제로는 스크롤 컬럼 안에 있음. 하단 고정으로 수정 필요.
 - **코스 관리 평점 별 색상**: 3.5에 따라 노란 별이어야 하는데 실제로는 `GolfTokens.FieldGreen`(녹색)으로 그려짐. `GolfTokens.Accent`로 교체 필요.
 - **본문 폰트 미적용**: `GolfFonts.BodyFontFamily`(IBM Plex Sans KR)가 번들돼 있지만 어느 화면에도 적용되지 않아 본문 텍스트가 전부 시스템 기본 폰트로 표시됨.
-- **Material3 기본 테마 잔존**: 앱 테마가 `MaterialTheme {}` 기본값(M3 퍼플)이라 토큰 색을 명시하지 않은 컨트롤(`OutlinedButton`, `OutlinedTextField`, 평범한 `TopAppBar` 3개 등)이 보라색/M3 기본색으로 렌더링됨. 각 컨트롤에 `GolfTokens` 기반 `colors =`를 명시하거나, 테마 레벨에서 토큰 기반 `colorScheme`을 도입하는 방향을 스테이지 3 계획 때 결정.
+- **Material3 기본 테마 잔존**: 앱 테마가 `MaterialTheme {}` 기본값(M3 퍼플)이라 토큰 색을 명시하지 않은 컨트롤(`OutlinedButton`, `OutlinedTextField`, 평범한 `TopAppBar` 3개 등)이 보라색/M3 기본색으로 렌더링됨. **결정(2026-10-10, 스테이지 3 계획 시)**: 영향받는 컨트롤이 7개 파일에 28곳이라 컨트롤별 `colors=` 개별 수정 대신, `GolfTokens` 기반 `lightColorScheme`+`Typography`(본문 폰트 포함)를 `ui/theme/GolfTheme.kt`에 만들어 `MainActivity`의 `MaterialTheme {}`를 교체한다 — 이 항목에 한정해 7절의 "M3 ColorScheme 도입 안 함" 경계를 수정한다(`GolfTokens.kt` 자체는 그대로 평범한 Kotlin object로 유지, M3에 값만 공급).
 
 ---
 
@@ -238,4 +238,5 @@ val MIGRATION_19_20 = object : Migration(19, 20) {
 ## 7. 범위 밖 (이 스펙에서 제외)
 
 - 스코어카드 공유(이미지 생성 + 공유 인텐트) — 브리프도 "별도 단계로 미뤄도 됨"이라 명시. 필요해지면 별도 브레인스토밍.
-- Material3 `ColorScheme`/다이나믹 컬러 전환 — 토큰은 평범한 Kotlin object로 유지하고 M3 테마 자체는 건드리지 않는다.
+- Material3 다이나믹 컬러 전환 — 토큰은 평범한 Kotlin object로 유지한다.
+- (스테이지 3에서 수정) ~~Material3 `ColorScheme` 전환~~ — §3.7의 "Material3 기본 테마 잔존" 항목에 한정해 `GolfTheme`(토큰 기반 `lightColorScheme`+`Typography`)을 도입하기로 결정(2026-10-10).
