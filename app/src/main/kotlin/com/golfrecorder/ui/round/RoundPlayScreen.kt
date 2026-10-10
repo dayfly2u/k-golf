@@ -479,6 +479,65 @@ fun RoundPlayScreen(
                 },
             )
         },
+        bottomBar = {
+            Box(
+                modifier = Modifier.fillMaxWidth()
+                    .background(GolfTokens.CardBackground)
+                    .padding(16.dp),
+            ) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    androidx.compose.material3.OutlinedButton(
+                        onClick = {
+                            viewModel.goToHole(viewModel.currentHoleNumber - 1) {
+                                RoundRecordingService.refreshState(context)
+                            }
+                        },
+                        enabled = viewModel.currentHoleNumber > 1,
+                        shape = RoundedCornerShape(GolfTokens.ButtonCorner),
+                    ) { Text("이전 홀") }
+                    if (holeCount == 0 || viewModel.currentHoleNumber < holeCount) {
+                        Button(
+                            onClick = {
+                                viewModel.goToHole(viewModel.currentHoleNumber + 1) {
+                                    RoundRecordingService.refreshState(context)
+                                }
+                            },
+                            shape = RoundedCornerShape(GolfTokens.ButtonCorner),
+                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                containerColor = GolfTokens.TextPrimary,
+                                contentColor = GolfTokens.CardBackground,
+                            ),
+                        ) { Text("다음 홀") }
+                    } else if (!viewModel.isReview) {
+                        // 이미 완료된 라운드를 리뷰 중이면 다시 완료할 이유가 없으니 버튼을 안 보여준다.
+                        Button(
+                            onClick = { showFinishConfirm = true },
+                            shape = RoundedCornerShape(GolfTokens.ButtonCorner),
+                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                containerColor = GolfTokens.TextPrimary,
+                                contentColor = GolfTokens.CardBackground,
+                            ),
+                        ) { Text("완료") }
+                    }
+                }
+            }
+            if (showFinishConfirm) {
+                AlertDialog(
+                    onDismissRequest = { showFinishConfirm = false },
+                    title = { Text("라운드를 완료할까요?") },
+                    text = { Text("완료하면 홀 정보를 더 이상 수정할 수 없습니다.") },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            showFinishConfirm = false
+                            viewModel.finishRound(onFinished)
+                        }) { Text("완료") }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showFinishConfirm = false }) { Text("취소") }
+                    },
+                )
+            }
+        },
     ) { padding ->
         Column(
             modifier = Modifier
@@ -628,58 +687,7 @@ fun RoundPlayScreen(
                     showDivider = false,
                 )
             }
-            Spacer(Modifier.height(24.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                androidx.compose.material3.OutlinedButton(
-                    onClick = {
-                        viewModel.goToHole(viewModel.currentHoleNumber - 1) {
-                            RoundRecordingService.refreshState(context)
-                        }
-                    },
-                    enabled = viewModel.currentHoleNumber > 1,
-                    shape = RoundedCornerShape(GolfTokens.ButtonCorner),
-                ) { Text("이전 홀") }
-                if (holeCount == 0 || viewModel.currentHoleNumber < holeCount) {
-                    Button(
-                        onClick = {
-                            viewModel.goToHole(viewModel.currentHoleNumber + 1) {
-                                RoundRecordingService.refreshState(context)
-                            }
-                        },
-                        shape = RoundedCornerShape(GolfTokens.ButtonCorner),
-                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                            containerColor = GolfTokens.TextPrimary,
-                            contentColor = GolfTokens.CardBackground,
-                        ),
-                    ) { Text("다음 홀") }
-                } else if (!viewModel.isReview) {
-                    // 이미 완료된 라운드를 리뷰 중이면 다시 완료할 이유가 없으니 버튼을 안 보여준다.
-                    Button(
-                        onClick = { showFinishConfirm = true },
-                        shape = RoundedCornerShape(GolfTokens.ButtonCorner),
-                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                            containerColor = GolfTokens.TextPrimary,
-                            contentColor = GolfTokens.CardBackground,
-                        ),
-                    ) { Text("완료") }
-                }
-            }
-            if (showFinishConfirm) {
-                AlertDialog(
-                    onDismissRequest = { showFinishConfirm = false },
-                    title = { Text("라운드를 완료할까요?") },
-                    text = { Text("완료하면 홀 정보를 더 이상 수정할 수 없습니다.") },
-                    confirmButton = {
-                        TextButton(onClick = {
-                            showFinishConfirm = false
-                            viewModel.finishRound(onFinished)
-                        }) { Text("완료") }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { showFinishConfirm = false }) { Text("취소") }
-                    },
-                )
-            }
+            Spacer(Modifier.height(16.dp))
         }
     }
 }
