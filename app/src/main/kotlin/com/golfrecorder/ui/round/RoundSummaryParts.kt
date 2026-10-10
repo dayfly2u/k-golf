@@ -49,21 +49,8 @@ import com.golfrecorder.ui.theme.GolfTokens
 import com.golfrecorder.ui.theme.scoreTierColor
 import com.golfrecorder.ui.theme.scoreTierTextColor
 import java.text.NumberFormat
-import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
 import kotlin.math.roundToInt
-
-private val periodDateFormat = SimpleDateFormat("MM.dd (E) HH:mm", Locale.KOREA)
-private val periodTimeFormat = SimpleDateFormat("HH:mm", Locale.KOREA)
-
-/** "09.27 (토) 07:10~11:52 (4시간 42분)" — 아직 안 끝난 라운드는 "09.27 (토) 07:10~". */
-internal fun formatRoundPeriod(playedAt: Long, finishedAt: Long?): String {
-    val start = periodDateFormat.format(Date(playedAt))
-    if (finishedAt == null) return "$start~"
-    val totalMinutes = (finishedAt - playedAt) / 60_000
-    return "$start~${periodTimeFormat.format(Date(finishedAt))} (${totalMinutes / 60}시간 ${totalMinutes % 60}분)"
-}
 
 private fun percent(count: Int, total: Int): Int = if (total == 0) 0 else (count * 100.0 / total).roundToInt()
 

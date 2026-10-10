@@ -45,6 +45,10 @@ object GolfTokens {
     val ScoreTier3 = Color(0xFFFFCDD2)
     val ScoreTier4 = Color(0xFFC62828)
 
+    // 홈: 아직 안 끝난 라운드의 점수 배지(회색), 펼친 카드의 리뷰 인용 박스(베이지) — 시안 Main.dc.html
+    val BadgePlain = Color(0xFFEEF0E8)
+    val QuoteBackground = Color(0xFFF7F4E8)
+
     // 홀 상세(리뷰)에서 실수한 항목(3퍼팅 이상, 숏어프로치, GIR 실패, OB/해저드) 행 하이라이트 — 연한 빨강.
     val MistakeHighlight = ScoreTier3
 

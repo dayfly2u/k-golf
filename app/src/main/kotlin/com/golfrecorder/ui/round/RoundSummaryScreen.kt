@@ -62,6 +62,7 @@ import com.golfrecorder.domain.model.calculateDriverDistanceStats
 import com.golfrecorder.domain.model.computeRecentRank
 import com.golfrecorder.domain.model.formatToPar
 import com.golfrecorder.ui.common.StatGrid
+import com.golfrecorder.ui.common.formatRoundPeriod
 import com.golfrecorder.ui.common.StatItem
 import com.golfrecorder.ui.theme.GolfFonts
 import com.golfrecorder.ui.theme.GolfTokens

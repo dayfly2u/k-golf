@@ -7,26 +7,25 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -39,39 +38,29 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.golfrecorder.backup.BackupManager
 import com.golfrecorder.data.local.dto.RoundSummary
+import com.golfrecorder.data.repository.PenaltyRepository
 import com.golfrecorder.data.repository.RoundRepository
 import com.golfrecorder.data.repository.ShotRepository
 import com.golfrecorder.domain.model.DriverDistanceStats
 import com.golfrecorder.domain.model.HoleResult
 import com.golfrecorder.domain.model.calculateDriverDistanceStats
 import com.golfrecorder.domain.model.computeRoundAggregates
-import com.golfrecorder.domain.model.formatToPar
-import com.golfrecorder.domain.model.strokeScoreTier
-import com.golfrecorder.ui.common.GirSummaryLines
 import com.golfrecorder.ui.common.GolfCard
 import com.golfrecorder.ui.common.MoreBelowIndicator
 import com.golfrecorder.ui.common.PrimaryCtaButton
-import com.golfrecorder.ui.common.RoundStatsLine
-import com.golfrecorder.ui.common.StatGrid
-import com.golfrecorder.ui.common.StatItem
-import com.golfrecorder.ui.theme.GolfFonts
+import com.golfrecorder.ui.common.formatRoundPeriod
+import com.golfrecorder.ui.theme.GolfIcons
 import com.golfrecorder.ui.theme.GolfTokens
-import com.golfrecorder.ui.theme.scoreTierColor
-import com.golfrecorder.ui.theme.scoreTierTextColor
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -79,14 +68,11 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import java.text.NumberFormat
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 class RoundHistoryViewModel(
     private val roundRepository: RoundRepository,
     private val shotRepository: ShotRepository,
+    private val penaltyRepository: PenaltyRepository,
 ) : ViewModel() {
     val rounds: StateFlow<List<RoundSummary>> = roundRepository.getRoundSummaries()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -109,42 +95,21 @@ class RoundHistoryViewModel(
         combine(shotRepository.getShotsForRound(roundId), getHoleResults(roundId)) { shots, holes ->
             calculateDriverDistanceStats(shots, holes.associate { it.holeNumber to it.par })
         }
+
+    /** 펼친 카드의 "벌타" 타일 — OB/해저드 건수 합. */
+    fun getPenaltyCount(roundId: Long): Flow<Int> =
+        penaltyRepository.getPenaltiesForRound(roundId).map { it.size }
 }
 
 class RoundHistoryViewModelFactory(
     private val roundRepository: RoundRepository,
     private val shotRepository: ShotRepository,
+    private val penaltyRepository: PenaltyRepository,
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T =
-        RoundHistoryViewModel(roundRepository, shotRepository) as T
+        RoundHistoryViewModel(roundRepository, shotRepository, penaltyRepository) as T
 }
-
-private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.KOREA)
-private val timeFormat = SimpleDateFormat("HH:mm", Locale.KOREA)
-private val priceFormat = NumberFormat.getNumberInstance(Locale.KOREA)
-
-private fun formatDuration(playedAt: Long, finishedAt: Long): String {
-    val totalMinutes = (finishedAt - playedAt) / 60_000
-    val hours = totalMinutes / 60
-    val minutes = totalMinutes % 60
-    return "${hours}hr ${minutes}m"
-}
-
-private fun formatRoundPeriod(playedAt: Long, finishedAt: Long?): String {
-    val date = dateFormat.format(Date(playedAt))
-    val start = timeFormat.format(Date(playedAt))
-    if (finishedAt == null) return "$date $start~"
-    val end = timeFormat.format(Date(finishedAt))
-    return "$date $start~$end (${formatDuration(playedAt, finishedAt)})"
-}
-
-// 총 타수 배지는 점수 레벨 4구간 색(80대 진녹색 / 90~94 연초록 / 95~99 연빨강 / 100+ 진빨강)을
-// 쓴다 — 결과 화면 스코어카드·홀 결과 비율 막대와 같은 scoreTierColor.
-private fun strokeScoreColor(strokes: Int): Color? = strokeScoreTier(strokes)?.let { scoreTierColor(it) }
-
-private fun strokeScoreTextColor(strokes: Int): Color =
-    strokeScoreTier(strokes)?.let { scoreTierTextColor(it) } ?: GolfTokens.TextPrimary
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -209,25 +174,7 @@ fun RoundHistoryScreen(
 
     Scaffold(
         topBar = {
-            Row(
-                modifier = Modifier.fillMaxWidth()
-                    .clip(RoundedCornerShape(bottomStart = 26.dp, bottomEnd = 26.dp))
-                    .background(GolfTokens.FieldGreen)
-                    .windowInsetsPadding(WindowInsets.statusBars)
-                    .padding(horizontal = 20.dp, vertical = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    "K-Golf",
-                    color = GolfTokens.CardBackground,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = MaterialTheme.typography.titleLarge.fontSize,
-                )
-                TextButton(onClick = onManageCourses) {
-                    Text("코스 관리", color = GolfTokens.CardBackground)
-                }
-            }
+            HomeHeader(aggregates = computeRoundAggregates(rounds), onManageCourses = onManageCourses)
         },
         bottomBar = {
             Row(
@@ -255,6 +202,7 @@ fun RoundHistoryScreen(
                 PrimaryCtaButton(
                     text = "새 라운딩 시작!",
                     onClick = onStartRound,
+                    icon = Icons.Filled.Add,
                     modifier = Modifier.height(GolfTokens.PrimaryButtonHeight),
                 )
             }
@@ -274,19 +222,14 @@ fun RoundHistoryScreen(
                     bottom = GolfTokens.PrimaryButtonHeight + 32.dp,
                 ),
             ) {
-                val aggregates = computeRoundAggregates(rounds)
-                if (aggregates != null) {
-                    item {
-                        GolfCard(modifier = Modifier.padding(bottom = 10.dp)) {
-                            StatGrid(
-                                items = listOf(
-                                    StatItem(label = "평균 스코어", value = "%.1f".format(aggregates.avgTotalStrokes)),
-                                    StatItem(label = "베스트 스코어", value = "${aggregates.bestTotalStrokes}"),
-                                    StatItem(label = "평균 퍼팅", value = "%.1f".format(aggregates.avgPutts)),
-                                ),
-                                columns = 3,
-                            )
-                        }
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(start = 4.dp, end = 4.dp, bottom = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Bottom,
+                    ) {
+                        Text("최근 라운드", fontSize = 17.sp, fontWeight = FontWeight.Bold, color = GolfTokens.TextPrimary)
+                        Text("총 ${rounds.size}회", fontSize = 12.sp, color = GolfTokens.TextSecondary)
                     }
                 }
                 items(rounds, key = { it.roundId }) { round ->
@@ -303,12 +246,17 @@ fun RoundHistoryScreen(
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Column(modifier = Modifier.weight(1f)) {
+                            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                                 Row {
-                                    Text(round.courseName, fontWeight = FontWeight.Bold, color = GolfTokens.TextPrimary)
+                                    Text(
+                                        round.courseName,
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = GolfTokens.TextPrimary,
+                                    )
                                     if (round.courseId == null) {
                                         Text(
                                             " (삭제됨)",
@@ -317,99 +265,39 @@ fun RoundHistoryScreen(
                                         )
                                     }
                                 }
-                                Text(
-                                    formatRoundPeriod(round.playedAt, round.finishedAt),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = GolfTokens.TextSecondary,
-                                )
-                                val infoLine = listOfNotNull(
-                                    round.price?.let { "${priceFormat.format(it)}원" },
-                                    round.companions?.takeIf { it.isNotBlank() },
-                                ).joinToString(" | ")
-                                if (infoLine.isNotBlank()) {
-                                    Text(infoLine, style = MaterialTheme.typography.bodySmall, color = GolfTokens.TextSecondary)
-                                }
-                            }
-                            val backgroundColor = strokeScoreColor(round.totalStrokes)
-                            Column(horizontalAlignment = Alignment.End) {
-                                Text(
-                                    "${round.totalStrokes}",
-                                    fontFamily = GolfFonts.NumberFontFamily,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = MaterialTheme.typography.headlineSmall.fontSize,
-                                    color = strokeScoreTextColor(round.totalStrokes),
-                                    modifier = (
-                                        if (backgroundColor != null) {
-                                            Modifier.background(backgroundColor, RoundedCornerShape(8.dp))
-                                        } else {
-                                            Modifier
-                                        }
-                                    ).padding(horizontal = 8.dp, vertical = 2.dp),
-                                )
-                                if (round.totalPar > 0) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(5.dp),
+                                ) {
+                                    Icon(
+                                        GolfIcons.Clock,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(13.dp),
+                                        tint = GolfTokens.TextSecondary,
+                                    )
                                     Text(
-                                        formatToPar(round.totalStrokes - round.totalPar),
-                                        style = MaterialTheme.typography.labelSmall,
+                                        formatRoundPeriod(round.playedAt, round.finishedAt),
+                                        fontSize = 13.sp,
                                         color = GolfTokens.TextSecondary,
                                     )
                                 }
                             }
+                            RoundScoreBadge(round)
                         }
                         if (expanded) {
                             val holeResults by remember(round.roundId) { viewModel.getHoleResults(round.roundId) }
                                 .collectAsStateWithLifecycle(initialValue = emptyList())
                             val driverStats by remember(round.roundId) { viewModel.getDriverDistanceStats(round.roundId) }
                                 .collectAsStateWithLifecycle(initialValue = DriverDistanceStats(null, null))
-                            val expandedGirCount = holeResults.count { it.isGreenInRegulation }
-                            val expandedStrictGirCount = holeResults.count { it.isStrictGreenInRegulation }
-                            val expandedTotalPutts = holeResults.sumOf { it.strokesPutt }
-                            val expandedAvgPutts = if (holeResults.isEmpty()) {
-                                0.0
-                            } else {
-                                expandedTotalPutts.toDouble() / holeResults.size
-                            }
-                            Column(modifier = Modifier.padding(top = 12.dp)) {
-                                if (holeResults.isNotEmpty()) {
-                                    GirSummaryLines(
-                                        girCount = expandedGirCount,
-                                        strictGirCount = expandedStrictGirCount,
-                                        totalHoles = holeResults.size,
-                                        singleLine = true,
-                                    )
-                                    RoundStatsLine(
-                                        driverStats = driverStats,
-                                        avgPutts = expandedAvgPutts,
-                                        totalPutts = expandedTotalPutts,
-                                        modifier = Modifier.padding(top = 4.dp),
-                                    )
-                                    Spacer(Modifier.height(8.dp))
-                                }
-                                val reviewText = buildAnnotatedString {
-                                    withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = GolfTokens.TextPrimary)) {
-                                        append("리뷰: ")
-                                    }
-                                    val reviewContent = round.review?.takeIf { it.isNotBlank() }
-                                    if (reviewContent != null) {
-                                        withStyle(SpanStyle(color = GolfTokens.TextPrimary)) { append(reviewContent) }
-                                    } else {
-                                        withStyle(SpanStyle(color = GolfTokens.TextSecondary)) {
-                                            append("작성된 라운딩 리뷰가 없습니다. \"상세 결과 보기\"에서 추가할 수 있습니다.")
-                                        }
-                                    }
-                                }
-                                Text(reviewText, style = MaterialTheme.typography.bodySmall)
-                                Text(
-                                    "상세 결과 보기 ›",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = GolfTokens.FieldGreen,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(top = 8.dp)
-                                        .clickable { onRoundClick(round) },
-                                    textAlign = androidx.compose.ui.text.style.TextAlign.End,
-                                )
-                            }
+                            val penaltyCount by remember(round.roundId) { viewModel.getPenaltyCount(round.roundId) }
+                                .collectAsStateWithLifecycle(initialValue = 0)
+                            RoundCardDetails(
+                                round = round,
+                                holeResults = holeResults,
+                                driverStats = driverStats,
+                                penaltyCount = penaltyCount,
+                                onOpenDetail = { onRoundClick(round) },
+                            )
                         }
                     }
                 }
@@ -421,6 +309,7 @@ fun RoundHistoryScreen(
             PrimaryCtaButton(
                 text = "새 라운딩 시작!",
                 onClick = onStartRound,
+                icon = Icons.Filled.Add,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(horizontal = 16.dp, vertical = 16.dp)
