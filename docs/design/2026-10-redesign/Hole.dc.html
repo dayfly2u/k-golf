@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>K-Golf 홀 상세</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1F5C3F;text-decoration:none}a:hover{color:#123A28}
+button{font-family:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #F4F5EF; font-family: 'IBM Plex Sans KR', sans-serif; color: #18241D; display: flex; flex-direction: column; overflow: hidden">
+  <div style="padding: 14px 12px 10px; display: flex; align-items: center; gap: 6px">
+    <a href="Summary.dc.html" aria-label="라운드 결과로" style="width: 44px; height: 44px; color: #18241D; display: flex; align-items: center; justify-content: center">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+    </a>
+    <div style="flex: 1; display: flex; align-items: baseline; gap: 8px">
+      <div style="font-family: 'Barlow Condensed', sans-serif; font-size: 34px; font-weight: 700; line-height: 1">HOLE 4</div>
+      <div style="font-size: 14px; font-weight: 600; color: #FFFFFF; background: {{accent}}; padding: 3px 10px; border-radius: 999px">파 5</div>
+    </div>
+    <div style="text-align: right; padding-right: 8px">
+      <div style="font-size: 11px; color: #56635A">이 홀</div>
+      <div style="font-family: 'Barlow Condensed', sans-serif; font-size: 24px; font-weight: 700; line-height: 1">7 · 더블</div>
+    </div>
+  </div>
+
+  <div style="padding: 0 16px 10px; display: flex; gap: 4px">
+    <sc-for list="{{holes}}" as="h" hint-placeholder-count="18">
+      <div style="{{h.style}}"></div>
+    </sc-for>
+  </div>
+
+  <div style="margin: 0 16px; height: 300px; border-radius: 22px; background: #2B4F35; position: relative; overflow: hidden">
+    <svg width="358" height="300" viewBox="0 0 358 300" role="img" aria-label="4번 홀 샷 경로: 232m, 168m, 85m, 28m, 어프로치 9m">
+      <rect width="358" height="300" fill="#2B4F35"/>
+      <path d="M80 278 C 120 225, 230 205, 245 150 S 235 70, 250 46" stroke="#5E9A62" stroke-width="70" fill="none" stroke-linecap="round"/>
+      <ellipse cx="252" cy="44" rx="38" ry="26" fill="#8CC48A"/>
+      <ellipse cx="208" cy="72" rx="16" ry="10" fill="#E8DDB5"/>
+      <ellipse cx="272" cy="122" rx="13" ry="8" fill="#E8DDB5"/>
+      <polyline points="82,274 214,198 240,98 216,64 234,46 252,42" fill="none" stroke="#F2C14E" stroke-width="3"/>
+      <circle cx="82" cy="274" r="7" fill="#FFFFFF" stroke="#18241D" stroke-width="2"/>
+      <circle cx="214" cy="198" r="6" fill="#F2C14E" stroke="#18241D" stroke-width="2"/>
+      <circle cx="240" cy="98" r="6" fill="#F2C14E" stroke="#18241D" stroke-width="2"/>
+      <circle cx="216" cy="64" r="6" fill="#F2C14E" stroke="#18241D" stroke-width="2"/>
+      <circle cx="234" cy="46" r="6" fill="#F2C14E" stroke="#18241D" stroke-width="2"/>
+      <circle cx="252" cy="42" r="5" fill="#FFFFFF"/>
+      <rect x="118" y="226" width="56" height="24" rx="12" fill="#18241D"/>
+      <text x="146" y="243" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-size="16" font-weight="700" fill="#FFFFFF">232m</text>
+      <rect x="238" y="140" width="56" height="24" rx="12" fill="#18241D"/>
+      <text x="266" y="157" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-size="16" font-weight="700" fill="#FFFFFF">168m</text>
+      <rect x="162" y="78" width="48" height="24" rx="12" fill="#18241D"/>
+      <text x="186" y="95" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-size="16" font-weight="700" fill="#FFFFFF">85m</text>
+      <rect x="276" y="56" width="44" height="22" rx="11" fill="#18241D"/>
+      <text x="298" y="72" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-size="15" font-weight="700" fill="#FFFFFF">28m</text>
+      <rect x="282" y="20" width="38" height="22" rx="11" fill="#18241D"/>
+      <text x="301" y="36" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-size="15" font-weight="700" fill="#FFFFFF">9m</text>
+    </svg>
+    <div style="position: absolute; left: 12px; top: 12px; background: rgba(24,36,29,0.8); color: #FFFFFF; border-radius: 10px; padding: 6px 10px; font-size: 11px">직선 거리 · 고저차 미반영</div>
+  </div>
+
+  <div style="margin: 12px 16px 0; background: #FFFFFF; border-radius: 22px; padding: 6px 16px; display: flex; flex-direction: column">
+    <sc-for list="{{rows}}" as="r" hint-placeholder-count="3">
+      <div style="{{r.rowStyle}}">
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 1px">
+          <div style="font-size: 16px; font-weight: 600">{{r.label}}</div>
+          <div style="font-size: 12px; color: #56635A">{{r.hint}}</div>
+        </div>
+        <div style="min-width: 48px; text-align: right; font-family: 'Barlow Condensed', sans-serif; font-size: 38px; font-weight: 700; line-height: 1.2">{{r.value}}</div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="margin: 10px 16px 0; background: #FFFFFF; border-radius: 16px; padding: 12px 16px; display: flex; align-items: center; gap: 10px">
+    <div style="flex: 1; font-size: 14px; font-weight: 600">벌타</div>
+    <div style="font-size: 13px; font-weight: 600; color: #7A4A0C; background: #FFF6E8; border-radius: 999px; padding: 4px 12px">OB 0</div>
+    <div style="font-size: 13px; font-weight: 600; color: #24476E; background: #EEF3F9; border-radius: 999px; padding: 4px 12px">해저드 0</div>
+  </div>
+
+  <div style="flex: 1"></div>
+  <div style="padding: 0 16px 22px; display: flex; gap: 10px">
+    <a href="Hole.dc.html" style="width: 110px; height: 56px; box-sizing: border-box; border-radius: 18px; border: 1.5px solid #CDD3C8; color: #18241D; font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: center">3번 홀</a>
+    <a href="Hole.dc.html" style="flex: 1; height: 56px; border-radius: 18px; background: #18241D; color: #FFFFFF; font-size: 16px; font-weight: 700; display: flex; align-items: center; justify-content: center">5번 홀</a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#1F5C3F","options":["#1F5C3F","#0F4C5C","#2B3A55"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const accent = this.props.accent ?? '#1F5C3F';
+    const holes = [];
+    for (let i = 1; i <= 18; i++) {
+      const bg = i === 4 ? '#F2C14E' : accent;
+      holes.push({ style: 'flex: 1; height: 6px; border-radius: 3px; background: ' + bg + ';' });
+    }
+    const row = 'display: flex; align-items: center; gap: 8px; padding: 8px 0;';
+    const divided = row + ' border-bottom: 1px solid #ECEFE7;';
+    return {
+      accent,
+      holes,
+      rows: [
+        { label: '그린까지', hint: '티샷부터 그린 도착', value: 4, rowStyle: divided },
+        { label: '숏게임', hint: '어프로치 · 칩샷', value: 1, rowStyle: divided },
+        { label: '퍼팅', hint: '그린 위', value: 2, rowStyle: row }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

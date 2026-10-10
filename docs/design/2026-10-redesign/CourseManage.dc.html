@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>K-Golf 코스 관리</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1F5C3F;text-decoration:none}a:hover{color:#123A28}
+button{font-family:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #F4F5EF; font-family: 'IBM Plex Sans KR', sans-serif; color: #18241D; display: flex; flex-direction: column; overflow: hidden; position: relative">
+  <div style="padding: 14px 12px 6px; display: flex; align-items: center; gap: 6px">
+    <a href="Main.dc.html" aria-label="홈으로" style="width: 44px; height: 44px; color: #18241D; display: flex; align-items: center; justify-content: center">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+    </a>
+    <div style="flex: 1; font-size: 22px; font-weight: 700">코스 관리</div>
+    <div style="font-size: 13px; color: #56635A; padding-right: 8px">3개 코스</div>
+  </div>
+  <div style="padding: 0 20px 10px; font-size: 12px; color: #56635A">코스를 누르면 상세 리뷰가 펼쳐져요. ≡를 길게 눌러 순서를 바꿀 수 있어요.</div>
+
+  <div style="padding: 0 16px; display: flex; flex-direction: column; gap: 10px">
+    <sc-for list="{{courses}}" as="c" hint-placeholder-count="3">
+      <div style="background: #FFFFFF; border-radius: 18px; box-shadow: 0 1px 2px rgba(24,36,29,0.06); display: flex; flex-direction: column">
+        <div style="display: flex; align-items: flex-start; gap: 4px; padding: 12px 8px 12px 6px">
+          <div aria-hidden="true" style="width: 32px; height: 44px; display: flex; align-items: center; justify-content: center; color: #9AA59C">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 8h14M5 12h14M5 16h14"/></svg>
+          </div>
+          <button onClick="{{c.toggle}}" style="flex: 1; min-width: 0; text-align: left; border: none; background: transparent; color: #18241D; padding: 2px 0; display: flex; flex-direction: column; gap: 4px">
+            <div style="font-size: 16px; font-weight: 600">{{c.name}}</div>
+            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap">
+              <div style="display: flex; align-items: center; gap: 3px; font-size: 13px; font-weight: 700">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="#F2C14E" stroke="#C9971F" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>
+                {{c.rating}}
+              </div>
+              <div style="font-size: 12px; font-weight: 600; color: #7A4A0C; background: #FFF6E8; border-radius: 999px; padding: 2px 8px">난이도 {{c.difficulty}}</div>
+              <div style="font-size: 12px; color: #56635A">{{c.info}}</div>
+            </div>
+            <div style="font-size: 13px; color: #3F4B43">{{c.oneLine}}</div>
+          </button>
+          <a href="CourseEdit.dc.html" aria-label="{{c.name}} 수정" style="width: 44px; height: 44px; border-radius: 12px; color: #1F5C3F; display: flex; align-items: center; justify-content: center">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+          </a>
+        </div>
+        <sc-if value="{{c.open}}" hint-placeholder-val="{{ false }}">
+          <div style="border-top: 1px solid #ECEFE7; padding: 12px 16px 14px; display: flex; flex-direction: column; gap: 10px">
+            <sc-for list="{{c.sections}}" as="s" hint-placeholder-count="3">
+              <div style="display: flex; gap: 10px">
+                <div style="width: 64px; flex-shrink: 0; font-size: 12px; font-weight: 700; color: #1F5C3F">{{s.title}}</div>
+                <div style="flex: 1; font-size: 13px; line-height: 1.5; color: #2C3830">{{s.body}}</div>
+              </div>
+            </sc-for>
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <div style="font-size: 12px; font-weight: 700; color: #1F5C3F">유튜브 링크</div>
+              <sc-for list="{{c.videos}}" as="v" hint-placeholder-count="2">
+                <div style="display: flex; align-items: center; gap: 10px; background: #F4F5EF; border-radius: 12px; padding: 6px">
+                  <div style="width: 64px; height: 36px; border-radius: 8px; background: #2F5A3B; display: flex; align-items: center; justify-content: center">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="#FFFFFF" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+                  </div>
+                  <div style="flex: 1; font-size: 12px; line-height: 1.4">{{v.title}}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="position: absolute; left: 16px; right: 16px; bottom: 22px">
+    <a href="CourseEdit.dc.html" style="width: 100%; height: 58px; border-radius: 18px; background: #F2C14E; color: #18241D; font-size: 17px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 6px 16px rgba(24,36,29,0.18)">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      새 코스 추가
+    </a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { openId: null };
+  }
+  renderVals() {
+    const data = [
+      { id: 1, name: '태광 (북서)', rating: '4.5', difficulty: '3.0', info: '경기용인 · 30km · 40분', oneLine: '회원제다운 관리. 잔디 상태 최고!',
+        sections: [
+          { title: '교통', body: '영동고속도로 신갈IC에서 10분. 주말 아침엔 IC 근처 정체.' },
+          { title: '클럽하우스', body: '리모델링해서 깔끔함. 그늘집 메뉴 무난.' },
+          { title: '코스', body: '페어웨이 넓은 편. 그린이 빠르니 내리막 퍼팅 조심.' }
+        ],
+        videos: [{ title: '태광CC 북서코스 전홀 공략' }, { title: '태광 북코스 3번 홀 티샷 포인트' }] },
+      { id: 2, name: '킹스데일 (Lake-Hill)', rating: '4.5', difficulty: '4.5', info: '충북충주 · 105km · 1시간 10분', oneLine: '최애 코스. 여기 점수가 진짜 핸디!',
+        sections: [
+          { title: '교통', body: '중부내륙고속도로 이용. 휴게소 한 번 들르면 딱 맞음.' },
+          { title: '클럽하우스', body: '레이크뷰 식당이 좋음.' },
+          { title: '코스', body: '레이크 4번 홀은 왼쪽 공략. 해저드 주의.' }
+        ],
+        videos: [{ title: '킹스데일 레이크 코스 라운딩' }] },
+      { id: 3, name: '세일 (들길-산길)', rating: '3.5', difficulty: '3.5', info: '충북충주 · 109km · 1시간 20분', oneLine: '싼마이 연습 라운딩 코스!',
+        sections: [
+          { title: '코스', body: '산길 코스 오르막 많음. 한 클럽 길게.' }
+        ],
+        videos: [] }
+    ];
+    return {
+      courses: data.map((c) => {
+        const open = this.state.openId === c.id;
+        return { ...c, open, toggle: () => this.setState({ openId: open ? null : c.id }) };
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>

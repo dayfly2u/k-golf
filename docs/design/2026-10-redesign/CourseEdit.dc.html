@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>K-Golf 코스 추가</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1F5C3F;text-decoration:none}a:hover{color:#123A28}
+button{font-family:inherit;cursor:pointer}
+input,textarea{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 1300px; box-sizing: border-box; background: #F4F5EF; font-family: 'IBM Plex Sans KR', sans-serif; color: #18241D; display: flex; flex-direction: column; overflow: hidden">
+  <div style="padding: 14px 12px 6px; display: flex; align-items: center; gap: 6px">
+    <a href="CourseManage.dc.html" aria-label="코스 관리로" style="width: 44px; height: 44px; color: #18241D; display: flex; align-items: center; justify-content: center">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+    </a>
+    <div style="flex: 1; font-size: 22px; font-weight: 700">코스 추가</div>
+    <a href="CourseManage.dc.html" style="height: 40px; padding: 0 18px; border-radius: 20px; background: #1F5C3F; color: #FFFFFF; font-size: 15px; font-weight: 700; display: flex; align-items: center">저장</a>
+  </div>
+
+  <div style="padding: 8px 16px 0; display: flex; flex-direction: column; gap: 6px">
+    <label for="cname" style="font-size: 13px; font-weight: 600; color: #3F4B43">코스 이름</label>
+    <input id="cname" placeholder="예: 킹스데일 (Lake-Hill)" style="height: 50px; box-sizing: border-box; border-radius: 14px; border: 1.5px solid #CDD3C8; background: #FFFFFF; padding: 0 14px; font-size: 16px; color: #18241D">
+  </div>
+
+  <div style="margin: 14px 16px 0; background: #FFFFFF; border-radius: 20px; padding: 14px 12px; display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 4px">
+      <div style="font-size: 15px; font-weight: 700">홀별 파</div>
+      <div style="font-size: 13px; font-weight: 700; color: #FFFFFF; background: #1F5C3F; border-radius: 999px; padding: 3px 10px">총 파 {{total}}</div>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+      <sc-for list="{{halves}}" as="half" hint-placeholder-count="2">
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <div style="font-size: 12px; font-weight: 700; color: #1F5C3F; padding-left: 2px">{{half.name}} · 파 {{half.sum}}</div>
+          <sc-for list="{{half.holes}}" as="h" hint-placeholder-count="9">
+            <div style="display: flex; align-items: center; gap: 4px">
+              <div style="width: 22px; font-family: 'Barlow Condensed', sans-serif; font-size: 17px; font-weight: 700; color: #56635A">{{h.no}}</div>
+              <div style="flex: 1; display: flex; background: #EEF0E8; border-radius: 10px; padding: 2px; gap: 2px">
+                <sc-for list="{{h.opts}}" as="o" hint-placeholder-count="3">
+                  <button onClick="{{o.pick}}" aria-label="{{h.no}}번 홀 파 {{o.par}}" style="{{o.style}}">{{o.par}}</button>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="margin: 12px 16px 0; background: #FFFFFF; border-radius: 20px; padding: 14px 14px; display: flex; flex-direction: column; gap: 12px">
+    <div style="font-size: 15px; font-weight: 700">코스 정보 <span style="font-size: 12px; font-weight: 400; color: #56635A">선택 입력</span></div>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+      <div style="display: flex; flex-direction: column; gap: 4px"><label for="f1" style="font-size: 12px; color: #3F4B43">지역</label><input id="f1" placeholder="충북충주" style="height: 42px; box-sizing: border-box; width: 100%; border-radius: 10px; border: 1.5px solid #CDD3C8; padding: 0 10px; font-size: 14px"></div>
+      <div style="display: flex; flex-direction: column; gap: 4px"><label for="f2" style="font-size: 12px; color: #3F4B43">거리</label><input id="f2" placeholder="105km" style="height: 42px; box-sizing: border-box; width: 100%; border-radius: 10px; border: 1.5px solid #CDD3C8; padding: 0 10px; font-size: 14px"></div>
+      <div style="display: flex; flex-direction: column; gap: 4px"><label for="f3" style="font-size: 12px; color: #3F4B43">시간</label><input id="f3" placeholder="1시간 10분" style="height: 42px; box-sizing: border-box; width: 100%; border-radius: 10px; border: 1.5px solid #CDD3C8; padding: 0 10px; font-size: 14px"></div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px">
+      <div style="width: 46px; font-size: 13px; color: #3F4B43">평점</div>
+      <div style="flex: 1; display: flex; gap: 2px">
+        <sc-for list="{{stars}}" as="s" hint-placeholder-count="5">
+          <div style="position: relative; width: 24px; height: 24px">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="#FFFFFF" stroke="#C9971F" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true" style="position: absolute; left: 0; top: 0"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>
+            <div style="{{s.clip}}">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="#F2C14E" stroke="#C9971F" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <button onClick="{{rateDown}}" aria-label="평점 0.5 내리기" style="width: 40px; height: 40px; border-radius: 10px; border: 1.5px solid #CDD3C8; background: #FFFFFF; color: #18241D; font-size: 20px">−</button>
+      <div style="width: 36px; text-align: center; font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 700">{{rateText}}</div>
+      <button onClick="{{rateUp}}" aria-label="평점 0.5 올리기" style="width: 40px; height: 40px; border-radius: 10px; border: none; background: #1F5C3F; color: #FFFFFF; font-size: 20px">+</button>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px">
+      <div style="width: 46px; font-size: 13px; color: #3F4B43">난이도</div>
+      <div style="flex: 1; display: flex; gap: 3px">
+        <sc-for list="{{levels}}" as="l" hint-placeholder-count="5">
+          <div style="flex: 1; height: 12px; border-radius: 4px; background: #EEF0E8; overflow: hidden">
+            <div style="{{l.fill}}"></div>
+          </div>
+        </sc-for>
+      </div>
+      <button onClick="{{diffDown}}" aria-label="난이도 0.5 내리기" style="width: 40px; height: 40px; border-radius: 10px; border: 1.5px solid #CDD3C8; background: #FFFFFF; color: #18241D; font-size: 20px">−</button>
+      <div style="width: 36px; text-align: center; font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 700">{{diffText}}</div>
+      <button onClick="{{diffUp}}" aria-label="난이도 0.5 올리기" style="width: 40px; height: 40px; border-radius: 10px; border: none; background: #E3A34A; color: #18241D; font-size: 20px">+</button>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 4px">
+      <label for="f4" style="font-size: 12px; color: #3F4B43">한줄평</label>
+      <input id="f4" placeholder="이 코스를 한 줄로" style="height: 44px; box-sizing: border-box; border-radius: 10px; border: 1.5px solid #CDD3C8; padding: 0 12px; font-size: 14px">
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 4px">
+      <label for="f5" style="font-size: 12px; color: #3F4B43">교통</label>
+      <textarea id="f5" rows="2" placeholder="거리, 경로 등" style="box-sizing: border-box; border-radius: 10px; border: 1.5px solid #CDD3C8; padding: 8px 12px; font-size: 14px; resize: none"></textarea>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 4px">
+      <label for="f6" style="font-size: 12px; color: #3F4B43">클럽하우스</label>
+      <textarea id="f6" rows="2" placeholder="외관/내관, 소품 등" style="box-sizing: border-box; border-radius: 10px; border: 1.5px solid #CDD3C8; padding: 8px 12px; font-size: 14px; resize: none"></textarea>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 4px">
+      <label for="f7" style="font-size: 12px; color: #3F4B43">코스</label>
+      <textarea id="f7" rows="2" placeholder="티샷, 코스, 그린 등" style="box-sizing: border-box; border-radius: 10px; border: 1.5px solid #CDD3C8; padding: 8px 12px; font-size: 14px; resize: none"></textarea>
+    </div>
+    <button style="height: 44px; border-radius: 12px; border: 1.5px dashed #9AA59C; background: transparent; color: #1F5C3F; font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="#1F5C3F" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+      유튜브 공략 영상 추가
+    </button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1300}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { rating: 4.5, difficulty: 3.5, pars:[4, 4, 3, 5, 4, 4, 3, 4, 5, 4, 5, 3, 4, 4, 4, 3, 5, 4] };
+  }
+  renderVals() {
+    const pars = this.state.pars;
+    const on = "flex: 1; height: 38px; border: none; border-radius: 8px; background: #1F5C3F; color: #FFFFFF; font-family: 'Barlow Condensed', sans-serif; font-size: 17px; font-weight: 700;";
+    const off = "flex: 1; height: 38px; border: none; border-radius: 8px; background: transparent; color: #56635A; font-family: 'Barlow Condensed', sans-serif; font-size: 17px; font-weight: 600;";
+    const hole = (i) => ({
+      no: i + 1,
+      opts: [3, 4, 5].map((p) => ({
+        par: p,
+        style: pars[i] === p ? on : off,
+        pick: () => { const next = pars.slice(); next[i] = p; this.setState({ pars: next }); }
+      }))
+    });
+    const range = (a, b) => { const r = []; for (let i = a; i < b; i++) r.push(hole(i)); return r; };
+    const sum = (a, b) => pars.slice(a, b).reduce((x, y) => x + y, 0);
+    const { rating, difficulty } = this.state;
+    const part = (v, n) => Math.max(0, Math.min(1, v - (n - 1)));
+    const step = (key, d) => () => this.setState({ [key]: Math.max(0.5, Math.min(5, this.state[key] + d)) });
+    return {
+      rateText: rating.toFixed(1),
+      diffText: difficulty.toFixed(1),
+      rateUp: step('rating', 0.5),
+      rateDown: step('rating', -0.5),
+      diffUp: step('difficulty', 0.5),
+      diffDown: step('difficulty', -0.5),
+      total: sum(0, 18),
+      halves: [
+        { name: 'OUT 1~9', sum: sum(0, 9), holes: range(0, 9) },
+        { name: 'IN 10~18', sum: sum(9, 18), holes: range(9, 18) }
+      ],
+      stars: [1, 2, 3, 4, 5].map((n) => ({ clip: 'position: absolute; left: 0; top: 0; height: 24px; overflow: hidden; width: ' + (part(rating, n) * 24) + 'px;' })),
+      levels: [1, 2, 3, 4, 5].map((n) => ({ fill: 'height: 100%; background: #E3A34A; width: ' + (part(difficulty, n) * 100) + '%;' }))
+    };
+  }
+}
+</script>
+</body>
+</html>
