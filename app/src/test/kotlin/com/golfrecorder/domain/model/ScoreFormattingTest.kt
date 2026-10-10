@@ -52,8 +52,8 @@ class ScoreFormattingTest {
     @Test
     fun `strokeScoreTier 총타수 구간 경계`() {
         assertEquals(null, strokeScoreTier(0))
-        assertEquals(1, strokeScoreTier(60))
-        assertEquals(1, strokeScoreTier(79))
+        assertEquals(0, strokeScoreTier(60))
+        assertEquals(0, strokeScoreTier(79))
         assertEquals(1, strokeScoreTier(80))
         assertEquals(1, strokeScoreTier(89))
         assertEquals(2, strokeScoreTier(90))

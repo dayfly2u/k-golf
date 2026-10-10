@@ -124,11 +124,11 @@ internal fun HomeHeader(aggregates: RoundAggregates?, onManageCourses: () -> Uni
     }
 }
 
-/** 카드 오른쪽 64dp 정사각 점수 배지 — 총타수 + 파 대비. 끝난 라운드는 점수 레벨 색, 아직 안 끝난
- * 라운드는 회색(부분 타수라 레벨을 매기지 않는다). */
+/** 카드 오른쪽 64dp 정사각 점수 배지 — 총타수 + 파 대비. 색은 총타수의 점수 레벨 색
+ * ([strokeScoreTier], 사용자가 정한 구간 색 그대로)이고, 기록이 없을 때만 회색이다. */
 @Composable
 internal fun RoundScoreBadge(round: RoundSummary) {
-    val tier = if (round.finishedAt != null) strokeScoreTier(round.totalStrokes) else null
+    val tier = strokeScoreTier(round.totalStrokes)
     val background = tier?.let { scoreTierColor(it) } ?: GolfTokens.BadgePlain
     val content = tier?.let { scoreTierTextColor(it) } ?: GolfTokens.TextPrimary
     Column(

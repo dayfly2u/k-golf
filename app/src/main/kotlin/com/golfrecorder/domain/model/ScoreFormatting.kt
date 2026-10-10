@@ -29,11 +29,12 @@ fun scoreTierLabel(tier: Int): String = when (tier) {
     else -> "트리플+"
 }
 
-/** 라운드 총타수를 점수 레벨 4구간으로(홈 배지): 89 이하=1(80타 미만의 더 좋은 기록도 같은 최고 구간),
- * 90~94=2, 95~99=3, 100 이상=4. 기록이 없는 0 이하는 null(배지 색 없음). */
+/** 라운드 총타수를 점수 레벨 구간으로(홈 배지): 80 미만=0(홀 점수의 버디 이하와 같은 금색),
+ * 80대=1, 90~94=2, 95~99=3, 100 이상=4. 기록이 없는 0 이하는 null(배지 색 없음). */
 fun strokeScoreTier(strokes: Int): Int? = when {
     strokes <= 0 -> null
-    strokes in 1..89 -> 1
+    strokes < 80 -> 0
+    strokes in 80..89 -> 1
     strokes in 90..94 -> 2
     strokes in 95..99 -> 3
     strokes >= 100 -> 4
