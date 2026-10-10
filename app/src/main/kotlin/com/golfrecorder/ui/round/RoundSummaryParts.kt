@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -47,6 +48,7 @@ import com.golfrecorder.ui.theme.GolfFonts
 import com.golfrecorder.ui.theme.GolfTokens
 import com.golfrecorder.ui.theme.scoreTierColor
 import com.golfrecorder.ui.theme.scoreTierTextColor
+import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -250,6 +252,48 @@ internal fun ScoreCardGrid(
         listOf("OUT" to holeResults.take(SLOTS_PER_HALF), "IN" to holeResults.drop(SLOTS_PER_HALF))
             .filter { (_, holes) -> holes.isNotEmpty() }
             .forEach { (name, holes) -> ScoreCardHalf(name, holes, enabled, onHoleClick) }
+    }
+}
+
+private val reviewPriceFormat = NumberFormat.getNumberInstance(Locale.KOREA)
+
+@Composable
+private fun ReviewInfoRow(label: String, value: String) {
+    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp), verticalAlignment = Alignment.Top) {
+        Text(label, fontSize = 12.sp, color = GolfTokens.TextSecondary, modifier = Modifier.width(72.dp))
+        Text(value, fontSize = 14.sp, color = GolfTokens.TextPrimary, modifier = Modifier.weight(1f))
+    }
+}
+
+/** "리뷰 쓰기" 버튼 위에 보여주는 작성된 리뷰 카드 — 가격/동반자/리뷰 내용. 아무것도 안 적었으면
+ * 안내 문구만 보여준다. 값은 [RoundSummaryViewModel]의 price/companions/review 그대로(저장하면
+ * 바로 갱신된다). */
+@Composable
+internal fun ReviewCard(price: String, companions: String, review: String, modifier: Modifier = Modifier) {
+    val priceText = price.trim().toIntOrNull()?.let { "${reviewPriceFormat.format(it)}원" }
+    val companionsText = companions.trim().takeIf { it.isNotEmpty() }
+    val reviewText = review.trim().takeIf { it.isNotEmpty() }
+    GolfCard(modifier = modifier) {
+        Text("라운딩 리뷰", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = GolfTokens.TextPrimary)
+        Spacer(Modifier.height(6.dp))
+        if (priceText == null && companionsText == null && reviewText == null) {
+            Text(
+                "작성된 리뷰가 없습니다. 아래 \"리뷰 쓰기\"에서 남길 수 있어요.",
+                fontSize = 12.sp,
+                color = GolfTokens.TextSecondary,
+            )
+            return@GolfCard
+        }
+        priceText?.let { ReviewInfoRow("라운딩 가격", it) }
+        companionsText?.let { ReviewInfoRow("동반자", it) }
+        if (reviewText != null) {
+            if (priceText != null || companionsText != null) {
+                Spacer(Modifier.height(6.dp))
+                HorizontalDivider(color = GolfTokens.Divider)
+                Spacer(Modifier.height(8.dp))
+            }
+            Text(reviewText, fontSize = 14.sp, lineHeight = 21.sp, color = GolfTokens.TextPrimary)
+        }
     }
 }
 

@@ -397,6 +397,11 @@ fun RoundSummaryScreen(
                 enabled = viewModel.courseId != null,
                 onHoleClick = onEditHole,
             )
+            ReviewCard(
+                price = viewModel.price,
+                companions = viewModel.companions,
+                review = viewModel.review,
+            )
         }
     }
 }
