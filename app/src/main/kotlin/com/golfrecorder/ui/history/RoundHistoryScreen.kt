@@ -136,25 +136,24 @@ private fun formatRoundPeriod(playedAt: Long, finishedAt: Long?): String {
     return "$date $start~$end (${formatDuration(playedAt, finishedAt)})"
 }
 
-// 총 타수 배지는 GolfTokens의 3단계 대신 원래의 4단계 색(80대 연파랑 / 90~94 연초록 /
+// 총 타수 배지는 GolfTokens의 3단계 대신 4단계 색(80대 진녹색 / 90~94 연초록 /
 // 95~99 연빨강 / 100+ 진빨강)을 쓴다 — 구간을 한눈에 구분하려는 사용자 요청으로
-// 토큰화(v0.8.37)를 되돌렸다.
-private val STROKE_LIGHT_BLUE = Color(0xFFBBDEFB)
+// 토큰화(v0.8.37)를 되돌렸다. 80대는 앱의 진녹색 토큰(FieldGreen) + 흰 글자.
 private val STROKE_LIGHT_GREEN = Color(0xFFC8E6C9)
 private val STROKE_LIGHT_RED = Color(0xFFFFCDD2)
 private val STROKE_DARK_RED = Color(0xFFC62828)
 
 private fun strokeScoreColor(strokes: Int): Color? = when {
-    strokes in 80..89 -> STROKE_LIGHT_BLUE
+    strokes in 80..89 -> GolfTokens.FieldGreen
     strokes in 90..94 -> STROKE_LIGHT_GREEN
     strokes in 95..99 -> STROKE_LIGHT_RED
     strokes >= 100 -> STROKE_DARK_RED
     else -> null
 }
 
-// 진한 빨강 배경은 어두운 글자로는 대비가 약해 흰 글자로 바꾼다.
+// 진한 배경(80대 진녹색, 100+ 진빨강)은 어두운 글자로는 대비가 약해 흰 글자로 바꾼다.
 private fun strokeScoreTextColor(strokes: Int): Color =
-    if (strokes >= 100) GolfTokens.CardBackground else GolfTokens.TextPrimary
+    if (strokes in 80..89 || strokes >= 100) GolfTokens.CardBackground else GolfTokens.TextPrimary
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
