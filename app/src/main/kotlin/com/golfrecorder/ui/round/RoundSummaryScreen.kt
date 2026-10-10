@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -57,6 +58,7 @@ import com.golfrecorder.domain.model.DriverDistanceStats
 import com.golfrecorder.domain.model.HoleResult
 import com.golfrecorder.domain.model.PenaltyType
 import com.golfrecorder.domain.model.calculateDriverDistanceStats
+import com.golfrecorder.domain.model.computeRecentRank
 import com.golfrecorder.domain.model.formatToPar
 import com.golfrecorder.domain.model.scoreGradeLabel
 import com.golfrecorder.ui.common.StatGrid
@@ -160,6 +162,10 @@ class RoundSummaryViewModel(
             list.count { it.type == PenaltyType.OB.name } to list.count { it.type == PenaltyType.HAZARD.name }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0 to 0)
+
+    val recentRank: StateFlow<Pair<Int, Int>?> = roundRepository.getRoundSummaries()
+        .map { all -> computeRecentRank(all, roundId) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     val courseName: StateFlow<String> = combine(roundWithRecords, liveCourse) { round, course ->
         course?.course?.name ?: round?.round?.courseName.orEmpty()
@@ -286,6 +292,18 @@ fun RoundSummaryScreen(
                         }
                     }
                     Spacer(Modifier.weight(1f))
+                    val recentRank by viewModel.recentRank.collectAsStateWithLifecycle()
+                    recentRank?.let { (rank, pool) ->
+                        Text(
+                            "최근 ${pool}회 중 ${rank}위",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = GolfTokens.TextPrimary,
+                            modifier = Modifier
+                                .background(GolfTokens.Accent, RoundedCornerShape(GolfTokens.ChipCorner))
+                                .padding(horizontal = 10.dp, vertical = 3.dp),
+                        )
+                        Spacer(Modifier.width(8.dp))
+                    }
                     TextButton(onClick = { showDeleteConfirm = true }) {
                         Text("삭제", color = GolfTokens.CardBackground)
                     }
