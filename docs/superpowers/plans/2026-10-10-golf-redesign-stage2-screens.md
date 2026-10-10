@@ -112,6 +112,8 @@ import android.os.Process
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -429,12 +431,6 @@ fun RoundHistoryScreen(
                                     }
                                 ).padding(horizontal = 8.dp, vertical = 2.dp),
                             )
-                            Text(
-                                "🔍",
-                                modifier = Modifier
-                                    .clickable { onRoundClick(round) }
-                                    .padding(4.dp),
-                            )
                         }
                         if (expanded) {
                             val holeResults by remember(round.roundId) { viewModel.getHoleResults(round.roundId) }
@@ -474,11 +470,22 @@ fun RoundHistoryScreen(
                                         withStyle(SpanStyle(color = GolfTokens.TextPrimary)) { append(reviewContent) }
                                     } else {
                                         withStyle(SpanStyle(color = GolfTokens.TextSecondary)) {
-                                            append("작성된 라운딩 리뷰가 없습니다. \"🔍\"에서 추가할 수 있습니다.")
+                                            append("작성된 라운딩 리뷰가 없습니다. \"상세 결과 보기\"에서 추가할 수 있습니다.")
                                         }
                                     }
                                 }
                                 Text(reviewText, style = MaterialTheme.typography.bodySmall)
+                                Text(
+                                    "상세 결과 보기 ›",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = GolfTokens.FieldGreen,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 8.dp)
+                                        .clickable { onRoundClick(round) },
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.End,
+                                )
                             }
                         }
                     }
@@ -501,11 +508,9 @@ fun RoundHistoryScreen(
 }
 ```
 
-**주의 — 자체 점검 시 꼭 확인**: 원본에 있던 `import androidx.compose.foundation.background`와 `import androidx.compose.foundation.clickable`가 위 코드에 빠져 있다 — `Modifier.background(...)`/`Modifier.clickable(...)`를 그대로 쓰므로 반드시 추가해야 한다(`androidx.compose.foundation.background`, `androidx.compose.foundation.clickable`). 이 플랜 작성 과정에서 누락된 것이니, 구현자는 컴파일 에러로 빠진 import를 발견하면 그냥 추가하고 넘어가면 된다(플랜 버그 — 임의로 다른 걸 바꾸지 말고 import만 보충할 것).
-
 **로직 보존 체크리스트** (자체 점검 때 원본과 비교):
 - `expandedRoundIds` 토글 조건 동일
-- `onRoundClick(round)` 호출 위치(🔍 아이콘) 동일 — 펼친 상태와 무관하게 항상 노출
+- **인터랙션 변경(의도된 것, 버그 아님)**: `onRoundClick(round)`를 호출하는 🔍 아이콘(접힌 상태에서도 항상 노출)은 완전히 제거됐다 — redesign-spec.md 3.1절이 명시한 의도된 변경이다. 대신 펼쳤을 때만 보이는 "상세 결과 보기 ›" 텍스트(카드 맨 아래, 우측 정렬)가 `onRoundClick(round)`를 호출한다. 접은 상태에서 상세로 바로 가는 경로는 이제 없다(먼저 펼쳐야 함) — 이것도 의도된 것.
 - `GirSummaryLines`/`RoundStatsLine` 호출 인자 동일
 - 백업/복원 다이얼로그 로직 100% 동일(문구, `runCatching`, 프로세스 재시작 포함)
 - "새 라운딩 시작!"이 이제 하단 고정 `PrimaryCtaButton`(기존엔 TopAppBar actions) — `onStartRound` 콜백 자체는 동일하게 전달
