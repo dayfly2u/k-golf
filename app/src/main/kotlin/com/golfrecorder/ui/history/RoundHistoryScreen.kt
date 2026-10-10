@@ -136,19 +136,25 @@ private fun formatRoundPeriod(playedAt: Long, finishedAt: Long?): String {
     return "$date $start~$end (${formatDuration(playedAt, finishedAt)})"
 }
 
-// GolfTokens의 "스코어 셀(파 이하/보기/더블 이상)" 3단계를 재사용한다(redesign-spec.md
-// 3.7) — 80대는 "파 이하"급 좋은 구간, 90대는 "보기"급 보통 구간, 95타 이상은 전부
-// "더블 이상"급 나쁜 구간으로 묶는다(이전엔 95~99/100+가 연한/진한 빨강으로 따로
-// 나뉘어 있었지만, GolfTokens에 그 두 단계를 구분하는 토큰이 없다).
+// 총 타수 배지는 GolfTokens의 3단계 대신 원래의 4단계 색(80대 연파랑 / 90~94 연초록 /
+// 95~99 연빨강 / 100+ 진빨강)을 쓴다 — 구간을 한눈에 구분하려는 사용자 요청으로
+// 토큰화(v0.8.37)를 되돌렸다.
+private val STROKE_LIGHT_BLUE = Color(0xFFBBDEFB)
+private val STROKE_LIGHT_GREEN = Color(0xFFC8E6C9)
+private val STROKE_LIGHT_RED = Color(0xFFFFCDD2)
+private val STROKE_DARK_RED = Color(0xFFC62828)
+
 private fun strokeScoreColor(strokes: Int): Color? = when {
-    strokes in 80..89 -> GolfTokens.ScoreUnderParBorder
-    strokes in 90..94 -> GolfTokens.ScoreBogeyBackground
-    strokes >= 95 -> GolfTokens.ScoreDoubleOrWorseBackground
+    strokes in 80..89 -> STROKE_LIGHT_BLUE
+    strokes in 90..94 -> STROKE_LIGHT_GREEN
+    strokes in 95..99 -> STROKE_LIGHT_RED
+    strokes >= 100 -> STROKE_DARK_RED
     else -> null
 }
 
+// 진한 빨강 배경은 어두운 글자로는 대비가 약해 흰 글자로 바꾼다.
 private fun strokeScoreTextColor(strokes: Int): Color =
-    if (strokes >= 95) GolfTokens.CardBackground else GolfTokens.TextPrimary
+    if (strokes >= 100) GolfTokens.CardBackground else GolfTokens.TextPrimary
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
