@@ -19,6 +19,16 @@ fun holeScoreTier(scoreToPar: Int): Int = when {
     else -> 4
 }
 
+/** [holeScoreTier] 구간(0~4)의 이름 — 결과 화면 홀 결과 비율 범례용. 인덱스 계산 대신 이 함수로
+ * 찾는다(목록 인덱스를 잘못 계산해 범례가 크래시한 적이 있다). */
+fun scoreTierLabel(tier: Int): String = when (tier) {
+    0 -> "버디 이하"
+    1 -> "파"
+    2 -> "보기"
+    3 -> "더블"
+    else -> "트리플+"
+}
+
 /** 라운드 총타수를 점수 레벨 4구간으로(홈 배지): 80대=1, 90~94=2, 95~99=3, 100 이상=4,
  * 80 미만은 null(배지 색 없음). */
 fun strokeScoreTier(strokes: Int): Int? = when {

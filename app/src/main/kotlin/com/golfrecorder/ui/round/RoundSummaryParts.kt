@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.golfrecorder.domain.model.HoleResult
 import com.golfrecorder.domain.model.holeScoreTier
+import com.golfrecorder.domain.model.scoreTierLabel
 import com.golfrecorder.ui.common.GolfCard
 import com.golfrecorder.ui.theme.GolfFonts
 import com.golfrecorder.ui.theme.GolfTokens
@@ -61,10 +62,6 @@ internal fun formatRoundPeriod(playedAt: Long, finishedAt: Long?): String {
     val totalMinutes = (finishedAt - playedAt) / 60_000
     return "$start~${periodTimeFormat.format(Date(finishedAt))} (${totalMinutes / 60}시간 ${totalMinutes % 60}분)"
 }
-
-// 점수 레벨 구간 이름(인덱스 = holeScoreTier, 0=버디 이하). 색은 scoreTierColor — 1~4구간은 홈
-// 총타수 배지와 같은 색이고 0구간(버디 이하)만 금색이다.
-private val TIER_LABELS = listOf("버디 이하", "파", "보기", "더블", "트리플+")
 
 private fun percent(count: Int, total: Int): Int = if (total == 0) 0 else (count * 100.0 / total).roundToInt()
 
@@ -129,7 +126,7 @@ internal fun HoleResultRatioCard(holeResults: List<HoleResult>, modifier: Modifi
                     )
                     Spacer(Modifier.width(5.dp))
                     Text(
-                        "${TIER_LABELS[tier - 1]} ${tierCounts[tier] ?: 0}",
+                        "${scoreTierLabel(tier)} ${tierCounts[tier] ?: 0}",
                         fontSize = 12.sp,
                         color = GolfTokens.TextPrimary,
                     )

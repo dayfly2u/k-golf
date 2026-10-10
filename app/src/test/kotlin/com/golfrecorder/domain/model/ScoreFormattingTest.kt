@@ -43,6 +43,13 @@ class ScoreFormattingTest {
     }
 
     @Test
+    fun `scoreTierLabel은 모든 파 대비 점수에서 scoreGradeLabel과 같다`() {
+        for (scoreToPar in -4..8) {
+            assertEquals(scoreGradeLabel(scoreToPar), scoreTierLabel(holeScoreTier(scoreToPar)))
+        }
+    }
+
+    @Test
     fun `strokeScoreTier 총타수 구간 경계`() {
         assertEquals(null, strokeScoreTier(79))
         assertEquals(1, strokeScoreTier(80))
