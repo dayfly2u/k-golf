@@ -1,33 +1,35 @@
 package com.golfrecorder.ui.round
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -39,11 +41,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -60,7 +61,6 @@ import com.golfrecorder.domain.model.PenaltyType
 import com.golfrecorder.domain.model.calculateDriverDistanceStats
 import com.golfrecorder.domain.model.computeRecentRank
 import com.golfrecorder.domain.model.formatToPar
-import com.golfrecorder.domain.model.scoreGradeLabel
 import com.golfrecorder.ui.common.StatGrid
 import com.golfrecorder.ui.common.StatItem
 import com.golfrecorder.ui.theme.GolfFonts
@@ -167,6 +167,11 @@ class RoundSummaryViewModel(
         .map { all -> computeRecentRank(all, roundId) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
+    /** (시작 시각, 끝난 시각 또는 null) — 헤더의 "09.27 (토) 07:10~11:52 (4시간 42분)"용. */
+    val roundTimes: StateFlow<Pair<Long, Long?>?> = roundWithRecords
+        .map { rwr -> rwr?.round?.let { it.playedAt to it.finishedAt } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
     val courseName: StateFlow<String> = combine(roundWithRecords, liveCourse) { round, course ->
         course?.course?.name ?: round?.round?.courseName.orEmpty()
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
@@ -185,39 +190,6 @@ class RoundSummaryViewModelFactory(
         RoundSummaryViewModel(roundRepository, courseRepository, shotRepository, penaltyRepository, roundId, courseId) as T
 }
 
-// GIR(그린 적중) 실패("그린 N"), 숏어프로치 발생("숏 N", 50m 이하 숏은 곧 그린을 놓쳤다는
-// 뜻), 3퍼팅 이상("퍼팅 N") 공통 경고 스타일. 전부 꽉 찬 빨강 배경 + 흰 글씨였던 적도,
-// 테두리만 있는 앰버 칩이었던 적도 있었다 — 빨강 계열은 더블보기+2타 이상 홀의 진한
-// 빨강 행 배경과 겹치면(배지든 테두리든) 거의 안 보였고, 빨강을 쓰는 한 행 배경이 뭐든
-// 피할 수 없는 문제였다. 행 배경과 겹치지 않는 앰버로, 그리고 테두리가 아니라 꽉 채워서
-// 행 배경과 무관하게 항상 대비가 보장되게 했다.
-private val WARNING_COLOR = Color(0xFFE65100) // 진한 앰버
-private val WARNING_TEXT_COLOR = Color.White
-
-@Composable
-private fun WarningBadge(text: String) {
-    Text(
-        text,
-        color = WARNING_TEXT_COLOR,
-        fontWeight = FontWeight.Bold,
-        modifier = Modifier
-            .background(WARNING_COLOR, RoundedCornerShape(4.dp))
-            .padding(horizontal = 6.dp, vertical = 1.dp),
-    )
-}
-
-// GolfTokens의 3단계(파 이하/보기/더블 이상)로 다시 묶는다(redesign-spec.md 3.7) —
-// "파 이하"(버디 이하 + 파)는 배경 없음, "보기"(+1)는 처음으로 배경을 받고,
-// "더블 이상"(+2부터 전부)은 기존에 나뉘어 있던 연한/진한 빨강을 하나로 합친다.
-private fun scoreRowColor(scoreToPar: Int): Color = when {
-    scoreToPar == 1 -> GolfTokens.ScoreBogeyBackground
-    scoreToPar >= 2 -> GolfTokens.ScoreDoubleOrWorseBackground
-    else -> Color.Transparent
-}
-
-private fun scoreRowTextColor(scoreToPar: Int): Color =
-    if (scoreToPar >= 2) GolfTokens.CardBackground else GolfTokens.TextPrimary
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RoundSummaryScreen(
@@ -228,18 +200,20 @@ fun RoundSummaryScreen(
     val holeResults by viewModel.holeResults.collectAsStateWithLifecycle()
     val courseName by viewModel.courseName.collectAsStateWithLifecycle()
     val driverStats by viewModel.driverDistanceStats.collectAsStateWithLifecycle()
+    val penaltyCounts by viewModel.penaltyCounts.collectAsStateWithLifecycle()
+    val roundTimes by viewModel.roundTimes.collectAsStateWithLifecycle()
+    val recentRank by viewModel.recentRank.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showReviewDialog by remember { mutableStateOf(false) }
+    val totalHoles = holeResults.size
     val totalStrokes = holeResults.sumOf { it.totalStrokes }
     val totalScoreToPar = holeResults.sumOf { it.scoreToPar }
     val girCount = holeResults.count { it.isGreenInRegulation }
     val strictGirCount = holeResults.count { it.isStrictGreenInRegulation }
     val totalPutts = holeResults.sumOf { it.strokesPutt }
     val avgPutts = if (holeResults.isEmpty()) 0.0 else totalPutts.toDouble() / holeResults.size
-    val frontNineStrokes = holeResults.take(9).sumOf { it.totalStrokes }
-    val frontNineScoreToPar = holeResults.take(9).sumOf { it.scoreToPar }
-    val backNineStrokes = holeResults.drop(9).sumOf { it.totalStrokes }
-    val backNineScoreToPar = holeResults.drop(9).sumOf { it.scoreToPar }
+    val percentOfHoles: (Int) -> Int = { count -> if (totalHoles == 0) 0 else (count * 100.0 / totalHoles).roundToInt() }
 
     if (showDeleteConfirm) {
         AlertDialog(
@@ -262,6 +236,22 @@ fun RoundSummaryScreen(
         )
     }
 
+    if (showReviewDialog) {
+        ReviewDialog(
+            initialPrice = viewModel.price,
+            initialCompanions = viewModel.companions,
+            initialReview = viewModel.review,
+            onSave = { price, companions, review ->
+                viewModel.price = price
+                viewModel.companions = companions
+                viewModel.review = review
+                viewModel.saveReview()
+                showReviewDialog = false
+            },
+            onDismiss = { showReviewDialog = false },
+        )
+    }
+
     Scaffold(
         topBar = {
             Column(
@@ -269,19 +259,21 @@ fun RoundSummaryScreen(
                     .clip(RoundedCornerShape(bottomStart = 26.dp, bottomEnd = 26.dp))
                     .background(GolfTokens.FieldGreen)
                     .windowInsetsPadding(WindowInsets.statusBars)
-                    .padding(top = 8.dp, bottom = 14.dp, start = 4.dp, end = 16.dp),
+                    .padding(top = 6.dp, bottom = 18.dp, start = 4.dp, end = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = onHome) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "홈으로", tint = GolfTokens.CardBackground)
                     }
-                    // 제목이 남는 폭을 전부 차지하고(weight) 순위 칩/삭제 버튼은 먼저 측정돼 항상
-                    // 제 크기를 지킨다 — 코스 이름이 길면 제목이 줄바꿈될 뿐 버튼이 밀려나지 않는다.
+                    // 제목이 남는 폭을 전부 차지하고(weight) 삭제 버튼은 먼저 측정돼 항상 제 크기를
+                    // 지킨다 — 코스 이름이 길면 제목이 줄바꿈될 뿐 버튼이 밀려나지 않는다.
                     Column(modifier = Modifier.weight(1f)) {
                         Row {
                             Text(
                                 courseName.ifBlank { "라운드 결과" },
                                 color = GolfTokens.CardBackground,
+                                fontSize = 16.sp,
                                 fontWeight = FontWeight.SemiBold,
                             )
                             if (viewModel.courseId == null && courseName.isNotBlank()) {
@@ -292,44 +284,94 @@ fun RoundSummaryScreen(
                                 )
                             }
                         }
-                    }
-                    val recentRank by viewModel.recentRank.collectAsStateWithLifecycle()
-                    recentRank?.let { (rank, pool) ->
-                        Text(
-                            "최근 ${pool}회 중 ${rank}위",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = GolfTokens.TextPrimary,
-                            modifier = Modifier
-                                .background(GolfTokens.Accent, RoundedCornerShape(GolfTokens.ChipCorner))
-                                .padding(horizontal = 10.dp, vertical = 3.dp),
-                        )
-                        Spacer(Modifier.width(8.dp))
+                        roundTimes?.let { (playedAt, finishedAt) ->
+                            Text(
+                                formatRoundPeriod(playedAt, finishedAt),
+                                fontSize = 12.sp,
+                                color = GolfTokens.CardBackground.copy(alpha = 0.85f),
+                            )
+                        }
                     }
                     TextButton(onClick = { showDeleteConfirm = true }) {
                         Text("삭제", color = GolfTokens.CardBackground)
                     }
                 }
+                Row(
+                    modifier = Modifier.padding(start = 16.dp),
+                    verticalAlignment = Alignment.Bottom,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                ) {
+                    Text(
+                        "$totalStrokes",
+                        fontFamily = GolfFonts.NumberFontFamily,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 76.sp,
+                        lineHeight = 68.sp,
+                        color = GolfTokens.CardBackground,
+                    )
+                    Column(
+                        modifier = Modifier.padding(bottom = 4.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Text(
+                            formatToPar(totalScoreToPar),
+                            fontFamily = GolfFonts.NumberFontFamily,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 24.sp,
+                            color = GolfTokens.CardBackground,
+                        )
+                        recentRank?.let { (rank, pool) ->
+                            Text(
+                                "최근 ${pool}회 중 ${rank}위",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = GolfTokens.TextPrimary,
+                                modifier = Modifier
+                                    .background(GolfTokens.Accent, RoundedCornerShape(GolfTokens.ChipCorner))
+                                    .padding(horizontal = 8.dp, vertical = 3.dp),
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        bottomBar = {
+            Box(
+                modifier = Modifier.fillMaxWidth()
+                    .background(GolfTokens.Background)
+                    .navigationBarsPadding()
+                    .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 12.dp),
+            ) {
+                OutlinedButton(
+                    onClick = { showReviewDialog = true },
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape = RoundedCornerShape(GolfTokens.ButtonCorner),
+                    border = BorderStroke(1.5.dp, GolfTokens.Border),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = GolfTokens.TextPrimary),
+                ) {
+                    Icon(Icons.Filled.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("리뷰 쓰기", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
             }
         },
     ) { padding ->
-        Column(modifier = Modifier.padding(padding).fillMaxSize().background(GolfTokens.Background)) {
-            Text(
-                "총 ${totalStrokes}타 (${formatToPar(totalScoreToPar)})",
-                fontFamily = GolfFonts.NumberFontFamily,
-                fontWeight = FontWeight.Bold,
-                fontSize = MaterialTheme.typography.headlineMedium.fontSize,
-                color = GolfTokens.TextPrimary,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            )
-            val penaltyCounts by viewModel.penaltyCounts.collectAsStateWithLifecycle()
-            val (obCount, hazardCount) = penaltyCounts
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+                .background(GolfTokens.Background)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
             // 표시명과 코드명이 반대다 — "GIR"은 strictGirCount(isStrictGreenInRegulation),
             // "L-GIR"은 girCount(isGreenInRegulation)(redesign-spec.md 4.1, 표시만 교체).
             StatGrid(
                 items = listOf(
-                    StatItem(label = "GIR", value = "$strictGirCount", sub = "/${holeResults.size}"),
-                    StatItem(label = "L-GIR", value = "$girCount", sub = "/${holeResults.size}"),
-                    StatItem(label = "퍼팅", value = "$totalPutts", sub = "평균 ${"%.1f".format(avgPutts)}"),
+                    StatItem(label = "GIR", value = "${percentOfHoles(strictGirCount)}%", sub = "$strictGirCount/$totalHoles"),
+                    StatItem(label = "L-GIR", value = "${percentOfHoles(girCount)}%", sub = "$girCount/$totalHoles"),
+                    StatItem(label = "퍼팅", value = "$totalPutts", sub = "홀당 ${"%.1f".format(avgPutts)}"),
                     StatItem(
                         label = "드라이버 평균",
                         value = driverStats.avgMeters?.roundToInt()?.toString() ?: "-",
@@ -340,171 +382,21 @@ fun RoundSummaryScreen(
                         value = driverStats.maxMeters?.roundToInt()?.toString() ?: "-",
                         sub = "m",
                     ),
-                    StatItem(label = "벌타", value = "OB $obCount", sub = "해저드 $hazardCount"),
+                    StatItem(
+                        label = "벌타",
+                        value = "${penaltyCounts.first + penaltyCounts.second}",
+                        sub = "OB ${penaltyCounts.first} · 해저드 ${penaltyCounts.second}",
+                    ),
                 ),
                 columns = 3,
-                modifier = Modifier.padding(horizontal = 16.dp),
+                cardCells = true,
             )
-            Spacer(Modifier.height(8.dp))
-            HoleResultRatioBar(
+            HoleResultRatioCard(holeResults = holeResults)
+            ScoreCardGrid(
                 holeResults = holeResults,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                enabled = viewModel.courseId != null,
+                onHoleClick = onEditHole,
             )
-            Spacer(Modifier.height(8.dp))
-            HorizontalDivider(color = GolfTokens.Divider)
-            LazyColumn(modifier = Modifier.weight(1f)) {
-                itemsIndexed(holeResults, key = { _, hole -> hole.holeNumber }) { index, hole ->
-                    if (index == 9) {
-                        // 전반 마지막 홀과 "후반" 구분줄이 붙어서 눈에 잘 안 띄길래
-                        // 얇은 흰 칸으로 한 번 끊어준다.
-                        Spacer(
-                            modifier = Modifier.fillMaxWidth()
-                                .height(18.dp)
-                                .background(GolfTokens.CardBackground),
-                        )
-                    }
-                    if (index == 0 || index == 9) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth()
-                                .background(GolfTokens.Background)
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                        ) {
-                            Text(
-                                if (index == 0) "전반" else "후반",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = GolfTokens.FieldGreen,
-                            )
-                            Text(
-                                if (index == 0) {
-                                    "${frontNineStrokes}타 (${formatToPar(frontNineScoreToPar)})"
-                                } else {
-                                    "${backNineStrokes}타 (${formatToPar(backNineScoreToPar)})"
-                                },
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = GolfTokens.FieldGreen,
-                            )
-                        }
-                    }
-                    val textColor = scoreRowTextColor(hole.scoreToPar)
-                    Row(
-                        modifier = Modifier.fillMaxWidth()
-                            .background(scoreRowColor(hole.scoreToPar))
-                            .clickable(enabled = viewModel.courseId != null) { onEditHole(hole.holeNumber) }
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text("${hole.holeNumber}홀 (파${hole.par})", fontWeight = FontWeight.Bold, color = textColor)
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            if (hole.isGreenInRegulation) {
-                                Text("그린 ${hole.strokesToGreen}", color = textColor)
-                            } else {
-                                WarningBadge("그린 ${hole.strokesToGreen}")
-                            }
-                            // 숏어프로치를 실제로 입력한 홀만 나눠서 보여준다 — 대부분의
-                            // 홀은 전부 퍼팅이라, 매번 "숏 0 · 퍼팅 N"으로 보이면 오히려
-                            // 안 나눈 것보다 읽기 불편하다.
-                            if (hole.strokesShortGame > 0) {
-                                Text(" · ", color = textColor)
-                                WarningBadge("숏 ${hole.strokesShortGame}")
-                            }
-                            Text(" · ", color = textColor)
-                            // 3퍼팅 이상도 숏어프로치와 마찬가지로 실수로 보고 경고 표기.
-                            if (hole.strokesPutt >= 3) {
-                                WarningBadge("퍼팅 ${hole.strokesPutt}")
-                            } else {
-                                Text("퍼팅 ${hole.strokesPutt}", color = textColor)
-                            }
-                        }
-                        Text("${hole.totalStrokes}타 (${formatToPar(hole.scoreToPar)})", color = textColor)
-                    }
-                    HorizontalDivider(color = GolfTokens.Divider)
-                }
-                item {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text("라운딩 리뷰 (선택 입력)", fontWeight = FontWeight.Bold, color = GolfTokens.TextPrimary)
-                            TextButton(onClick = { viewModel.saveReview() }) { Text("저장") }
-                        }
-                        Spacer(Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = viewModel.price,
-                            onValueChange = { viewModel.price = it },
-                            label = { Text("라운딩 가격 (원)") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = viewModel.companions,
-                            onValueChange = { viewModel.companions = it },
-                            label = { Text("동반자") },
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = viewModel.review,
-                            onValueChange = { viewModel.review = it },
-                            label = { Text("라운딩 리뷰") },
-                            minLines = 3,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-private val GRADE_ORDER = listOf("버디 이하", "파", "보기", "더블", "트리플+")
-
-private val GRADE_COLOR = mapOf(
-    "버디 이하" to GolfTokens.Accent,
-    "파" to GolfTokens.FieldGreen,
-    "보기" to GolfTokens.ScoreBogeyBackground,
-    "더블" to GolfTokens.ScoreDoubleOrWorseBackground,
-    "트리플+" to GolfTokens.TextSecondary,
-)
-
-/** 18홀 스코어를 다섯 구간(버디 이하/파/보기/더블/트리플+)으로 나눠 한 줄 비율 막대 +
- * 아래 범례(홀 수)로 보여준다. [scoreGradeLabel]로 구간을 나누고, 구간 순서는 항상
- * [GRADE_ORDER] 그대로 — 홀 수가 0인 구간은 막대에서 생략한다(Compose weight()는
- * 0을 허용하지 않는다). */
-@Composable
-private fun HoleResultRatioBar(holeResults: List<HoleResult>, modifier: Modifier = Modifier) {
-    if (holeResults.isEmpty()) return
-    val counts = GRADE_ORDER.associateWith { grade -> holeResults.count { scoreGradeLabel(it.scoreToPar) == grade } }
-    Column(modifier = modifier) {
-        Row(
-            modifier = Modifier.fillMaxWidth()
-                .height(10.dp)
-                .clip(RoundedCornerShape(GolfTokens.ChipCorner)),
-        ) {
-            GRADE_ORDER.filter { grade -> (counts[grade] ?: 0) > 0 }.forEach { grade ->
-                Spacer(
-                    modifier = Modifier
-                        .weight((counts[grade] ?: 0).toFloat())
-                        .fillMaxHeight()
-                        .background(GRADE_COLOR.getValue(grade)),
-                )
-            }
-        }
-        Spacer(Modifier.height(6.dp))
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            GRADE_ORDER.forEach { grade ->
-                Text(
-                    "$grade ${counts[grade] ?: 0}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = GolfTokens.TextSecondary,
-                )
-            }
         }
     }
 }

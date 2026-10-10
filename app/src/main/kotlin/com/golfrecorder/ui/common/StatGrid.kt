@@ -1,10 +1,12 @@
 package com.golfrecorder.ui.common
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -19,8 +21,15 @@ import com.golfrecorder.ui.theme.GolfTokens
 data class StatItem(val label: String, val value: String, val sub: String? = null)
 
 @Composable
-private fun StatCell(item: StatItem, modifier: Modifier = Modifier) {
-    Column(modifier = modifier.padding(6.dp)) {
+private fun StatCell(item: StatItem, card: Boolean, modifier: Modifier = Modifier) {
+    // card=true면 시안(Summary.dc.html)처럼 흰 둥근 카드 한 칸으로 그린다.
+    val cellModifier = if (card) {
+        modifier.background(GolfTokens.CardBackground, RoundedCornerShape(14.dp))
+            .padding(horizontal = 10.dp, vertical = 8.dp)
+    } else {
+        modifier.padding(6.dp)
+    }
+    Column(modifier = cellModifier) {
         Text(item.label, fontSize = 11.sp, color = GolfTokens.TextSecondary)
         Row {
             Text(
@@ -48,12 +57,18 @@ private fun StatCell(item: StatItem, modifier: Modifier = Modifier) {
  * 다른 곳에서 겪은 적 있는 패턴), 항목 수가 고정이고 적은 이 용도엔 가장 단순하고
  * 안전한 방식이다. */
 @Composable
-fun StatGrid(items: List<StatItem>, columns: Int, modifier: Modifier = Modifier) {
+fun StatGrid(
+    items: List<StatItem>,
+    columns: Int,
+    modifier: Modifier = Modifier,
+    cardCells: Boolean = false,
+) {
     require(columns > 0) { "columns must be positive, was $columns" }
-    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    val gap = if (cardCells) 8.dp else 6.dp
+    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(gap)) {
         items.chunked(columns).forEach { rowItems ->
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                rowItems.forEach { item -> StatCell(item, modifier = Modifier.weight(1f)) }
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(gap)) {
+                rowItems.forEach { item -> StatCell(item, card = cardCells, modifier = Modifier.weight(1f)) }
                 // 마지막 행이 columns보다 적게 채워지면 남은 칸만큼 빈 공간으로 메워
                 // 셀 너비가 줄어들지 않게 한다.
                 repeat(columns - rowItems.size) { Column(modifier = Modifier.weight(1f)) {} }
