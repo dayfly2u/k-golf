@@ -94,7 +94,8 @@ fun StepperRow(
                 modifier = Modifier.size(STEPPER_BUTTON_SIZE_DP.dp),
                 shape = RoundedCornerShape(14.dp),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = GolfTokens.Accent, contentColor = GolfTokens.TextPrimary),
+                // 시안: "+"는 앱 기본 녹색(accent = FieldGreen) + 흰 글자(노란 Accent는 CTA/현재 홀 전용).
+                colors = ButtonDefaults.buttonColors(containerColor = GolfTokens.FieldGreen, contentColor = GolfTokens.CardBackground),
             ) { Text("+", fontSize = 20.sp) }
         }
     }

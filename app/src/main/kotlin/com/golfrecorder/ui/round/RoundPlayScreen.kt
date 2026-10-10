@@ -7,6 +7,7 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -14,11 +15,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -33,8 +37,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -44,10 +46,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -79,7 +81,7 @@ import com.golfrecorder.ui.common.PenaltyDisplayChip
 import com.golfrecorder.ui.common.ReadOnlyStepperRow
 import com.golfrecorder.ui.common.StepperRow
 import com.golfrecorder.ui.map.CourseMapSlot
-import com.golfrecorder.ui.map.GreenDistanceChip
+import com.golfrecorder.ui.map.GreenDistanceBox
 import com.golfrecorder.ui.map.MapSlotState
 import com.golfrecorder.ui.map.PenaltyPoint
 import com.golfrecorder.ui.map.ShotPoint
@@ -87,6 +89,7 @@ import com.golfrecorder.ui.theme.GolfTokens
 import com.golfrecorder.util.haversineMeters
 import com.golfrecorder.util.isOnline
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -98,9 +101,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-// 지도의 벌타 마커 색과 맞춘다 (CourseMapView의 ic_penalty_ob/ic_penalty_hazard).
-private val PENALTY_OB_COLOR = Color(0xFFFB8C00)
-private val PENALTY_HAZARD_COLOR = Color(0xFF2E7D32)
+/** 라이브 플레이 중 "그린까지" 거리를 갱신하려고 위치 추적기의 최신 위치를 읽는 주기(추적기 자체 갱신 주기와 같다). */
+private const val LIVE_LOCATION_POLL_MILLIS = 3_000L
 
 class RoundPlayViewModel(
     private val roundRepository: RoundRepository,
@@ -404,6 +406,15 @@ fun RoundPlayScreen(
     LaunchedEffect(hasLocationPermission, viewModel.currentHoleNumber, online) {
         if (hasLocationPermission && online) {
             currentLocation = LocationCapture.getCurrentLocation(context)
+            // 라이브 플레이에서는 걸어가는 동안 "그린까지" 거리가 바뀌어야 하므로(홀이 바뀌거나 위치 조정을
+            // 누를 때만 갱신되면 숫자가 그대로다) 추적기가 3초마다 갱신하는 최신 위치를 같은 주기로 읽는다.
+            // 끝난 라운드 리뷰는 보는 사람의 위치가 의미 없어 갱신하지 않는다.
+            if (!viewModel.isReview) {
+                while (true) {
+                    delay(LIVE_LOCATION_POLL_MILLIS)
+                    LocationTracker.latestLocation(context)?.let { currentLocation = it }
+                }
+            }
         }
     }
 
@@ -472,42 +483,103 @@ fun RoundPlayScreen(
         }
     }
 
+    val holeResults by viewModel.holeResults.collectAsStateWithLifecycle()
+    // 지나온 홀만(지금 치는 홀 제외) 더한 파 대비 — holeNumber로 직접 걸러낸다. hole_records에는 지금
+    // 치는 홀도 이미 upsert돼 있어서(RoundPlayViewModel.loadHole 참고) "저장됐는지"로는 걸러낼 수 없다.
+    val currentScoreToPar = holeResults
+        .filter { it.holeNumber < viewModel.currentHoleNumber }
+        .sumOf { it.scoreToPar }
+    val holeTotal = viewModel.strokesToGreen + viewModel.strokesShortGame + viewModel.strokesPutt
+    val fixedLocation = currentLocation
+    // DB에서 이 라운드의 실제 mapProvider를 읽어오는 동안(null)에는 지도를 아예 그리지 않는다 — KAKAO로
+    // 기본값을 먼저 그렸다가 GOOGLE로 바뀌면서 다시 그리면, 해외 코스처럼 카카오 타일이 아예 없는 곳에서
+    // 매번 빈/깨진 카카오 지도가 먼저 번쩍이고서야 구글 지도가 뜨는 문제가 있었다.
+    val provider = viewModel.mapProvider
+    // OB/해저드는 그린까지 가는 구간에서만 일어난다고 보고 숏게임에는 두지 않는다.
+    val obToGreenCount = penalties.count {
+        it.phase == ShotPhase.TO_GREEN.name && it.type == PenaltyType.OB.name
+    }
+    val hazardToGreenCount = penalties.count {
+        it.phase == ShotPhase.TO_GREEN.name && it.type == PenaltyType.HAZARD.name
+    }
+
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Row(verticalAlignment = Alignment.Bottom) {
+            Column(modifier = Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(start = 4.dp, end = 12.dp, top = 6.dp, bottom = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    IconButton(onClick = { onShowSummary() }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "뒤로", tint = GolfTokens.TextPrimary)
+                    }
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.Bottom,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
                         Text(
-                            "${viewModel.currentHoleNumber}홀",
+                            "HOLE ${viewModel.currentHoleNumber}",
                             fontFamily = com.golfrecorder.ui.theme.GolfFonts.NumberFontFamily,
                             fontWeight = FontWeight.Bold,
-                            fontSize = MaterialTheme.typography.headlineSmall.fontSize,
+                            fontSize = 34.sp,
+                            lineHeight = 34.sp,
+                            color = GolfTokens.TextPrimary,
                         )
-                        Spacer(Modifier.width(8.dp))
                         Text(
                             "파 $par",
                             color = GolfTokens.CardBackground,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
                             modifier = Modifier
+                                .padding(bottom = 3.dp)
                                 .background(GolfTokens.FieldGreen, RoundedCornerShape(GolfTokens.ChipCorner))
                                 .padding(horizontal = 10.dp, vertical = 3.dp),
                         )
                     }
-                },
-                navigationIcon = {
-                    IconButton(onClick = { onShowSummary() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "뒤로")
+                    Column(horizontalAlignment = Alignment.End) {
+                        if (viewModel.isReview) {
+                            Text("이 홀", fontSize = 11.sp, color = GolfTokens.TextSecondary)
+                            Text(
+                                if (holeTotal == 0) "-" else "$holeTotal · ${scoreGradeLabel(holeTotal - par)}",
+                                fontFamily = com.golfrecorder.ui.theme.GolfFonts.NumberFontFamily,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 24.sp,
+                                lineHeight = 24.sp,
+                                color = GolfTokens.TextPrimary,
+                            )
+                        } else {
+                            Text("현재 스코어", fontSize = 11.sp, color = GolfTokens.TextSecondary)
+                            Text(
+                                formatToPar(currentScoreToPar),
+                                fontFamily = com.golfrecorder.ui.theme.GolfFonts.NumberFontFamily,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 24.sp,
+                                lineHeight = 24.sp,
+                                color = GolfTokens.TextPrimary,
+                            )
+                        }
                     }
-                },
-            )
+                }
+                if (holeCount > 0) {
+                    HoleProgressBar(
+                        totalHoles = holeCount,
+                        currentHoleNumber = viewModel.currentHoleNumber,
+                        mode = if (viewModel.isReview) HoleProgressMode.REVIEW else HoleProgressMode.LIVE,
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 10.dp),
+                    )
+                }
+            }
         },
         bottomBar = {
             Box(
                 modifier = Modifier.fillMaxWidth()
-                    .background(GolfTokens.CardBackground)
+                    .background(GolfTokens.Background)
                     .navigationBarsPadding()
-                    .padding(16.dp),
+                    .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp),
             ) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    // 라이브는 "이전 홀", 끝난 라운드 리뷰는 시안처럼 이웃 홀 번호("3번 홀")를 보여준다.
                     androidx.compose.material3.OutlinedButton(
                         onClick = {
                             viewModel.goToHole(viewModel.currentHoleNumber - 1) {
@@ -515,43 +587,64 @@ fun RoundPlayScreen(
                             }
                         },
                         enabled = viewModel.currentHoleNumber > 1,
+                        modifier = Modifier.width(110.dp).height(56.dp),
                         shape = RoundedCornerShape(GolfTokens.ButtonCorner),
-                    ) { Text("이전 홀") }
+                        border = BorderStroke(1.5.dp, GolfTokens.Border),
+                        colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                            contentColor = GolfTokens.TextPrimary,
+                        ),
+                    ) {
+                        Text(
+                            if (viewModel.isReview && viewModel.currentHoleNumber > 1) {
+                                "${viewModel.currentHoleNumber - 1}번 홀"
+                            } else {
+                                "이전 홀"
+                            },
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
                     if (holeCount == 0 || viewModel.currentHoleNumber < holeCount) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Button(
-                                onClick = {
-                                    viewModel.goToHole(viewModel.currentHoleNumber + 1) {
-                                        RoundRecordingService.refreshState(context)
-                                    }
-                                },
-                                shape = RoundedCornerShape(GolfTokens.ButtonCorner),
-                                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                                    containerColor = GolfTokens.TextPrimary,
-                                    contentColor = GolfTokens.CardBackground,
-                                ),
-                            ) { Text("다음 홀") }
-                            if (!viewModel.isReview) {
-                                val liveTotal = viewModel.strokesToGreen + viewModel.strokesShortGame + viewModel.strokesPutt
-                                // 한 타도 안 친 홀은 0 - par로 "버디 이하"가 떠서 거짓 정보가 되므로
-                                // 숨기되, 첫 타를 칠 때 하단 바 높이가 출렁이지 않게 한 줄은 비워 둔다.
-                                Text(
-                                    if (liveTotal == 0) " " else "이 홀 ${liveTotal}타 · ${scoreGradeLabel(liveTotal - par)}",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = GolfTokens.TextSecondary,
-                                )
+                        Button(
+                            onClick = {
+                                viewModel.goToHole(viewModel.currentHoleNumber + 1) {
+                                    RoundRecordingService.refreshState(context)
+                                }
+                            },
+                            modifier = Modifier.weight(1f).height(56.dp),
+                            shape = RoundedCornerShape(GolfTokens.ButtonCorner),
+                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                containerColor = GolfTokens.TextPrimary,
+                                contentColor = GolfTokens.CardBackground,
+                            ),
+                        ) {
+                            if (viewModel.isReview) {
+                                Text("${viewModel.currentHoleNumber + 1}번 홀", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                            } else {
+                                Text("다음 홀", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                // 한 타도 안 친 홀은 0 - par로 "버디 이하"가 떠서 거짓 정보가 되므로 숨긴다.
+                                if (holeTotal > 0) {
+                                    Spacer(Modifier.width(10.dp))
+                                    Text(
+                                        "이 홀 ${holeTotal}타 · ${scoreGradeLabel(holeTotal - par)}",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = GolfTokens.CardBackground.copy(alpha = 0.8f),
+                                    )
+                                }
                             }
                         }
                     } else if (!viewModel.isReview) {
                         // 이미 완료된 라운드를 리뷰 중이면 다시 완료할 이유가 없으니 버튼을 안 보여준다.
                         Button(
                             onClick = { showFinishConfirm = true },
+                            modifier = Modifier.weight(1f).height(56.dp),
                             shape = RoundedCornerShape(GolfTokens.ButtonCorner),
                             colors = androidx.compose.material3.ButtonDefaults.buttonColors(
                                 containerColor = GolfTokens.TextPrimary,
                                 contentColor = GolfTokens.CardBackground,
                             ),
-                        ) { Text("완료") }
+                        ) { Text("완료", fontSize = 16.sp, fontWeight = FontWeight.Bold) }
                     }
                 }
             }
@@ -576,48 +669,15 @@ fun RoundPlayScreen(
         Column(
             modifier = Modifier
                 .padding(padding)
-                .padding(16.dp)
+                .padding(horizontal = 16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            val holeResults by viewModel.holeResults.collectAsStateWithLifecycle()
-            if (holeCount > 0) {
-                HoleProgressBar(
-                    totalHoles = holeCount,
-                    currentHoleNumber = viewModel.currentHoleNumber,
-                    mode = if (viewModel.isReview) HoleProgressMode.REVIEW else HoleProgressMode.LIVE,
-                )
-                if (!viewModel.isReview) {
-                    // 지나온 홀만(지금 치는 홀 제외) 더한 파 대비 — holeNumber로 직접
-                    // 걸러낸다. hole_records에는 지금 치는 홀도 이미 upsert돼 있어서
-                    // (RoundPlayViewModel.loadHole 참고) "저장됐는지"로는 걸러낼 수 없다.
-                    val currentScoreToPar = holeResults
-                        .filter { it.holeNumber < viewModel.currentHoleNumber }
-                        .sumOf { it.scoreToPar }
-                    Text(
-                        "현재 스코어 ${formatToPar(currentScoreToPar)}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = GolfTokens.TextSecondary,
-                        modifier = Modifier.padding(top = 4.dp),
-                    )
-                }
-                Spacer(Modifier.height(12.dp))
-            }
-            val fixedLocation = currentLocation
-            val showRecenterButton = !viewModel.isReview && hasLocationPermission && online
-            if (showRecenterButton) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    TextButton(onClick = { recenterOnCurrentLocation() }) { Text("위치 조정") }
-                }
-                Spacer(Modifier.height(8.dp))
-            }
-            // DB에서 이 라운드의 실제 mapProvider를 읽어오는 동안(null)에는 지도를
-            // 아예 그리지 않는다 — KAKAO로 기본값을 먼저 그렸다가 GOOGLE로 바뀌면서
-            // 다시 그리면, 해외 코스처럼 카카오 타일이 아예 없는 곳에서 매번 빈/깨진
-            // 카카오 지도가 먼저 번쩍이고서야 구글 지도가 뜨는 문제가 있었다.
-            val provider = viewModel.mapProvider
+            // 시안: 지도 높이 라이브 248dp / 홀 상세 300dp. "그린 중앙까지" 박스·"위치 조정" 버튼·리뷰 안내는
+            // 지도 위 요소라 루트 레이어의 MapOverlay(ui/map/GreenDistanceOverlay.kt)가 그린다.
+            val mapHeight = if (viewModel.isReview) 300.dp else 248.dp
             Box(
                 modifier = Modifier.fillMaxWidth()
-                    .background(GolfTokens.FieldGreenDark, RoundedCornerShape(GolfTokens.CardCorner)),
+                    .background(GolfTokens.FieldGreenDark, RoundedCornerShape(22.dp)),
             ) {
                 when {
                     !hasLocationPermission -> Text(
@@ -635,39 +695,32 @@ fun RoundPlayScreen(
                         penalties = penalties.map { PenaltyPoint(PenaltyType.valueOf(it.type), it.lat, it.lng) },
                         recenterSignal = recenterSignal,
                         preferCurrentLocation = !viewModel.isReview,
+                        height = mapHeight,
+                        onRecenter = { recenterOnCurrentLocation() },
                     )
                     // provider를 아직 못 읽어온 온라인 상태 — 아래 오프라인 분기와 섞이지
                     // 않도록 별도 분기로 빼서 로딩이 끝날 때까지 빈 자리로 둔다.
                     online -> {}
-                    // 거리 칩(redesign-spec.md 4.7). 온라인일 땐 실제 지도 뷰가 액티비티 루트에서
-                    // 이 화면 위에 겹쳐 그려져 여기 둔 요소가 가려지므로, 온라인용은
-                    // PersistentCourseMap의 GreenDistanceOverlay가 맡고 여기선 지도가 아예 없는
-                    // 오프라인일 때만 같은 칩을 그린다(둘 다 라이브 플레이에서만). "오프라인
-                    // 상태입니다." 문구와 겹치지 않도록 같은 Column 안에 위아래로 쌓는다.
-                    else -> Column(modifier = Modifier.padding(8.dp)) {
+                    // 거리 박스. 온라인일 땐 실제 지도 뷰가 이 화면 위에 겹쳐 그려져 여기 둔 요소가 가려지므로
+                    // 온라인용은 MapOverlay가 맡고, 여기선 지도가 아예 없는 오프라인일 때만 같은 박스를 그린다
+                    // (둘 다 라이브 플레이에서만). "오프라인 상태입니다." 문구와 겹치지 않도록 위아래로 쌓는다.
+                    else -> Column(modifier = Modifier.padding(12.dp)) {
                         if (!viewModel.isReview && greenLocation != null && fixedLocation != null) {
                             val distance = haversineMeters(
                                 fixedLocation.lat, fixedLocation.lng, greenLocation.lat, greenLocation.lng,
                             )
-                            GreenDistanceChip(distanceMeters = distance.toInt())
+                            GreenDistanceBox(distanceMeters = distance.toInt())
                         }
                         Text(
                             "오프라인 상태입니다.",
                             color = GolfTokens.CardBackground,
-                            modifier = Modifier.padding(8.dp),
+                            modifier = Modifier.padding(4.dp),
                         )
                     }
                 }
             }
-            // OB/해저드는 그린까지 가는 구간에서만 일어난다고 보고 숏게임에는 두지 않는다.
-            val obToGreenCount = penalties.count {
-                it.phase == ShotPhase.TO_GREEN.name && it.type == PenaltyType.OB.name
-            }
-            val hazardToGreenCount = penalties.count {
-                it.phase == ShotPhase.TO_GREEN.name && it.type == PenaltyType.HAZARD.name
-            }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(12.dp))
             if (viewModel.isReview) {
                 // 완료된 라운드는 홀 정보를 더 이상 고칠 수 없으니 입력 UI 대신 기록된
                 // 값만 읽기 전용으로 보여준다.
@@ -677,69 +730,107 @@ fun RoundPlayScreen(
                     viewModel.currentHoleNumber, par, viewModel.strokesToGreen,
                     viewModel.strokesShortGame + viewModel.strokesPutt, strokesPutt = viewModel.strokesPutt,
                 )
-                ReadOnlyStepperRow(
-                    label = "그린까지",
-                    hint = "티샷부터 그린 도착",
-                    value = viewModel.strokesToGreen,
-                    highlight = !reviewHole.isGreenInRegulation,
-                )
+                // 읽기 전용 행은 자체 안쪽 여백(12dp)이 있어 카드 안쪽 여백을 줄여 합이 16dp가 되게 한다.
+                Column(
+                    modifier = Modifier.fillMaxWidth()
+                        .background(GolfTokens.CardBackground, RoundedCornerShape(22.dp))
+                        .padding(horizontal = 4.dp, vertical = 6.dp),
+                ) {
+                    ReadOnlyStepperRow(
+                        label = "그린까지",
+                        hint = "티샷부터 그린 도착",
+                        value = viewModel.strokesToGreen,
+                        highlight = !reviewHole.isGreenInRegulation,
+                    )
+                    ReadOnlyStepperRow(
+                        label = "숏어프로치",
+                        hint = "어프로치 · 칩샷",
+                        value = viewModel.strokesShortGame,
+                        highlight = reviewHole.strokesShortGame > 0,
+                    )
+                    ReadOnlyStepperRow(
+                        label = "퍼팅",
+                        hint = "그린 위",
+                        value = viewModel.strokesPutt,
+                        showDivider = false,
+                        highlight = reviewHole.strokesPutt >= 3,
+                    )
+                }
+                // 벌타는 시안처럼 스테퍼 카드와 별도의 흰 카드(OB/해저드가 있으면 연한 빨강).
                 Row(
                     modifier = Modifier.fillMaxWidth()
-                        .then(
-                            if (penalties.isNotEmpty()) {
-                                Modifier.background(GolfTokens.MistakeHighlight, RoundedCornerShape(12.dp))
-                            } else {
-                                Modifier
-                            },
+                        .padding(top = 10.dp)
+                        .background(
+                            if (penalties.isNotEmpty()) GolfTokens.MistakeHighlight else GolfTokens.CardBackground,
+                            RoundedCornerShape(16.dp),
                         )
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
+                    Text(
+                        "벌타",
+                        modifier = Modifier.weight(1f),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = GolfTokens.TextPrimary,
+                    )
                     PenaltyDisplayChip("OB ${obToGreenCount}", PenaltyColor.OB)
                     PenaltyDisplayChip("해저드 ${hazardToGreenCount}", PenaltyColor.HAZARD)
                 }
-                ReadOnlyStepperRow(
-                    label = "숏어프로치",
-                    hint = "어프로치 · 칩샷",
-                    value = viewModel.strokesShortGame,
-                    highlight = reviewHole.strokesShortGame > 0,
-                )
-                ReadOnlyStepperRow(
-                    label = "퍼팅",
-                    hint = "그린 위",
-                    value = viewModel.strokesPutt,
-                    showDivider = false,
-                    highlight = reviewHole.strokesPutt >= 3,
-                )
             } else {
-                StepperRow(
-                    label = "그린까지",
-                    hint = "티샷부터 그린 도착",
-                    value = viewModel.strokesToGreen,
-                    onIncrement = { onStepperChange(ShotPhase.TO_GREEN, viewModel.strokesToGreen, viewModel.strokesToGreen + 1) },
-                    onDecrement = { onStepperChange(ShotPhase.TO_GREEN, viewModel.strokesToGreen, viewModel.strokesToGreen - 1) },
-                )
+                Column(
+                    modifier = Modifier.fillMaxWidth()
+                        .background(GolfTokens.CardBackground, RoundedCornerShape(22.dp))
+                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                ) {
+                    StepperRow(
+                        label = "그린까지",
+                        hint = "티샷부터 그린 도착",
+                        value = viewModel.strokesToGreen,
+                        onIncrement = { onStepperChange(ShotPhase.TO_GREEN, viewModel.strokesToGreen, viewModel.strokesToGreen + 1) },
+                        onDecrement = { onStepperChange(ShotPhase.TO_GREEN, viewModel.strokesToGreen, viewModel.strokesToGreen - 1) },
+                    )
+                    StepperRow(
+                        label = "숏어프로치",
+                        hint = "어프로치 · 칩샷",
+                        value = viewModel.strokesShortGame,
+                        onIncrement = { onStepperChange(ShotPhase.SHORT_GAME, viewModel.strokesShortGame, viewModel.strokesShortGame + 1) },
+                        onDecrement = { onStepperChange(ShotPhase.SHORT_GAME, viewModel.strokesShortGame, viewModel.strokesShortGame - 1) },
+                    )
+                    StepperRow(
+                        label = "퍼팅",
+                        hint = "그린 위",
+                        value = viewModel.strokesPutt,
+                        onIncrement = { onStepperChange(ShotPhase.PUTT, viewModel.strokesPutt, viewModel.strokesPutt + 1) },
+                        onDecrement = { onStepperChange(ShotPhase.PUTT, viewModel.strokesPutt, viewModel.strokesPutt - 1) },
+                        showDivider = false,
+                    )
+                }
+                // 시안: 스테퍼 카드 아래 "벌타" 라벨과 함께 한 줄.
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
+                    Text("벌타", fontSize = 13.sp, color = GolfTokens.TextSecondary, modifier = Modifier.width(40.dp))
                     PenaltyButton(
                         text = "OB +1",
                         color = PenaltyColor.OB,
                         onClick = { onAddPenalty(ShotPhase.TO_GREEN, PenaltyType.OB, 1) },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).height(44.dp),
                     )
                     PenaltyButton(
                         text = "OB +2",
                         color = PenaltyColor.OB,
                         onClick = { onAddPenalty(ShotPhase.TO_GREEN, PenaltyType.OB, 2) },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).height(44.dp),
                     )
                     PenaltyButton(
                         text = "해저드 +1",
                         color = PenaltyColor.HAZARD,
                         onClick = { onAddPenalty(ShotPhase.TO_GREEN, PenaltyType.HAZARD, 1) },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).height(44.dp),
                     )
                 }
                 // 시안엔 OB/해저드를 되돌리는 UI가 없지만(+버튼만 보임), 기존에 되돌리기
@@ -747,7 +838,7 @@ fun RoundPlayScreen(
                 // 되돌리게 해서 기능은 유지하면서 화면은 깔끔하게 둔다. 0건이면 탭해도
                 // onRemovePenalty가 조용히 아무것도 안 한다(ViewModel이 이미 처리).
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(start = 48.dp, top = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     PenaltyDisplayChip(
@@ -761,21 +852,6 @@ fun RoundPlayScreen(
                         modifier = Modifier.clickable { onRemovePenalty(ShotPhase.TO_GREEN, PenaltyType.HAZARD) },
                     )
                 }
-                StepperRow(
-                    label = "숏어프로치",
-                    hint = "어프로치 · 칩샷",
-                    value = viewModel.strokesShortGame,
-                    onIncrement = { onStepperChange(ShotPhase.SHORT_GAME, viewModel.strokesShortGame, viewModel.strokesShortGame + 1) },
-                    onDecrement = { onStepperChange(ShotPhase.SHORT_GAME, viewModel.strokesShortGame, viewModel.strokesShortGame - 1) },
-                )
-                StepperRow(
-                    label = "퍼팅",
-                    hint = "그린 위",
-                    value = viewModel.strokesPutt,
-                    onIncrement = { onStepperChange(ShotPhase.PUTT, viewModel.strokesPutt, viewModel.strokesPutt + 1) },
-                    onDecrement = { onStepperChange(ShotPhase.PUTT, viewModel.strokesPutt, viewModel.strokesPutt - 1) },
-                    showDivider = false,
-                )
             }
             Spacer(Modifier.height(16.dp))
         }

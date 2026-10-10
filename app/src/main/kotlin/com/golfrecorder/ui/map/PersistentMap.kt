@@ -11,12 +11,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -73,6 +75,8 @@ internal class MapRequest(
     /** 라운드 진행 중에는 현재 위치를, 이미 끝난 라운드를 리뷰/수정할 때는 그린 위치를
      * 자동 카메라 중심 우선순위로 쓴다 — 리뷰 중엔 보는 사람의 GPS 위치가 그 홀과 무관하다. */
     val preferCurrentLocation: Boolean = true,
+    /** 지도 위 "위치 조정" 버튼(루트 레이어 오버레이가 그림)을 눌렀을 때 부를 동작 — 화면이 넘겨준다. */
+    val onRecenter: () -> Unit = {},
 )
 
 /**
@@ -119,14 +123,20 @@ fun CourseMapSlot(
     modifier: Modifier = Modifier,
     recenterSignal: Int = 0,
     preferCurrentLocation: Boolean = true,
+    height: Dp = MAP_HEIGHT,
+    onRecenter: () -> Unit = {},
 ) {
     var offset by remember { mutableStateOf<IntOffset?>(null) }
     var size by remember { mutableStateOf(IntSize.Zero) }
+    // 요청(MapRequest)에 실리는 람다가 매 리컴포지션마다 새로 만들어지면 아래 LaunchedEffect가
+    // 계속 다시 도니, 최신 onRecenter를 부르는 안정된 래퍼 하나만 넘긴다.
+    val latestOnRecenter by rememberUpdatedState(onRecenter)
+    val stableOnRecenter = remember { { latestOnRecenter() } }
 
     Box(
         modifier
             .fillMaxWidth()
-            .height(MAP_HEIGHT)
+            .height(height)
             .onGloballyPositioned { coordinates ->
                 val position = coordinates.positionInRoot()
                 offset = IntOffset(position.x.roundToInt(), position.y.roundToInt())
@@ -160,6 +170,7 @@ fun CourseMapSlot(
                     penalties = penalties,
                     recenterSignal = recenterSignal,
                     preferCurrentLocation = preferCurrentLocation,
+                    onRecenter = stableOnRecenter,
                 )
             )
         }
@@ -339,5 +350,5 @@ fun PersistentCourseMap(state: MapSlotState) {
     PersistentKakaoMap(state)
     PersistentGoogleMap(state)
     // 두 지도보다 나중에 그려야 지도 위에 보인다.
-    GreenDistanceOverlay(state)
+    MapOverlay(state)
 }

@@ -23,6 +23,24 @@ object GolfIcons {
         }
     }
 
+    /** 지도 "위치 조정" 버튼의 조준 아이콘. */
+    val Crosshair: ImageVector by lazy {
+        strokeIcon("GolfCrosshair") {
+            moveTo(15f, 12f)
+            arcTo(3f, 3f, 0f, isMoreThanHalf = true, isPositiveArc = true, x1 = 9f, y1 = 12f)
+            arcTo(3f, 3f, 0f, isMoreThanHalf = true, isPositiveArc = true, x1 = 15f, y1 = 12f)
+            close()
+            moveTo(12f, 2f)
+            verticalLineToRelative(4f)
+            moveTo(12f, 18f)
+            verticalLineToRelative(4f)
+            moveTo(2f, 12f)
+            horizontalLineToRelative(4f)
+            moveTo(18f, 12f)
+            horizontalLineToRelative(4f)
+        }
+    }
+
     /** 라운드 카드의 시간 줄 앞 시계. */
     val Clock: ImageVector by lazy {
         strokeIcon("GolfClock") {
