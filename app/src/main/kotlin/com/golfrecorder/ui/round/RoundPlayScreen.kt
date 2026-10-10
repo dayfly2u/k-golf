@@ -639,24 +639,24 @@ fun RoundPlayScreen(
                     // provider를 아직 못 읽어온 온라인 상태 — 아래 오프라인 분기와 섞이지
                     // 않도록 별도 분기로 빼서 로딩이 끝날 때까지 빈 자리로 둔다.
                     online -> {}
-                    else -> Text(
-                        "오프라인 상태입니다.",
-                        color = GolfTokens.CardBackground,
-                        modifier = Modifier.padding(16.dp),
-                    )
-                }
-                // 거리 칩(redesign-spec.md 4.7). 온라인일 땐 실제 지도 뷰가 액티비티 루트에서
-                // 이 화면 위에 겹쳐 그려져 여기 둔 요소가 가려지므로, 온라인용은
-                // PersistentCourseMap의 GreenDistanceOverlay가 맡고 여기선 지도가 아예 없는
-                // 오프라인일 때만 같은 칩을 그린다. 둘 다 라이브 플레이에서만 보인다.
-                if (!online && !viewModel.isReview && greenLocation != null && fixedLocation != null) {
-                    val distance = haversineMeters(
-                        fixedLocation.lat, fixedLocation.lng, greenLocation.lat, greenLocation.lng,
-                    )
-                    GreenDistanceChip(
-                        distanceMeters = distance.toInt(),
-                        modifier = Modifier.align(Alignment.TopStart).padding(8.dp),
-                    )
+                    // 거리 칩(redesign-spec.md 4.7). 온라인일 땐 실제 지도 뷰가 액티비티 루트에서
+                    // 이 화면 위에 겹쳐 그려져 여기 둔 요소가 가려지므로, 온라인용은
+                    // PersistentCourseMap의 GreenDistanceOverlay가 맡고 여기선 지도가 아예 없는
+                    // 오프라인일 때만 같은 칩을 그린다(둘 다 라이브 플레이에서만). "오프라인
+                    // 상태입니다." 문구와 겹치지 않도록 같은 Column 안에 위아래로 쌓는다.
+                    else -> Column(modifier = Modifier.padding(8.dp)) {
+                        if (!viewModel.isReview && greenLocation != null && fixedLocation != null) {
+                            val distance = haversineMeters(
+                                fixedLocation.lat, fixedLocation.lng, greenLocation.lat, greenLocation.lng,
+                            )
+                            GreenDistanceChip(distanceMeters = distance.toInt())
+                        }
+                        Text(
+                            "오프라인 상태입니다.",
+                            color = GolfTokens.CardBackground,
+                            modifier = Modifier.padding(8.dp),
+                        )
+                    }
                 }
             }
             // OB/해저드는 그린까지 가는 구간에서만 일어난다고 보고 숏게임에는 두지 않는다.
