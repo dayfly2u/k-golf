@@ -36,8 +36,10 @@ object GolfTokens {
     val ScoreBogeyBackground = Color(0xFFDCE6F1)
     val ScoreDoubleOrWorseBackground = Color(0xFF6B8FB8) // 흰 글자
 
-    // 점수 레벨 4구간 색 — 홈 총타수 배지와 결과 화면 스코어카드·홀 결과 비율 막대가 같이 쓴다
-    // (1=가장 좋음 진녹색 → 4=가장 나쁨 진빨강). 어느 구간인지는 holeScoreTier/strokeScoreTier.
+    // 점수 레벨 색 — 홈 총타수 배지와 결과 화면 스코어카드·홀 결과 비율 막대가 같이 쓴다
+    // (1=파 진녹색 → 4=가장 나쁨 진빨강). 어느 구간인지는 holeScoreTier/strokeScoreTier.
+    // 0구간(버디 이하)은 홀 점수에만 있는 금색(시안 Summary.dc.html의 버디 이하 색).
+    val ScoreTier0 = Accent
     val ScoreTier1 = FieldGreen
     val ScoreTier2 = Color(0xFFC8E6C9)
     val ScoreTier3 = Color(0xFFFFCDD2)

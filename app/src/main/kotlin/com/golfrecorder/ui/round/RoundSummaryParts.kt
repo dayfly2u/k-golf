@@ -62,20 +62,21 @@ internal fun formatRoundPeriod(playedAt: Long, finishedAt: Long?): String {
     return "$start~${periodTimeFormat.format(Date(finishedAt))} (${totalMinutes / 60}시간 ${totalMinutes % 60}분)"
 }
 
-// 점수 레벨 4구간 이름(인덱스 = holeScoreTier - 1). 색은 홈 총타수 배지와 같은 scoreTierColor.
-private val TIER_LABELS = listOf("파 이하", "보기", "더블", "트리플+")
+// 점수 레벨 구간 이름(인덱스 = holeScoreTier, 0=버디 이하). 색은 scoreTierColor — 1~4구간은 홈
+// 총타수 배지와 같은 색이고 0구간(버디 이하)만 금색이다.
+private val TIER_LABELS = listOf("버디 이하", "파", "보기", "더블", "트리플+")
 
 private fun percent(count: Int, total: Int): Int = if (total == 0) 0 else (count * 100.0 / total).roundToInt()
 
 /** 시안 "홀 결과 비율" 카드 — 한 줄 100% 막대(구간마다 퍼센트 표시) + 색 칩이 붙은 범례(홀 수).
- * 구간은 [holeScoreTier]로 나누고 순서는 항상 1~4구간. 홀 수가 0인 구간은 막대에서
+ * 구간은 [holeScoreTier]로 나누고 순서는 항상 0~4구간. 홀 수가 0인 구간은 막대에서
  * 뺀다(Compose weight()는 0을 허용하지 않는다). */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun HoleResultRatioCard(holeResults: List<HoleResult>, modifier: Modifier = Modifier) {
     if (holeResults.isEmpty()) return
     val total = holeResults.size
-    val tierCounts = (1..4).associateWith { tier -> holeResults.count { holeScoreTier(it.scoreToPar) == tier } }
+    val tierCounts = (0..4).associateWith { tier -> holeResults.count { holeScoreTier(it.scoreToPar) == tier } }
     GolfCard(modifier = modifier) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -92,7 +93,7 @@ internal fun HoleResultRatioCard(holeResults: List<HoleResult>, modifier: Modifi
                 .clip(RoundedCornerShape(8.dp)),
             horizontalArrangement = Arrangement.spacedBy(2.dp),
         ) {
-            (1..4).filter { tier -> (tierCounts[tier] ?: 0) > 0 }.forEach { tier ->
+            (0..4).filter { tier -> (tierCounts[tier] ?: 0) > 0 }.forEach { tier ->
                 val count = tierCounts[tier] ?: 0
                 Box(
                     modifier = Modifier
@@ -119,7 +120,7 @@ internal fun HoleResultRatioCard(holeResults: List<HoleResult>, modifier: Modifi
             horizontalArrangement = Arrangement.spacedBy(14.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            (1..4).forEach { tier ->
+            (0..4).forEach { tier ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         Modifier.size(9.dp)
@@ -162,8 +163,8 @@ private fun SmallGridText(text: String, size: Int = 12, color: Color = GolfToken
     Text(text, fontSize = size.sp, color = color)
 }
 
-/** 타수 칸 — 파 대비 점수 레벨 4구간 색(홈 총타수 배지와 같은 색): 파 이하 진녹색, 보기 연초록,
- * 더블 연빨강, 트리플 이상 진빨강. 폭은 칸에 맞춰 줄어들고 최대 28dp. */
+/** 타수 칸 — 파 대비 점수 레벨 색: 버디 이하 금색, 파 진녹색, 보기 연초록, 더블 연빨강, 트리플
+ * 이상 진빨강(파~트리플은 홈 총타수 배지와 같은 색). 폭은 칸에 맞춰 줄어들고 최대 28dp. */
 @Composable
 private fun StrokeCell(hole: HoleResult, enabled: Boolean, onClick: () -> Unit) {
     val tier = holeScoreTier(hole.scoreToPar)

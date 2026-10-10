@@ -21,7 +21,7 @@ android {
         minSdk = 26
         targetSdk = 36
         versionCode = 10
-        versionName = "0.9.4"
+        versionName = "0.9.5"
 
         buildConfigField(
             "String",

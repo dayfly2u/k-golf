@@ -20,9 +20,13 @@ class ScoreFormattingTest {
     }
 
     @Test
-    fun `holeScoreTier 파 이하는 1구간`() {
-        assertEquals(1, holeScoreTier(-2))
-        assertEquals(1, holeScoreTier(-1))
+    fun `holeScoreTier 버디 이하는 0구간(별도 색)`() {
+        assertEquals(0, holeScoreTier(-2))
+        assertEquals(0, holeScoreTier(-1))
+    }
+
+    @Test
+    fun `holeScoreTier 파는 1구간`() {
         assertEquals(1, holeScoreTier(0))
     }
 

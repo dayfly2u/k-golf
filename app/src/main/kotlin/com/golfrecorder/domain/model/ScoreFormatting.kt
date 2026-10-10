@@ -8,11 +8,12 @@ fun formatToPar(scoreToPar: Int): String = when {
     else -> "$scoreToPar"
 }
 
-/** 홀 하나의 파 대비 점수를 점수 레벨 4구간으로: 1=파 이하, 2=보기, 3=더블, 4=트리플 이상.
- * 홈의 총타수 배지(strokeScoreTier)와 같은 4색을 쓰도록 결과 화면 스코어카드/비율 막대가
- * 공유하는 기준이다. */
+/** 홀 하나의 파 대비 점수를 점수 레벨 구간으로: 0=버디 이하(별도 금색), 1=파, 2=보기, 3=더블,
+ * 4=트리플 이상. 1~4구간은 홈의 총타수 배지(strokeScoreTier)와 같은 4색이고, 결과 화면
+ * 스코어카드/비율 막대가 공유하는 기준이다. */
 fun holeScoreTier(scoreToPar: Int): Int = when {
-    scoreToPar <= 0 -> 1
+    scoreToPar <= -1 -> 0
+    scoreToPar == 0 -> 1
     scoreToPar == 1 -> 2
     scoreToPar == 2 -> 3
     else -> 4
