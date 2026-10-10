@@ -54,6 +54,7 @@ import com.golfrecorder.data.repository.ShotRepository
 import com.golfrecorder.domain.model.DriverDistanceStats
 import com.golfrecorder.domain.model.HoleResult
 import com.golfrecorder.domain.model.calculateDriverDistanceStats
+import com.golfrecorder.domain.model.formatToPar
 import com.golfrecorder.ui.common.GirSummaryLines
 import com.golfrecorder.ui.common.RoundStatsLine
 import com.golfrecorder.ui.theme.GolfFonts
@@ -162,12 +163,6 @@ class RoundSummaryViewModelFactory(
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T =
         RoundSummaryViewModel(roundRepository, courseRepository, shotRepository, roundId, courseId) as T
-}
-
-private fun formatToPar(scoreToPar: Int): String = when {
-    scoreToPar == 0 -> "E"
-    scoreToPar > 0 -> "+$scoreToPar"
-    else -> "$scoreToPar"
 }
 
 // GIR(그린 적중) 실패("그린 N"), 숏어프로치 발생("숏 N", 50m 이하 숏은 곧 그린을 놓쳤다는

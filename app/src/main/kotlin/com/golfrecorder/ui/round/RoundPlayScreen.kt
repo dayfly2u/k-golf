@@ -60,14 +60,19 @@ import com.golfrecorder.data.repository.CourseRepository
 import com.golfrecorder.data.repository.PenaltyRepository
 import com.golfrecorder.data.repository.RoundRepository
 import com.golfrecorder.data.repository.ShotRepository
+import com.golfrecorder.domain.model.HoleResult
 import com.golfrecorder.domain.model.MapProvider
 import com.golfrecorder.domain.model.PenaltyType
 import com.golfrecorder.domain.model.ShotPhase
 import com.golfrecorder.domain.model.StrokeCalculator
+import com.golfrecorder.domain.model.formatToPar
+import com.golfrecorder.domain.model.scoreGradeLabel
 import com.golfrecorder.location.LatLng as AppLatLng
 import com.golfrecorder.location.LocationCapture
 import com.golfrecorder.location.LocationTracker
 import com.golfrecorder.service.RoundRecordingService
+import com.golfrecorder.ui.common.HoleProgressBar
+import com.golfrecorder.ui.common.HoleProgressMode
 import com.golfrecorder.ui.common.PenaltyButton
 import com.golfrecorder.ui.common.PenaltyColor
 import com.golfrecorder.ui.common.PenaltyDisplayChip
@@ -113,6 +118,20 @@ class RoundPlayViewModel(
 ) : ViewModel() {
     val holes: StateFlow<List<HoleEntity>> = courseRepository.getCourseWithHoles(courseId)
         .map { it?.holes.orEmpty().sortedBy { hole -> hole.holeNumber } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    /** 결과(요약) 화면과 같은 패턴으로 이 라운드의 hole_records를 HoleResult로
+     * 매핑한다 — 18홀 진행바의 "현재 스코어"(진행 홀까지, 지금 치는 홀 제외)를
+     * 계산하는 데 쓴다. */
+    val holeResults: StateFlow<List<HoleResult>> = roundRepository.getRoundWithHoleRecords(roundId)
+        .map { round ->
+            round?.holeRecords.orEmpty().sortedBy { it.holeNumber }.map { record ->
+                HoleResult(
+                    record.holeNumber, record.par, record.strokesToGreen, record.strokesGreenToHoleOut,
+                    strokesPutt = record.strokesPutt,
+                )
+            }
+        }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     var currentHoleNumber by mutableStateOf(initialHoleNumber)
@@ -498,18 +517,28 @@ fun RoundPlayScreen(
                         shape = RoundedCornerShape(GolfTokens.ButtonCorner),
                     ) { Text("이전 홀") }
                     if (holeCount == 0 || viewModel.currentHoleNumber < holeCount) {
-                        Button(
-                            onClick = {
-                                viewModel.goToHole(viewModel.currentHoleNumber + 1) {
-                                    RoundRecordingService.refreshState(context)
-                                }
-                            },
-                            shape = RoundedCornerShape(GolfTokens.ButtonCorner),
-                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                                containerColor = GolfTokens.TextPrimary,
-                                contentColor = GolfTokens.CardBackground,
-                            ),
-                        ) { Text("다음 홀") }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Button(
+                                onClick = {
+                                    viewModel.goToHole(viewModel.currentHoleNumber + 1) {
+                                        RoundRecordingService.refreshState(context)
+                                    }
+                                },
+                                shape = RoundedCornerShape(GolfTokens.ButtonCorner),
+                                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                    containerColor = GolfTokens.TextPrimary,
+                                    contentColor = GolfTokens.CardBackground,
+                                ),
+                            ) { Text("다음 홀") }
+                            if (!viewModel.isReview) {
+                                val liveTotal = viewModel.strokesToGreen + viewModel.strokesShortGame + viewModel.strokesPutt
+                                Text(
+                                    "이 홀 ${liveTotal}타 · ${scoreGradeLabel(liveTotal - par)}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = GolfTokens.TextSecondary,
+                                )
+                            }
+                        }
                     } else if (!viewModel.isReview) {
                         // 이미 완료된 라운드를 리뷰 중이면 다시 완료할 이유가 없으니 버튼을 안 보여준다.
                         Button(
@@ -547,6 +576,29 @@ fun RoundPlayScreen(
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
+            val holeResults by viewModel.holeResults.collectAsStateWithLifecycle()
+            if (holeCount > 0) {
+                HoleProgressBar(
+                    totalHoles = holeCount,
+                    currentHoleNumber = viewModel.currentHoleNumber,
+                    mode = if (viewModel.isReview) HoleProgressMode.REVIEW else HoleProgressMode.LIVE,
+                )
+                if (!viewModel.isReview) {
+                    // 지나온 홀만(지금 치는 홀 제외) 더한 파 대비 — holeNumber로 직접
+                    // 걸러낸다. hole_records에는 지금 치는 홀도 이미 upsert돼 있어서
+                    // (RoundPlayViewModel.loadHole 참고) "저장됐는지"로는 걸러낼 수 없다.
+                    val currentScoreToPar = holeResults
+                        .filter { it.holeNumber < viewModel.currentHoleNumber }
+                        .sumOf { it.scoreToPar }
+                    Text(
+                        "현재 스코어 ${formatToPar(currentScoreToPar)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = GolfTokens.TextSecondary,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
+                Spacer(Modifier.height(12.dp))
+            }
             val fixedLocation = currentLocation
             val showRecenterButton = !viewModel.isReview && hasLocationPermission && online
             if (showRecenterButton) {
