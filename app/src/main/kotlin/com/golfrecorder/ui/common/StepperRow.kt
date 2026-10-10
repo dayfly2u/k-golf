@@ -67,8 +67,9 @@ fun StepperRow(
                 modifier = Modifier.size(STEPPER_BUTTON_SIZE_DP.dp),
                 shape = RoundedCornerShape(14.dp),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = GolfTokens.TextPrimary),
                 border = androidx.compose.foundation.BorderStroke(1.5.dp, GolfTokens.Border),
-            ) { Text("−", fontSize = 20.sp, color = GolfTokens.TextPrimary) }
+            ) { Text("−", fontSize = 20.sp) }
             Text(
                 "$value",
                 fontFamily = GolfFonts.NumberFontFamily,
