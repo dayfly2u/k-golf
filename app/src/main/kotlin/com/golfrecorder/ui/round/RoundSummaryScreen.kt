@@ -7,10 +7,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -254,6 +257,7 @@ fun RoundSummaryScreen(
                 modifier = Modifier.fillMaxWidth()
                     .clip(RoundedCornerShape(bottomStart = 26.dp, bottomEnd = 26.dp))
                     .background(GolfTokens.FieldGreen)
+                    .windowInsetsPadding(WindowInsets.statusBars)
                     .padding(top = 8.dp, bottom = 14.dp, start = 4.dp, end = 16.dp),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {

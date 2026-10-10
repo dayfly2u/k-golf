@@ -406,7 +406,7 @@ fun CourseEditScreen(
             )
         },
     ) { padding ->
-        LazyColumn(modifier = Modifier.padding(padding).padding(16.dp).background(GolfTokens.Background)) {
+        LazyColumn(modifier = Modifier.padding(padding).background(GolfTokens.Background).padding(16.dp)) {
             item {
                 OutlinedTextField(
                     value = viewModel.name,

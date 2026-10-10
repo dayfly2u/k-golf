@@ -160,7 +160,12 @@ fun CourseManageScreen(
                     LazyColumn(
                         state = listState,
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+                        contentPadding = PaddingValues(
+                            start = 16.dp,
+                            end = 16.dp,
+                            top = 4.dp,
+                            bottom = GolfTokens.PrimaryButtonHeight + 32.dp,
+                        ),
                     ) {
                         itemsIndexed(displayCourses, key = { _, course -> course.id }) { index, course ->
                             val expanded = course.id in expandedCourseIds

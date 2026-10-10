@@ -14,10 +14,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -214,6 +217,7 @@ fun RoundHistoryScreen(
                 modifier = Modifier.fillMaxWidth()
                     .clip(RoundedCornerShape(bottomStart = 26.dp, bottomEnd = 26.dp))
                     .background(GolfTokens.FieldGreen)
+                    .windowInsetsPadding(WindowInsets.statusBars)
                     .padding(horizontal = 20.dp, vertical = 16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
@@ -267,7 +271,12 @@ fun RoundHistoryScreen(
             LazyColumn(
                 state = listState,
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                contentPadding = PaddingValues(
+                    start = 16.dp,
+                    end = 16.dp,
+                    top = 12.dp,
+                    bottom = GolfTokens.PrimaryButtonHeight + 32.dp,
+                ),
             ) {
                 items(rounds, key = { it.roundId }) { round ->
                     val expanded = round.roundId in expandedRoundIds
