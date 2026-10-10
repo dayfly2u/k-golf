@@ -14,22 +14,23 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,6 +39,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
@@ -57,8 +59,12 @@ import com.golfrecorder.domain.model.DriverDistanceStats
 import com.golfrecorder.domain.model.HoleResult
 import com.golfrecorder.domain.model.calculateDriverDistanceStats
 import com.golfrecorder.ui.common.GirSummaryLines
+import com.golfrecorder.ui.common.GolfCard
 import com.golfrecorder.ui.common.MoreBelowIndicator
+import com.golfrecorder.ui.common.PrimaryCtaButton
 import com.golfrecorder.ui.common.RoundStatsLine
+import com.golfrecorder.ui.theme.GolfFonts
+import com.golfrecorder.ui.theme.GolfTokens
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -207,13 +213,25 @@ fun RoundHistoryScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("K-Golf") },
-                actions = {
-                    TextButton(onClick = onStartRound) { Text("새 라운딩 시작!") }
-                    TextButton(onClick = onManageCourses) { Text("코스 관리") }
-                },
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth()
+                    .clip(RoundedCornerShape(bottomStart = 26.dp, bottomEnd = 26.dp))
+                    .background(GolfTokens.FieldGreen)
+                    .windowInsetsPadding(WindowInsets.statusBars)
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    "K-Golf",
+                    color = GolfTokens.CardBackground,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = MaterialTheme.typography.titleLarge.fontSize,
+                )
+                TextButton(onClick = onManageCourses) {
+                    Text("코스 관리", color = GolfTokens.CardBackground)
+                }
+            }
         },
         bottomBar = {
             Row(
@@ -232,27 +250,45 @@ fun RoundHistoryScreen(
         },
     ) { padding ->
         if (rounds.isEmpty()) {
-            Text(
-                "아직 기록된 라운드가 없습니다. \"새 라운딩 시작!\" 버튼을 눌러 시작하세요.",
-                modifier = Modifier.padding(padding).padding(16.dp),
-            )
+            Column(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp)) {
+                Text(
+                    "아직 기록된 라운드가 없습니다. 아래 버튼을 눌러 시작하세요.",
+                    color = GolfTokens.TextPrimary,
+                )
+                Spacer(Modifier.height(16.dp))
+                PrimaryCtaButton(
+                    text = "새 라운딩 시작!",
+                    onClick = onStartRound,
+                    modifier = Modifier.height(GolfTokens.PrimaryButtonHeight),
+                )
+            }
             return@Scaffold
         }
         val listState = rememberLazyListState()
-        Box(modifier = Modifier.padding(padding).fillMaxSize()) {
-            LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier.padding(padding).fillMaxSize().background(GolfTokens.Background),
+        ) {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(
+                    start = 16.dp,
+                    end = 16.dp,
+                    top = 12.dp,
+                    bottom = GolfTokens.PrimaryButtonHeight + 32.dp,
+                ),
+            ) {
                 items(rounds, key = { it.roundId }) { round ->
                     val expanded = round.roundId in expandedRoundIds
-                    Column(
-                        modifier = Modifier.fillMaxWidth()
-                            .clickable {
-                                expandedRoundIds = if (expanded) {
-                                    expandedRoundIds - round.roundId
-                                } else {
-                                    expandedRoundIds + round.roundId
-                                }
+                    GolfCard(
+                        modifier = Modifier.padding(bottom = 10.dp),
+                        onClick = {
+                            expandedRoundIds = if (expanded) {
+                                expandedRoundIds - round.roundId
+                            } else {
+                                expandedRoundIds + round.roundId
                             }
-                            .padding(16.dp),
+                        },
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -261,32 +297,34 @@ fun RoundHistoryScreen(
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Row {
-                                    Text(round.courseName, fontWeight = FontWeight.Bold)
+                                    Text(round.courseName, fontWeight = FontWeight.Bold, color = GolfTokens.TextPrimary)
                                     if (round.courseId == null) {
                                         Text(
                                             " (삭제됨)",
                                             style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.outline,
+                                            color = GolfTokens.TextSecondary,
                                         )
                                     }
                                 }
                                 Text(
                                     formatRoundPeriod(round.playedAt, round.finishedAt),
                                     style = MaterialTheme.typography.bodySmall,
+                                    color = GolfTokens.TextSecondary,
                                 )
                                 val infoLine = listOfNotNull(
                                     round.price?.let { "${priceFormat.format(it)}원" },
                                     round.companions?.takeIf { it.isNotBlank() },
                                 ).joinToString(" | ")
                                 if (infoLine.isNotBlank()) {
-                                    Text(infoLine, style = MaterialTheme.typography.bodySmall)
+                                    Text(infoLine, style = MaterialTheme.typography.bodySmall, color = GolfTokens.TextSecondary)
                                 }
                             }
                             val backgroundColor = strokeScoreColor(round.totalStrokes)
                             Text(
                                 "${round.totalStrokes}",
-                                style = MaterialTheme.typography.headlineSmall,
+                                fontFamily = GolfFonts.NumberFontFamily,
                                 fontWeight = FontWeight.Bold,
+                                fontSize = MaterialTheme.typography.headlineSmall.fontSize,
                                 color = strokeScoreTextColor(round.totalStrokes),
                                 modifier = (
                                     if (backgroundColor != null) {
@@ -295,15 +333,6 @@ fun RoundHistoryScreen(
                                         Modifier
                                     }
                                 ).padding(horizontal = 8.dp, vertical = 2.dp),
-                            )
-                            // TextButton은 M3 기본 최소 터치 영역(가로 58dp)을 강제해서
-                            // 글자(돋보기)와 화면 끝 사이에 안 보이는 여백이 생긴다 —
-                            // 배지 바로 옆에 붙이려고 clickable Text로 직접 만든다.
-                            Text(
-                                "🔍",
-                                modifier = Modifier
-                                    .clickable { onRoundClick(round) }
-                                    .padding(4.dp),
                             )
                         }
                         if (expanded) {
@@ -336,26 +365,46 @@ fun RoundHistoryScreen(
                                     Spacer(Modifier.height(8.dp))
                                 }
                                 val reviewText = buildAnnotatedString {
-                                    withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append("리뷰: ") }
+                                    withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = GolfTokens.TextPrimary)) {
+                                        append("리뷰: ")
+                                    }
                                     val reviewContent = round.review?.takeIf { it.isNotBlank() }
                                     if (reviewContent != null) {
-                                        append(reviewContent)
+                                        withStyle(SpanStyle(color = GolfTokens.TextPrimary)) { append(reviewContent) }
                                     } else {
-                                        withStyle(SpanStyle(color = MaterialTheme.colorScheme.outline)) {
-                                            append("작성된 라운딩 리뷰가 없습니다. \"✏️\"에서 추가할 수 있습니다.")
+                                        withStyle(SpanStyle(color = GolfTokens.TextSecondary)) {
+                                            append("작성된 라운딩 리뷰가 없습니다. \"상세 결과 보기\"에서 추가할 수 있습니다.")
                                         }
                                     }
                                 }
                                 Text(reviewText, style = MaterialTheme.typography.bodySmall)
+                                Text(
+                                    "상세 결과 보기 ›",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = GolfTokens.FieldGreen,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 8.dp)
+                                        .clickable { onRoundClick(round) },
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.End,
+                                )
                             }
                         }
                     }
-                    HorizontalDivider()
                 }
             }
             MoreBelowIndicator(
                 listState = listState,
-                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 8.dp),
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 80.dp),
+            )
+            PrimaryCtaButton(
+                text = "새 라운딩 시작!",
+                onClick = onStartRound,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(horizontal = 16.dp, vertical = 16.dp)
+                    .height(GolfTokens.PrimaryButtonHeight),
             )
         }
     }

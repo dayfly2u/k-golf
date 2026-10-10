@@ -1,6 +1,5 @@
 package com.golfrecorder.ui.common
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,21 +13,35 @@ import androidx.compose.ui.unit.dp
 import com.golfrecorder.ui.theme.GolfTokens
 
 /** 리디자인 공용 리스트 카드 — 흰 배경, 둥근 모서리, 옅은 그림자. [onClick]을 주면
- * 카드 전체가 탭 타깃이 된다(홈 라운드 카드의 "탭하면 펼침" 패턴). */
+ * 카드 전체가 탭 타깃이 된다(홈 라운드 카드의 "탭하면 펼침" 패턴) — `Card(onClick = ...)`
+ * 오버로드를 써서 리플이 카드의 둥근 모서리 안에서만 뜬다. */
 @Composable
 fun GolfCard(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth().let { m ->
-            if (onClick != null) m.clickable(onClick = onClick) else m
-        },
-        shape = RoundedCornerShape(GolfTokens.CardCorner),
-        colors = CardDefaults.cardColors(containerColor = GolfTokens.CardBackground),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-    ) {
-        Column(modifier = Modifier.padding(16.dp), content = content)
+    val shape = RoundedCornerShape(GolfTokens.CardCorner)
+    val colors = CardDefaults.cardColors(containerColor = GolfTokens.CardBackground)
+    val elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    if (onClick != null) {
+        Card(
+            onClick = onClick,
+            modifier = modifier.fillMaxWidth(),
+            shape = shape,
+            colors = colors,
+            elevation = elevation,
+        ) {
+            Column(modifier = Modifier.padding(16.dp), content = content)
+        }
+    } else {
+        Card(
+            modifier = modifier.fillMaxWidth(),
+            shape = shape,
+            colors = colors,
+            elevation = elevation,
+        ) {
+            Column(modifier = Modifier.padding(16.dp), content = content)
+        }
     }
 }

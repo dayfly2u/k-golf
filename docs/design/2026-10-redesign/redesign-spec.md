@@ -127,6 +127,17 @@ val NumberFontFamily = FontFamily(Font(R.font.barlow_condensed_medium, FontWeigh
 - 홀별 파를 전반/후반 2열 세그먼트 버튼 + 상단 "총 파 72" + 열별 소계로 교체
 - 평점/난이도 입력 UI는 스테이지 4(0.5 단위)와 함께 작업 — 스테이지 2에서는 기존 1단위 입력을 시안 스타일로만 교체
 
+### 3.7 스테이지 2에서 넘어온 미완료 항목 (스테이지 3에서 처리)
+
+최종 전체 브랜치 리뷰(2026-10-10)에서 발견. 기능엔 영향 없지만 시안과 다른 부분 — 머지는 진행하고 스테이지 3 범위에 포함시키기로 결정:
+
+- **스코어 배지 색상**: 홈(`RoundHistoryScreen`)과 결과(`RoundSummaryScreen`)의 구간별 배지 색이 여전히 옛 Material 파스텔(`STROKE_*`, `scoreRowColor` 상수)이다. `GolfTokens.ScoreBogeyBackground`/`ScoreDoubleOrWorseBackground`/`ScoreUnderParBorder`로 교체 필요(3.1 "현재 구간색 유지"는 구간 기준만 유지하라는 뜻이었고, 색 자체는 새 팔레트로 바꿔야 했음).
+- **이모지 아이콘 → 벡터 아이콘**: `CourseManageScreen`의 ✏️(수정)·≡(드래그 핸들)가 여전히 텍스트 이모지. `material-icons-core`가 이제 프로젝트에 있으므로 `Icons.Filled.Edit`/`Icons.Filled.Menu` 등으로 교체 가능.
+- **이전 홀/다음 홀 버튼 위치**: 3.2에 "하단 고정"이라고 명시했지만 실제로는 스크롤 컬럼 안에 있음. 하단 고정으로 수정 필요.
+- **코스 관리 평점 별 색상**: 3.5에 따라 노란 별이어야 하는데 실제로는 `GolfTokens.FieldGreen`(녹색)으로 그려짐. `GolfTokens.Accent`로 교체 필요.
+- **본문 폰트 미적용**: `GolfFonts.BodyFontFamily`(IBM Plex Sans KR)가 번들돼 있지만 어느 화면에도 적용되지 않아 본문 텍스트가 전부 시스템 기본 폰트로 표시됨.
+- **Material3 기본 테마 잔존**: 앱 테마가 `MaterialTheme {}` 기본값(M3 퍼플)이라 토큰 색을 명시하지 않은 컨트롤(`OutlinedButton`, `OutlinedTextField`, 평범한 `TopAppBar` 3개 등)이 보라색/M3 기본색으로 렌더링됨. 각 컨트롤에 `GolfTokens` 기반 `colors =`를 명시하거나, 테마 레벨에서 토큰 기반 `colorScheme`을 도입하는 방향을 스테이지 3 계획 때 결정.
+
 ---
 
 ## 4. 스테이지 3 — 신규-UI (기존 데이터로 계산/표시만 추가, 스키마 변경 없음)

@@ -21,7 +21,7 @@ android {
         minSdk = 26
         targetSdk = 36
         versionCode = 9
-        versionName = "0.8.14"
+        versionName = "0.8.22"
 
         buildConfigField(
             "String",
@@ -67,6 +67,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.material.icons.core)
     debugImplementation(libs.androidx.ui.tooling)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)

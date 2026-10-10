@@ -2,10 +2,12 @@ package com.golfrecorder.ui.course
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,12 +17,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -30,7 +35,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -43,10 +47,13 @@ import com.golfrecorder.data.local.entity.CourseEntity
 import com.golfrecorder.data.local.entity.CourseYoutubeLinkEntity
 import com.golfrecorder.data.repository.CourseRepository
 import com.golfrecorder.data.repository.CourseYoutubeLinkRepository
+import com.golfrecorder.ui.common.GolfCard
 import com.golfrecorder.ui.common.MoreBelowIndicator
+import com.golfrecorder.ui.common.PrimaryCtaButton
 import com.golfrecorder.ui.common.dragElevation
 import com.golfrecorder.ui.common.dragHandle
 import com.golfrecorder.ui.common.rememberDragDropListState
+import com.golfrecorder.ui.theme.GolfTokens
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -112,150 +119,193 @@ fun CourseManageScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("코스 관리") },
-                navigationIcon = { TextButton(onClick = onBack) { Text("< 뒤로") } },
+                title = { Text("코스 관리", fontWeight = FontWeight.Bold) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "뒤로")
+                    }
+                },
                 actions = {
-                    TextButton(onClick = onAddCourse) { Text("새 코스 추가") }
+                    Text(
+                        "${displayCourses.size}개 코스",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = GolfTokens.TextSecondary,
+                        modifier = Modifier.padding(end = 12.dp),
+                    )
                 },
             )
         },
     ) { padding ->
         if (displayCourses.isEmpty()) {
-            Text(
-                "등록된 코스가 없습니다. \"새 코스 추가!\" 버튼을 눌러 추가하세요.",
-                modifier = Modifier.padding(padding).padding(16.dp),
-            )
+            Column(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp)) {
+                Text("등록된 코스가 없습니다. 아래 버튼을 눌러 추가하세요.", color = GolfTokens.TextPrimary)
+                Spacer(Modifier.height(16.dp))
+                PrimaryCtaButton(
+                    text = "새 코스 추가",
+                    onClick = onAddCourse,
+                    modifier = Modifier.height(GolfTokens.PrimaryButtonHeight),
+                )
+            }
             return@Scaffold
         }
-        Column(modifier = Modifier.padding(padding).fillMaxSize()) {
-            Text(
-                "코스 상세 리뷰를 보시려면 코스 이름을 클릭하세요. 손잡이(≡)를 1초간 꾹 눌렀다가 " +
-                    "위아래로 드래그하면 순서를 바꿀 수 있어요.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.outline,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            )
-            Box(modifier = Modifier.fillMaxSize()) {
-            LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
-                itemsIndexed(displayCourses, key = { _, course -> course.id }) { index, course ->
-                    val expanded = course.id in expandedCourseIds
-                    Column(
-                        modifier = Modifier.fillMaxWidth()
-                            .dragElevation(index, dragState)
-                            .clickable {
-                                expandedCourseIds = if (expanded) {
-                                    expandedCourseIds - course.id
-                                } else {
-                                    expandedCourseIds + course.id
-                                }
-                            }
-                            .padding(16.dp),
+        Box(modifier = Modifier.padding(padding).fillMaxSize().background(GolfTokens.Background)) {
+            Column(modifier = Modifier.fillMaxSize()) {
+                Text(
+                    "코스를 누르면 상세 리뷰가 펼쳐져요. ≡를 길게 눌러 순서를 바꿀 수 있어요.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = GolfTokens.TextSecondary,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+                Box(modifier = Modifier.fillMaxSize()) {
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(
+                            start = 16.dp,
+                            end = 16.dp,
+                            top = 4.dp,
+                            bottom = GolfTokens.PrimaryButtonHeight + 32.dp,
+                        ),
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                        ) {
-                            Row(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    "≡",
-                                    modifier = Modifier.dragHandle(index, dragState).padding(end = 12.dp),
-                                    style = MaterialTheme.typography.titleLarge,
-                                    color = MaterialTheme.colorScheme.outline,
-                                )
-                                Column {
-                                    Row {
-                                        Text(course.name, fontWeight = FontWeight.Bold)
-                                        if (course.rating != null) {
-                                            Text(
-                                                "  ★ ${"%.1f".format(course.rating)}",
-                                                color = MaterialTheme.colorScheme.primary,
-                                                fontWeight = FontWeight.Bold,
-                                            )
-                                        }
-                                        if (course.difficulty != null) {
-                                            Text(
-                                                "  ★${course.difficulty}",
-                                                color = Color.Red,
-                                                fontWeight = FontWeight.Bold,
-                                            )
-                                        }
+                        itemsIndexed(displayCourses, key = { _, course -> course.id }) { index, course ->
+                            val expanded = course.id in expandedCourseIds
+                            GolfCard(
+                                modifier = Modifier.dragElevation(index, dragState).padding(bottom = 10.dp),
+                                onClick = {
+                                    expandedCourseIds = if (expanded) {
+                                        expandedCourseIds - course.id
+                                    } else {
+                                        expandedCourseIds + course.id
                                     }
-                                    val infoLine = listOfNotNull(
-                                        course.region?.takeIf { it.isNotBlank() },
-                                        course.distance?.takeIf { it.isNotBlank() },
-                                        course.travelTime?.takeIf { it.isNotBlank() },
-                                    ).joinToString(" | ")
-                                    if (infoLine.isNotBlank()) {
-                                        Text(infoLine, style = MaterialTheme.typography.bodySmall)
-                                    }
-                                    if (!course.oneLineReview.isNullOrBlank()) {
+                                },
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                ) {
+                                    Row(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            course.oneLineReview.chunked(30).joinToString("\n"),
-                                            style = MaterialTheme.typography.bodySmall,
+                                            "≡",
+                                            modifier = Modifier.dragHandle(index, dragState).padding(end = 12.dp),
+                                            style = MaterialTheme.typography.titleLarge,
+                                            color = GolfTokens.TextSecondary,
                                         )
-                                    }
-                                }
-                            }
-                            Row {
-                                TextButton(onClick = { onEditCourse(course.id) }) { Text("✏️") }
-                            }
-                        }
-                        if (expanded) {
-                            Column(modifier = Modifier.padding(top = 12.dp)) {
-                                val hasDetail = !course.transportInfo.isNullOrBlank() ||
-                                    !course.clubhouseInfo.isNullOrBlank() ||
-                                    !course.courseInfo.isNullOrBlank()
-                                if (!hasDetail) {
-                                    Text(
-                                        "입력된 리뷰 상세 정보가 없습니다. \"수정\"에서 추가할 수 있습니다.",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.outline,
-                                    )
-                                } else {
-                                    course.transportInfo?.takeIf { it.isNotBlank() }?.let {
-                                        ReviewSection("교통", it)
-                                        Spacer(Modifier.height(8.dp))
-                                    }
-                                    course.clubhouseInfo?.takeIf { it.isNotBlank() }?.let {
-                                        ReviewSection("클럽하우스", it)
-                                        Spacer(Modifier.height(8.dp))
-                                    }
-                                    course.courseInfo?.takeIf { it.isNotBlank() }?.let {
-                                        ReviewSection("코스", it)
-                                    }
-                                }
-
-                                val youtubeLinksFlow = remember(course.id) { viewModel.getYoutubeLinks(course.id) }
-                                val youtubeLinks by youtubeLinksFlow.collectAsStateWithLifecycle(initialValue = emptyList())
-                                if (youtubeLinks.isNotEmpty()) {
-                                    Spacer(Modifier.height(8.dp))
-                                    Text("유튜브 링크", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
-                                    youtubeLinks.forEach { link ->
-                                        Text(
-                                            "▶ ${link.title ?: link.url}",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.primary,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                            modifier = Modifier.fillMaxWidth()
-                                                .clickable {
-                                                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(link.url)))
+                                        Column {
+                                            Text(course.name, fontWeight = FontWeight.Bold, color = GolfTokens.TextPrimary)
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                if (course.rating != null) {
+                                                    Text(
+                                                        "★ ${"%.1f".format(course.rating)}  ",
+                                                        color = GolfTokens.FieldGreen,
+                                                        fontWeight = FontWeight.Bold,
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                    )
                                                 }
-                                                .padding(vertical = 4.dp),
-                                        )
+                                                if (course.difficulty != null) {
+                                                    Text(
+                                                        "난이도 ${course.difficulty}",
+                                                        color = GolfTokens.ObText,
+                                                        fontWeight = FontWeight.SemiBold,
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        modifier = Modifier
+                                                            .background(GolfTokens.ObBackground, RoundedCornerShape(GolfTokens.ChipCorner))
+                                                            .padding(horizontal = 8.dp, vertical = 2.dp),
+                                                    )
+                                                }
+                                            }
+                                            val infoLine = listOfNotNull(
+                                                course.region?.takeIf { it.isNotBlank() },
+                                                course.distance?.takeIf { it.isNotBlank() },
+                                                course.travelTime?.takeIf { it.isNotBlank() },
+                                            ).joinToString(" | ")
+                                            if (infoLine.isNotBlank()) {
+                                                Text(infoLine, style = MaterialTheme.typography.bodySmall, color = GolfTokens.TextSecondary)
+                                            }
+                                            if (!course.oneLineReview.isNullOrBlank()) {
+                                                Text(
+                                                    course.oneLineReview.chunked(30).joinToString("\n"),
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = GolfTokens.TextSecondary,
+                                                )
+                                            }
+                                        }
+                                    }
+                                    Text(
+                                        "✏️",
+                                        modifier = Modifier
+                                            .clickable { onEditCourse(course.id) }
+                                            .padding(4.dp),
+                                    )
+                                }
+                                if (expanded) {
+                                    Column(modifier = Modifier.padding(top = 12.dp)) {
+                                        val hasDetail = !course.transportInfo.isNullOrBlank() ||
+                                            !course.clubhouseInfo.isNullOrBlank() ||
+                                            !course.courseInfo.isNullOrBlank()
+                                        if (!hasDetail) {
+                                            Text(
+                                                "입력된 리뷰 상세 정보가 없습니다. \"✏️\"에서 추가할 수 있습니다.",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = GolfTokens.TextSecondary,
+                                            )
+                                        } else {
+                                            course.transportInfo?.takeIf { it.isNotBlank() }?.let {
+                                                ReviewSection("교통", it)
+                                                Spacer(Modifier.height(8.dp))
+                                            }
+                                            course.clubhouseInfo?.takeIf { it.isNotBlank() }?.let {
+                                                ReviewSection("클럽하우스", it)
+                                                Spacer(Modifier.height(8.dp))
+                                            }
+                                            course.courseInfo?.takeIf { it.isNotBlank() }?.let {
+                                                ReviewSection("코스", it)
+                                            }
+                                        }
+
+                                        val youtubeLinksFlow = remember(course.id) { viewModel.getYoutubeLinks(course.id) }
+                                        val youtubeLinks by youtubeLinksFlow.collectAsStateWithLifecycle(initialValue = emptyList())
+                                        if (youtubeLinks.isNotEmpty()) {
+                                            Spacer(Modifier.height(8.dp))
+                                            Text(
+                                                "유튜브 링크",
+                                                style = MaterialTheme.typography.labelMedium,
+                                                fontWeight = FontWeight.Bold,
+                                                color = GolfTokens.FieldGreen,
+                                            )
+                                            youtubeLinks.forEach { link ->
+                                                Text(
+                                                    "▶ ${link.title ?: link.url}",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = GolfTokens.FieldGreen,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                    modifier = Modifier.fillMaxWidth()
+                                                        .clickable {
+                                                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(link.url)))
+                                                        }
+                                                        .padding(vertical = 4.dp),
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                    HorizontalDivider()
+                    MoreBelowIndicator(
+                        listState = listState,
+                        modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 80.dp),
+                    )
                 }
             }
-            MoreBelowIndicator(
-                listState = listState,
-                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 8.dp),
+            PrimaryCtaButton(
+                text = "새 코스 추가",
+                onClick = onAddCourse,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(horizontal = 16.dp, vertical = 16.dp)
+                    .height(GolfTokens.PrimaryButtonHeight),
             )
-            }
         }
     }
 }

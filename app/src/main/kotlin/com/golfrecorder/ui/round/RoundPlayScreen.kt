@@ -7,7 +7,10 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,15 +19,21 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -58,12 +67,16 @@ import com.golfrecorder.location.LatLng as AppLatLng
 import com.golfrecorder.location.LocationCapture
 import com.golfrecorder.location.LocationTracker
 import com.golfrecorder.service.RoundRecordingService
-import com.golfrecorder.ui.common.PenaltyStepper
-import com.golfrecorder.ui.common.StrokeStepper
+import com.golfrecorder.ui.common.PenaltyButton
+import com.golfrecorder.ui.common.PenaltyColor
+import com.golfrecorder.ui.common.PenaltyDisplayChip
+import com.golfrecorder.ui.common.ReadOnlyStepperRow
+import com.golfrecorder.ui.common.StepperRow
 import com.golfrecorder.ui.map.CourseMapSlot
 import com.golfrecorder.ui.map.MapSlotState
 import com.golfrecorder.ui.map.PenaltyPoint
 import com.golfrecorder.ui.map.ShotPoint
+import com.golfrecorder.ui.theme.GolfTokens
 import com.golfrecorder.util.haversineMeters
 import com.golfrecorder.util.isOnline
 import kotlinx.coroutines.Job
@@ -441,8 +454,29 @@ fun RoundPlayScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("${viewModel.currentHoleNumber}홀 (파 $par)") },
-                navigationIcon = { TextButton(onClick = { onShowSummary() }) { Text("< 뒤로") } },
+                title = {
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        Text(
+                            "${viewModel.currentHoleNumber}홀",
+                            fontFamily = com.golfrecorder.ui.theme.GolfFonts.NumberFontFamily,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = MaterialTheme.typography.headlineSmall.fontSize,
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            "파 $par",
+                            color = GolfTokens.CardBackground,
+                            modifier = Modifier
+                                .background(GolfTokens.FieldGreen, RoundedCornerShape(GolfTokens.ChipCorner))
+                                .padding(horizontal = 10.dp, vertical = 3.dp),
+                        )
+                    }
+                },
+                navigationIcon = {
+                    IconButton(onClick = { onShowSummary() }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "뒤로")
+                    }
+                },
             )
         },
     ) { padding ->
@@ -465,32 +499,46 @@ fun RoundPlayScreen(
             // 다시 그리면, 해외 코스처럼 카카오 타일이 아예 없는 곳에서 매번 빈/깨진
             // 카카오 지도가 먼저 번쩍이고서야 구글 지도가 뜨는 문제가 있었다.
             val provider = viewModel.mapProvider
-            when {
-                !hasLocationPermission -> Text("위치 권한이 필요합니다.")
-                online && provider != null -> CourseMapSlot(
-                    state = mapSlotState,
-                    cameraKey = "round-${viewModel.roundId}-hole-${viewModel.currentHoleNumber}",
-                    provider = provider,
-                    greenLocation = greenLocation,
-                    currentLocation = fixedLocation,
-                    shots = shots.map { ShotPoint(ShotPhase.valueOf(it.phase), it.lat, it.lng) },
-                    penalties = penalties.map { PenaltyPoint(PenaltyType.valueOf(it.type), it.lat, it.lng) },
-                    recenterSignal = recenterSignal,
-                    preferCurrentLocation = !viewModel.isReview,
-                )
-                // provider를 아직 못 읽어온 온라인 상태 — 아래 오프라인 분기들과 섞이지
-                // 않도록 별도 분기로 빼서 로딩이 끝날 때까지 빈 자리로 둔다.
-                online -> {}
-                greenLocation != null && fixedLocation != null -> {
-                    val distance = haversineMeters(
-                        fixedLocation.lat,
-                        fixedLocation.lng,
-                        greenLocation.lat,
-                        greenLocation.lng,
+            Box(
+                modifier = Modifier.fillMaxWidth()
+                    .background(GolfTokens.FieldGreenDark, RoundedCornerShape(GolfTokens.CardCorner)),
+            ) {
+                when {
+                    !hasLocationPermission -> Text(
+                        "위치 권한이 필요합니다.",
+                        color = GolfTokens.CardBackground,
+                        modifier = Modifier.padding(16.dp),
                     )
-                    Text("오프라인 - 그린까지 약 ${distance.toInt()}m")
+                    online && provider != null -> CourseMapSlot(
+                        state = mapSlotState,
+                        cameraKey = "round-${viewModel.roundId}-hole-${viewModel.currentHoleNumber}",
+                        provider = provider,
+                        greenLocation = greenLocation,
+                        currentLocation = fixedLocation,
+                        shots = shots.map { ShotPoint(ShotPhase.valueOf(it.phase), it.lat, it.lng) },
+                        penalties = penalties.map { PenaltyPoint(PenaltyType.valueOf(it.type), it.lat, it.lng) },
+                        recenterSignal = recenterSignal,
+                        preferCurrentLocation = !viewModel.isReview,
+                    )
+                    // provider를 아직 못 읽어온 온라인 상태 — 아래 오프라인 분기들과 섞이지
+                    // 않도록 별도 분기로 빼서 로딩이 끝날 때까지 빈 자리로 둔다.
+                    online -> {}
+                    greenLocation != null && fixedLocation != null -> {
+                        val distance = haversineMeters(
+                            fixedLocation.lat, fixedLocation.lng, greenLocation.lat, greenLocation.lng,
+                        )
+                        Text(
+                            "오프라인 - 그린까지 약 ${distance.toInt()}m",
+                            color = GolfTokens.CardBackground,
+                            modifier = Modifier.padding(16.dp),
+                        )
+                    }
+                    else -> Text(
+                        "오프라인 상태입니다.",
+                        color = GolfTokens.CardBackground,
+                        modifier = Modifier.padding(16.dp),
+                    )
                 }
-                else -> Text("오프라인 상태입니다.")
             }
             // OB/해저드는 그린까지 가는 구간에서만 일어난다고 보고 숏게임에는 두지 않는다.
             val obToGreenCount = penalties.count {
@@ -504,84 +552,116 @@ fun RoundPlayScreen(
             if (viewModel.isReview) {
                 // 완료된 라운드는 홀 정보를 더 이상 고칠 수 없으니 입력 UI 대신 기록된
                 // 값만 읽기 전용으로 보여준다.
-                Text("그린까지 타수: ${viewModel.strokesToGreen}")
-                Spacer(Modifier.height(4.dp))
-                Text("OB ${obToGreenCount}회 · 해저드 ${hazardToGreenCount}회")
-                Spacer(Modifier.height(4.dp))
-                Text("숏어프로치 ${viewModel.strokesShortGame} · 퍼팅 ${viewModel.strokesPutt}")
+                ReadOnlyStepperRow(label = "그린까지", hint = "티샷부터 그린 도착", value = viewModel.strokesToGreen)
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    PenaltyDisplayChip("OB ${obToGreenCount}", PenaltyColor.OB)
+                    PenaltyDisplayChip("해저드 ${hazardToGreenCount}", PenaltyColor.HAZARD)
+                }
+                ReadOnlyStepperRow(label = "숏어프로치", hint = "어프로치 · 칩샷", value = viewModel.strokesShortGame)
+                ReadOnlyStepperRow(label = "퍼팅", hint = "그린 위", value = viewModel.strokesPutt, showDivider = false)
             } else {
-                StrokeStepper(
-                    label = "그린까지 타수",
+                StepperRow(
+                    label = "그린까지",
+                    hint = "티샷부터 그린 도착",
                     value = viewModel.strokesToGreen,
-                    onValueChange = { newValue ->
-                        val old = viewModel.strokesToGreen
-                        onStepperChange(ShotPhase.TO_GREEN, old, newValue)
-                    },
+                    onIncrement = { onStepperChange(ShotPhase.TO_GREEN, viewModel.strokesToGreen, viewModel.strokesToGreen + 1) },
+                    onDecrement = { onStepperChange(ShotPhase.TO_GREEN, viewModel.strokesToGreen, viewModel.strokesToGreen - 1) },
                 )
-                Spacer(Modifier.height(4.dp))
-                Row {
-                    PenaltyStepper(
-                        label = "OB",
-                        value = obToGreenCount,
-                        buttonColor = PENALTY_OB_COLOR,
-                        addAmounts = listOf(1, 2),
-                        canRemove = obToGreenCount > 0,
-                        onAdd = { strokeCount -> onAddPenalty(ShotPhase.TO_GREEN, PenaltyType.OB, strokeCount) },
-                        onRemove = { onRemovePenalty(ShotPhase.TO_GREEN, PenaltyType.OB) },
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    PenaltyButton(
+                        text = "OB +1",
+                        color = PenaltyColor.OB,
+                        onClick = { onAddPenalty(ShotPhase.TO_GREEN, PenaltyType.OB, 1) },
+                        modifier = Modifier.weight(1f),
                     )
-                    Spacer(Modifier.width(20.dp))
-                    StrokeStepper(
-                        label = "해저드",
-                        value = hazardToGreenCount,
-                        buttonColor = PENALTY_HAZARD_COLOR,
-                        compact = true,
-                        onValueChange = { newValue ->
-                            if (newValue > hazardToGreenCount) {
-                                onAddPenalty(ShotPhase.TO_GREEN, PenaltyType.HAZARD, 1)
-                            } else {
-                                onRemovePenalty(ShotPhase.TO_GREEN, PenaltyType.HAZARD)
-                            }
-                        },
+                    PenaltyButton(
+                        text = "OB +2",
+                        color = PenaltyColor.OB,
+                        onClick = { onAddPenalty(ShotPhase.TO_GREEN, PenaltyType.OB, 2) },
+                        modifier = Modifier.weight(1f),
+                    )
+                    PenaltyButton(
+                        text = "해저드 +1",
+                        color = PenaltyColor.HAZARD,
+                        onClick = { onAddPenalty(ShotPhase.TO_GREEN, PenaltyType.HAZARD, 1) },
+                        modifier = Modifier.weight(1f),
                     )
                 }
-                Spacer(Modifier.height(16.dp))
-                StrokeStepper(
+                // 시안엔 OB/해저드를 되돌리는 UI가 없지만(+버튼만 보임), 기존에 되돌리기
+                // 기능이 있었으므로(onRemovePenalty) 없앨 수 없다 — 건수 칩을 탭하면
+                // 되돌리게 해서 기능은 유지하면서 화면은 깔끔하게 둔다. 0건이면 탭해도
+                // onRemovePenalty가 조용히 아무것도 안 한다(ViewModel이 이미 처리).
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    PenaltyDisplayChip(
+                        "OB ${obToGreenCount} · 탭해서 취소",
+                        PenaltyColor.OB,
+                        modifier = Modifier.clickable { onRemovePenalty(ShotPhase.TO_GREEN, PenaltyType.OB) },
+                    )
+                    PenaltyDisplayChip(
+                        "해저드 ${hazardToGreenCount} · 탭해서 취소",
+                        PenaltyColor.HAZARD,
+                        modifier = Modifier.clickable { onRemovePenalty(ShotPhase.TO_GREEN, PenaltyType.HAZARD) },
+                    )
+                }
+                StepperRow(
                     label = "숏어프로치",
+                    hint = "어프로치 · 칩샷",
                     value = viewModel.strokesShortGame,
-                    onValueChange = { newValue ->
-                        val old = viewModel.strokesShortGame
-                        onStepperChange(ShotPhase.SHORT_GAME, old, newValue)
-                    },
+                    onIncrement = { onStepperChange(ShotPhase.SHORT_GAME, viewModel.strokesShortGame, viewModel.strokesShortGame + 1) },
+                    onDecrement = { onStepperChange(ShotPhase.SHORT_GAME, viewModel.strokesShortGame, viewModel.strokesShortGame - 1) },
                 )
-                Spacer(Modifier.height(4.dp))
-                StrokeStepper(
+                StepperRow(
                     label = "퍼팅",
+                    hint = "그린 위",
                     value = viewModel.strokesPutt,
-                    onValueChange = { newValue ->
-                        val old = viewModel.strokesPutt
-                        onStepperChange(ShotPhase.PUTT, old, newValue)
-                    },
+                    onIncrement = { onStepperChange(ShotPhase.PUTT, viewModel.strokesPutt, viewModel.strokesPutt + 1) },
+                    onDecrement = { onStepperChange(ShotPhase.PUTT, viewModel.strokesPutt, viewModel.strokesPutt - 1) },
+                    showDivider = false,
                 )
             }
             Spacer(Modifier.height(24.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Button(
+                androidx.compose.material3.OutlinedButton(
                     onClick = {
                         viewModel.goToHole(viewModel.currentHoleNumber - 1) {
                             RoundRecordingService.refreshState(context)
                         }
                     },
                     enabled = viewModel.currentHoleNumber > 1,
+                    shape = RoundedCornerShape(GolfTokens.ButtonCorner),
                 ) { Text("이전 홀") }
                 if (holeCount == 0 || viewModel.currentHoleNumber < holeCount) {
-                    Button(onClick = {
-                        viewModel.goToHole(viewModel.currentHoleNumber + 1) {
-                            RoundRecordingService.refreshState(context)
-                        }
-                    }) { Text("다음 홀") }
+                    Button(
+                        onClick = {
+                            viewModel.goToHole(viewModel.currentHoleNumber + 1) {
+                                RoundRecordingService.refreshState(context)
+                            }
+                        },
+                        shape = RoundedCornerShape(GolfTokens.ButtonCorner),
+                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                            containerColor = GolfTokens.TextPrimary,
+                            contentColor = GolfTokens.CardBackground,
+                        ),
+                    ) { Text("다음 홀") }
                 } else if (!viewModel.isReview) {
                     // 이미 완료된 라운드를 리뷰 중이면 다시 완료할 이유가 없으니 버튼을 안 보여준다.
-                    Button(onClick = { showFinishConfirm = true }) { Text("완료") }
+                    Button(
+                        onClick = { showFinishConfirm = true },
+                        shape = RoundedCornerShape(GolfTokens.ButtonCorner),
+                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                            containerColor = GolfTokens.TextPrimary,
+                            contentColor = GolfTokens.CardBackground,
+                        ),
+                    ) { Text("완료") }
                 }
             }
             if (showFinishConfirm) {
