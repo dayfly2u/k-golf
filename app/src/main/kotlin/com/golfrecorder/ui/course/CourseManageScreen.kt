@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
@@ -38,10 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -52,6 +48,7 @@ import com.golfrecorder.data.local.entity.CourseEntity
 import com.golfrecorder.data.local.entity.CourseYoutubeLinkEntity
 import com.golfrecorder.data.repository.CourseRepository
 import com.golfrecorder.data.repository.CourseYoutubeLinkRepository
+import com.golfrecorder.ui.common.CourseRatingRow
 import com.golfrecorder.ui.common.GolfCard
 import com.golfrecorder.ui.common.MoreBelowIndicator
 import com.golfrecorder.ui.common.PrimaryCtaButton
@@ -197,32 +194,7 @@ fun CourseManageScreen(
                                         )
                                         Column {
                                             Text(course.name, fontWeight = FontWeight.Bold, color = GolfTokens.TextPrimary)
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                if (course.rating != null) {
-                                                    // 노란 Accent는 흰 카드 위에서 글자색으로 쓰기엔 대비가 너무 낮아
-                                                    // (~1.7:1) 별만 노랗게, 숫자는 본문색으로 둔다.
-                                                    Text(
-                                                        buildAnnotatedString {
-                                                            withStyle(SpanStyle(color = GolfTokens.Accent)) { append("★") }
-                                                            append(" ${"%.1f".format(course.rating)}  ")
-                                                        },
-                                                        color = GolfTokens.TextPrimary,
-                                                        fontWeight = FontWeight.Bold,
-                                                        style = MaterialTheme.typography.bodySmall,
-                                                    )
-                                                }
-                                                if (course.difficulty != null) {
-                                                    Text(
-                                                        "난이도 ${course.difficulty}",
-                                                        color = GolfTokens.ObText,
-                                                        fontWeight = FontWeight.SemiBold,
-                                                        style = MaterialTheme.typography.bodySmall,
-                                                        modifier = Modifier
-                                                            .background(GolfTokens.ObBackground, RoundedCornerShape(GolfTokens.ChipCorner))
-                                                            .padding(horizontal = 8.dp, vertical = 2.dp),
-                                                    )
-                                                }
-                                            }
+                                            CourseRatingRow(rating = course.rating, difficulty = course.difficulty)
                                             val infoLine = listOfNotNull(
                                                 course.region?.takeIf { it.isNotBlank() },
                                                 course.distance?.takeIf { it.isNotBlank() },

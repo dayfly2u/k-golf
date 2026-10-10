@@ -31,7 +31,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -44,6 +43,7 @@ import androidx.lifecycle.viewModelScope
 import com.golfrecorder.data.local.entity.CourseEntity
 import com.golfrecorder.data.repository.CourseRepository
 import com.golfrecorder.data.repository.RoundRepository
+import com.golfrecorder.ui.common.CourseRatingRow
 import com.golfrecorder.domain.model.LocationSource
 import com.golfrecorder.domain.model.MapProvider
 import kotlinx.coroutines.flow.SharingStarted
@@ -213,22 +213,7 @@ fun CourseSelectScreen(
                             Text(infoLine, style = MaterialTheme.typography.bodySmall)
                         }
                     }
-                    Row {
-                        if (course.rating != null) {
-                            Text(
-                                "★ ${"%.1f".format(course.rating)}",
-                                color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.Bold,
-                            )
-                        }
-                        if (course.difficulty != null) {
-                            Text(
-                                "  ★${course.difficulty}",
-                                color = Color.Red,
-                                fontWeight = FontWeight.Bold,
-                            )
-                        }
-                    }
+                    CourseRatingRow(rating = course.rating, difficulty = course.difficulty)
                 }
                 HorizontalDivider()
             }
