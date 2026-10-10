@@ -14,15 +14,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,6 +33,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -49,6 +53,8 @@ import com.golfrecorder.domain.model.HoleResult
 import com.golfrecorder.domain.model.calculateDriverDistanceStats
 import com.golfrecorder.ui.common.GirSummaryLines
 import com.golfrecorder.ui.common.RoundStatsLine
+import com.golfrecorder.ui.theme.GolfFonts
+import com.golfrecorder.ui.theme.GolfTokens
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -244,36 +250,51 @@ fun RoundSummaryScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Row {
-                        Text(courseName.ifBlank { "라운드 결과" })
-                        if (viewModel.courseId == null && courseName.isNotBlank()) {
+            Column(
+                modifier = Modifier.fillMaxWidth()
+                    .background(GolfTokens.FieldGreen)
+                    .clip(RoundedCornerShape(bottomStart = 26.dp, bottomEnd = 26.dp))
+                    .padding(top = 8.dp, bottom = 14.dp, start = 4.dp, end = 16.dp),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onHome) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "홈으로", tint = GolfTokens.CardBackground)
+                    }
+                    Column {
+                        Row {
                             Text(
-                                " (삭제됨)",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.outline,
+                                courseName.ifBlank { "라운드 결과" },
+                                color = GolfTokens.CardBackground,
+                                fontWeight = FontWeight.SemiBold,
                             )
+                            if (viewModel.courseId == null && courseName.isNotBlank()) {
+                                Text(
+                                    " (삭제됨)",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = GolfTokens.CardBackground.copy(alpha = 0.75f),
+                                )
+                            }
                         }
                     }
-                },
-                navigationIcon = {
-                    TextButton(onClick = onHome) { Text("< 뒤로") }
-                },
-                actions = {
-                    TextButton(onClick = { showDeleteConfirm = true }) { Text("삭제") }
-                },
-            )
+                    Spacer(Modifier.weight(1f))
+                    TextButton(onClick = { showDeleteConfirm = true }) {
+                        Text("삭제", color = GolfTokens.CardBackground)
+                    }
+                }
+            }
         },
     ) { padding ->
-        Column(modifier = Modifier.padding(padding).fillMaxSize()) {
+        Column(modifier = Modifier.padding(padding).fillMaxSize().background(GolfTokens.Background)) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(
                     "총 ${totalStrokes}타 (${formatToPar(totalScoreToPar)})",
-                    style = MaterialTheme.typography.titleLarge,
+                    fontFamily = GolfFonts.NumberFontFamily,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = MaterialTheme.typography.headlineMedium.fontSize,
+                    color = GolfTokens.TextPrimary,
                 )
                 GirSummaryLines(
                     girCount = girCount,
@@ -288,7 +309,7 @@ fun RoundSummaryScreen(
                 totalPutts = totalPutts,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
             )
-            HorizontalDivider()
+            HorizontalDivider(color = GolfTokens.Divider)
             LazyColumn(modifier = Modifier.weight(1f)) {
                 itemsIndexed(holeResults, key = { _, hole -> hole.holeNumber }) { index, hole ->
                     if (index == 9) {
@@ -297,13 +318,13 @@ fun RoundSummaryScreen(
                         Spacer(
                             modifier = Modifier.fillMaxWidth()
                                 .height(18.dp)
-                                .background(Color.White),
+                                .background(GolfTokens.CardBackground),
                         )
                     }
                     if (index == 0 || index == 9) {
                         Row(
                             modifier = Modifier.fillMaxWidth()
-                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                                .background(GolfTokens.Background)
                                 .padding(horizontal = 16.dp, vertical = 8.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                         ) {
@@ -311,7 +332,7 @@ fun RoundSummaryScreen(
                                 if (index == 0) "전반" else "후반",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary,
+                                color = GolfTokens.FieldGreen,
                             )
                             Text(
                                 if (index == 0) {
@@ -321,7 +342,7 @@ fun RoundSummaryScreen(
                                 },
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary,
+                                color = GolfTokens.FieldGreen,
                             )
                         }
                     }
@@ -358,7 +379,7 @@ fun RoundSummaryScreen(
                         }
                         Text("${hole.totalStrokes}타 (${formatToPar(hole.scoreToPar)})", color = textColor)
                     }
-                    HorizontalDivider()
+                    HorizontalDivider(color = GolfTokens.Divider)
                 }
                 item {
                     Column(modifier = Modifier.padding(16.dp)) {
@@ -367,7 +388,7 @@ fun RoundSummaryScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Text("라운딩 리뷰 (선택 입력)", fontWeight = FontWeight.Bold)
+                            Text("라운딩 리뷰 (선택 입력)", fontWeight = FontWeight.Bold, color = GolfTokens.TextPrimary)
                             TextButton(onClick = { viewModel.saveReview() }) { Text("저장") }
                         }
                         Spacer(Modifier.height(8.dp))
