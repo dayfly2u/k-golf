@@ -532,8 +532,10 @@ fun RoundPlayScreen(
                             ) { Text("다음 홀") }
                             if (!viewModel.isReview) {
                                 val liveTotal = viewModel.strokesToGreen + viewModel.strokesShortGame + viewModel.strokesPutt
+                                // 한 타도 안 친 홀은 0 - par로 "버디 이하"가 떠서 거짓 정보가 되므로
+                                // 숨기되, 첫 타를 칠 때 하단 바 높이가 출렁이지 않게 한 줄은 비워 둔다.
                                 Text(
-                                    "이 홀 ${liveTotal}타 · ${scoreGradeLabel(liveTotal - par)}",
+                                    if (liveTotal == 0) " " else "이 홀 ${liveTotal}타 · ${scoreGradeLabel(liveTotal - par)}",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = GolfTokens.TextSecondary,
                                 )
