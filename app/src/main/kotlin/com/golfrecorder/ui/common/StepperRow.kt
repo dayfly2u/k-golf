@@ -1,5 +1,6 @@
 package com.golfrecorder.ui.common
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,11 +34,18 @@ private fun StepperRowScaffold(
     hint: String,
     showDivider: Boolean,
     modifier: Modifier = Modifier,
+    readOnly: Boolean = false,
+    highlight: Boolean = false,
     trailing: @Composable () -> Unit,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
+            // 읽기 전용(홀 상세 리뷰) 행은 하이라이트 여부와 상관없이 같은 안쪽 여백을 줘서, 빨간 행과
+            // 아닌 행의 숫자 위치가 어긋나지 않게 한다.
+            modifier = Modifier.fillMaxWidth()
+                .then(if (highlight) Modifier.background(GolfTokens.MistakeHighlight, RoundedCornerShape(12.dp)) else Modifier)
+                .then(if (readOnly) Modifier.padding(horizontal = 12.dp) else Modifier)
+                .padding(vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
@@ -99,8 +107,10 @@ fun ReadOnlyStepperRow(
     value: Int,
     showDivider: Boolean = true,
     modifier: Modifier = Modifier,
+    /** true면 행 배경을 연한 빨강으로 칠해 실수한 항목임을 표시한다(홀 상세 리뷰용). */
+    highlight: Boolean = false,
 ) {
-    StepperRowScaffold(label, hint, showDivider, modifier) {
+    StepperRowScaffold(label, hint, showDivider, modifier, readOnly = true, highlight = highlight) {
         Text(
             "$value",
             fontFamily = GolfFonts.NumberFontFamily,

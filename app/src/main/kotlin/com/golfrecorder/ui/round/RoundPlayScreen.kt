@@ -671,16 +671,46 @@ fun RoundPlayScreen(
             if (viewModel.isReview) {
                 // 완료된 라운드는 홀 정보를 더 이상 고칠 수 없으니 입력 UI 대신 기록된
                 // 값만 읽기 전용으로 보여준다.
-                ReadOnlyStepperRow(label = "그린까지", hint = "티샷부터 그린 도착", value = viewModel.strokesToGreen)
+                // 실수한 항목은 행 배경을 연한 빨강으로 하이라이트한다: GIR 실패(그린까지), OB/해저드,
+                // 숏어프로치, 3퍼팅 이상. GIR 기준은 결과 화면과 같은 HoleResult.isGreenInRegulation.
+                val reviewHole = HoleResult(
+                    viewModel.currentHoleNumber, par, viewModel.strokesToGreen,
+                    viewModel.strokesShortGame + viewModel.strokesPutt, strokesPutt = viewModel.strokesPutt,
+                )
+                ReadOnlyStepperRow(
+                    label = "그린까지",
+                    hint = "티샷부터 그린 도착",
+                    value = viewModel.strokesToGreen,
+                    highlight = !reviewHole.isGreenInRegulation,
+                )
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                        .then(
+                            if (penalties.isNotEmpty()) {
+                                Modifier.background(GolfTokens.MistakeHighlight, RoundedCornerShape(12.dp))
+                            } else {
+                                Modifier
+                            },
+                        )
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     PenaltyDisplayChip("OB ${obToGreenCount}", PenaltyColor.OB)
                     PenaltyDisplayChip("해저드 ${hazardToGreenCount}", PenaltyColor.HAZARD)
                 }
-                ReadOnlyStepperRow(label = "숏어프로치", hint = "어프로치 · 칩샷", value = viewModel.strokesShortGame)
-                ReadOnlyStepperRow(label = "퍼팅", hint = "그린 위", value = viewModel.strokesPutt, showDivider = false)
+                ReadOnlyStepperRow(
+                    label = "숏어프로치",
+                    hint = "어프로치 · 칩샷",
+                    value = viewModel.strokesShortGame,
+                    highlight = reviewHole.strokesShortGame > 0,
+                )
+                ReadOnlyStepperRow(
+                    label = "퍼팅",
+                    hint = "그린 위",
+                    value = viewModel.strokesPutt,
+                    showDivider = false,
+                    highlight = reviewHole.strokesPutt >= 3,
+                )
             } else {
                 StepperRow(
                     label = "그린까지",

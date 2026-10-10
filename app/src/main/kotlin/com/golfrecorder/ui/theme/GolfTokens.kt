@@ -45,6 +45,9 @@ object GolfTokens {
     val ScoreTier3 = Color(0xFFFFCDD2)
     val ScoreTier4 = Color(0xFFC62828)
 
+    // 홀 상세(리뷰)에서 실수한 항목(3퍼팅 이상, 숏어프로치, GIR 실패, OB/해저드) 행 하이라이트 — 연한 빨강.
+    val MistakeHighlight = ScoreTier3
+
     // 18홀 진행바 — 아직 안 지나온 홀
     val ProgressRemaining = Color(0xFFDADFD4)
 
