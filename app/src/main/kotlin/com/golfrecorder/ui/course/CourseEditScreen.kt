@@ -7,24 +7,33 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -38,6 +47,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -53,6 +63,8 @@ import com.golfrecorder.domain.model.YoutubeCategory
 import com.golfrecorder.domain.model.YoutubeSearchResult
 import com.golfrecorder.ui.common.SectionHeader
 import com.golfrecorder.ui.common.VideoThumbnail
+import com.golfrecorder.ui.theme.GolfFonts
+import com.golfrecorder.ui.theme.GolfTokens
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -238,6 +250,49 @@ class CourseEditViewModelFactory(
         CourseEditViewModel(courseRepository, courseYoutubeLinkRepository, roundRepository, existingCourseId) as T
 }
 
+/** 홀 하나의 파3/4/5 선택 — 이 화면 전용(다른 화면에서 안 씀)이라 공용 컴포넌트로
+ * 안 뽑고 여기 private으로 둔다. */
+@Composable
+private fun HoleParSegment(holeNumber: Int, selectedPar: Int, onSelect: (Int) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text(
+            "${holeNumber}",
+            fontFamily = GolfFonts.NumberFontFamily,
+            fontWeight = FontWeight.Bold,
+            color = GolfTokens.TextSecondary,
+            modifier = Modifier.width(20.dp),
+        )
+        Row(
+            modifier = Modifier.weight(1f)
+                .background(GolfTokens.Background, RoundedCornerShape(10.dp))
+                .padding(2.dp),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            PAR_OPTIONS.forEach { par ->
+                val selected = selectedPar == par
+                Text(
+                    "$par",
+                    fontFamily = GolfFonts.NumberFontFamily,
+                    fontWeight = FontWeight.Bold,
+                    color = if (selected) GolfTokens.CardBackground else GolfTokens.TextSecondary,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.weight(1f)
+                        .clickable { onSelect(par) }
+                        .background(
+                            if (selected) GolfTokens.FieldGreen else Color.Transparent,
+                            RoundedCornerShape(8.dp),
+                        )
+                        .padding(vertical = 8.dp),
+                )
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CourseEditScreen(
@@ -320,10 +375,20 @@ fun CourseEditScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (isNew) "코스 추가" else "코스 수정") },
-                navigationIcon = { TextButton(onClick = onBack) { Text("< 뒤로") } },
+                title = { Text(if (isNew) "코스 추가" else "코스 수정", fontWeight = FontWeight.Bold) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "뒤로")
+                    }
+                },
                 actions = {
-                    TextButton(onClick = { viewModel.save(onBack) }) { Text("저장") }
+                    TextButton(
+                        onClick = { viewModel.save(onBack) },
+                        colors = ButtonDefaults.textButtonColors(contentColor = GolfTokens.CardBackground),
+                        modifier = Modifier
+                            .background(GolfTokens.FieldGreen, RoundedCornerShape(GolfTokens.ChipCorner))
+                            .padding(horizontal = 4.dp),
+                    ) { Text("저장") }
                     if (!isNew) {
                         TextButton(onClick = {
                             viewModel.checkDeletable { roundCount ->
@@ -341,7 +406,7 @@ fun CourseEditScreen(
             )
         },
     ) { padding ->
-        LazyColumn(modifier = Modifier.padding(padding).padding(16.dp)) {
+        LazyColumn(modifier = Modifier.padding(padding).padding(16.dp).background(GolfTokens.Background)) {
             item {
                 OutlinedTextField(
                     value = viewModel.name,
@@ -360,193 +425,248 @@ fun CourseEditScreen(
                 }
                 Spacer(Modifier.height(16.dp))
             }
-            items(viewModel.pars.size) { index ->
-                if (index == 0) {
-                    Text(
-                        "전반 (1~9)",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(bottom = 4.dp),
-                    )
-                } else if (index == 9) {
-                    Spacer(Modifier.height(16.dp))
-                    HorizontalDivider()
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        "후반 (10~18)",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(bottom = 4.dp),
-                    )
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Text("${index + 1}홀", modifier = Modifier.padding(end = 8.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        PAR_OPTIONS.forEach { par ->
-                            FilterChip(
-                                selected = viewModel.pars[index] == par,
-                                onClick = { viewModel.setPar(index, par) },
-                                label = { Text("파$par") },
-                            )
-                        }
-                    }
-                }
-            }
             item {
-                Spacer(Modifier.height(24.dp))
-                HorizontalDivider()
-                Spacer(Modifier.height(16.dp))
-                SectionHeader("리뷰 (선택 입력)")
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    if (viewModel.rating <= 0f) "총평점: 없음" else "총평점: ${"%.1f".format(viewModel.rating)}",
-                )
-                Slider(
-                    value = viewModel.rating,
-                    onValueChange = { viewModel.rating = it },
-                    valueRange = 0f..5f,
-                    steps = 9, // 0, 0.5, 1.0, ..., 5.0 (0.5 단위)
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    if (viewModel.difficulty <= 0f) {
-                        "난이도: 없음"
-                    } else {
-                        val level = viewModel.difficulty.roundToInt()
-                        "난이도: ${difficultyLabel(level)} ($level)"
-                    },
-                )
-                Slider(
-                    value = viewModel.difficulty,
-                    onValueChange = { viewModel.difficulty = it },
-                    valueRange = 0f..5f,
-                    steps = 4, // 0(없음), 1(하), 2(중하), 3(중), 4(중상), 5(상)
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Spacer(Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(
-                        value = viewModel.region,
-                        onValueChange = { viewModel.region = it },
-                        label = { Text("지역") },
-                        modifier = Modifier.weight(1f),
-                    )
-                    OutlinedTextField(
-                        value = viewModel.distance,
-                        onValueChange = { viewModel.distance = it },
-                        label = { Text("거리") },
-                        modifier = Modifier.weight(1f),
-                    )
-                    OutlinedTextField(
-                        value = viewModel.travelTime,
-                        onValueChange = { viewModel.travelTime = it },
-                        label = { Text("시간") },
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = viewModel.oneLineReview,
-                    onValueChange = { viewModel.oneLineReview = it },
-                    label = { Text("한줄평") },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = viewModel.transportInfo,
-                    onValueChange = { viewModel.transportInfo = it },
-                    label = { Text("교통 (거리, 경로 등)") },
-                    minLines = 3,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = viewModel.clubhouseInfo,
-                    onValueChange = { viewModel.clubhouseInfo = it },
-                    label = { Text("클럽하우스 (외관/내관, 소품 등)") },
-                    minLines = 3,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = viewModel.courseInfo,
-                    onValueChange = { viewModel.courseInfo = it },
-                    label = { Text("코스 (티샷, 코스, 그린 등)") },
-                    minLines = 3,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-
-                Spacer(Modifier.height(24.dp))
-                HorizontalDivider()
-                Spacer(Modifier.height(16.dp))
-                if (viewModel.existingCourseId == null) {
-                    SectionHeader("유튜브 링크")
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        "코스를 저장한 후에 유튜브 링크를 추가할 수 있어요.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.outline,
-                    )
-                } else {
+                Column(
+                    modifier = Modifier.fillMaxWidth()
+                        .background(GolfTokens.CardBackground, RoundedCornerShape(GolfTokens.CardCorner))
+                        .padding(14.dp),
+                ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        SectionHeader("유튜브 링크")
-                        TextButton(onClick = { showAddLinkDialog = true }) { Text("링크 추가") }
-                    }
-                    if (youtubeLinks.isEmpty()) {
+                        Text("홀별 파", fontWeight = FontWeight.Bold, color = GolfTokens.TextPrimary)
                         Text(
-                            "아직 추가한 링크가 없어요.",
+                            "총 파 ${viewModel.pars.sum()}",
+                            color = GolfTokens.CardBackground,
+                            fontWeight = FontWeight.Bold,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.outline,
+                            modifier = Modifier
+                                .background(GolfTokens.FieldGreen, RoundedCornerShape(GolfTokens.ChipCorner))
+                                .padding(horizontal = 10.dp, vertical = 3.dp),
                         )
                     }
-                    YoutubeCategory.entries.forEach { category ->
-                        val links = youtubeLinks.filter { it.category == category.name }
-                        if (links.isNotEmpty()) {
-                            Text(category.displayLabel, style = MaterialTheme.typography.labelMedium)
-                            links.forEach { link ->
-                                Box(
-                                    modifier = Modifier.fillMaxWidth()
-                                        .clickable {
-                                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(link.url)))
-                                        }
-                                        .padding(vertical = 6.dp),
-                                ) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth().padding(end = 56.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    Spacer(Modifier.height(10.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "OUT 1~9 · 파 ${viewModel.pars.take(9).sum()}",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = GolfTokens.FieldGreen,
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            (0 until 9).forEach { i ->
+                                HoleParSegment(i + 1, viewModel.pars[i]) { par -> viewModel.setPar(i, par) }
+                                Spacer(Modifier.height(4.dp))
+                            }
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "IN 10~18 · 파 ${viewModel.pars.drop(9).sum()}",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = GolfTokens.FieldGreen,
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            (9 until 18).forEach { i ->
+                                HoleParSegment(i + 1, viewModel.pars[i]) { par -> viewModel.setPar(i, par) }
+                                Spacer(Modifier.height(4.dp))
+                            }
+                        }
+                    }
+                }
+                Spacer(Modifier.height(16.dp))
+            }
+            item {
+                Column(
+                    modifier = Modifier.fillMaxWidth()
+                        .background(GolfTokens.CardBackground, RoundedCornerShape(GolfTokens.CardCorner))
+                        .padding(14.dp),
+                ) {
+                    SectionHeader("리뷰 (선택 입력)")
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        if (viewModel.rating <= 0f) "평점: 없음" else "평점: ${"%.1f".format(viewModel.rating)}",
+                        color = GolfTokens.TextPrimary,
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(
+                            onClick = { viewModel.rating = (viewModel.rating - 0.5f).coerceIn(0f, 5f) },
+                            modifier = Modifier.size(40.dp),
+                            contentPadding = PaddingValues(0.dp),
+                            shape = RoundedCornerShape(10.dp),
+                        ) { Text("−") }
+                        Box(modifier = Modifier.width(44.dp), contentAlignment = Alignment.Center) {
+                            Text(
+                                "%.1f".format(viewModel.rating),
+                                fontFamily = GolfFonts.NumberFontFamily,
+                                fontWeight = FontWeight.Bold,
+                                color = GolfTokens.TextPrimary,
+                            )
+                        }
+                        Button(
+                            onClick = { viewModel.rating = (viewModel.rating + 0.5f).coerceIn(0f, 5f) },
+                            modifier = Modifier.size(40.dp),
+                            contentPadding = PaddingValues(0.dp),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = GolfTokens.FieldGreen),
+                        ) { Text("+") }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        if (viewModel.difficulty <= 0f) {
+                            "난이도: 없음"
+                        } else {
+                            val level = viewModel.difficulty.roundToInt()
+                            "난이도: ${difficultyLabel(level)} ($level)"
+                        },
+                        color = GolfTokens.TextPrimary,
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        // 난이도는 아직 Int? 컬럼이라 1단위로만 바꾼다(0.5단위는 스테이지 4 마이그레이션 이후).
+                        OutlinedButton(
+                            onClick = { viewModel.difficulty = (viewModel.difficulty - 1f).coerceIn(0f, 5f) },
+                            modifier = Modifier.size(40.dp),
+                            contentPadding = PaddingValues(0.dp),
+                            shape = RoundedCornerShape(10.dp),
+                        ) { Text("−") }
+                        Box(modifier = Modifier.width(44.dp), contentAlignment = Alignment.Center) {
+                            Text(
+                                "${viewModel.difficulty.roundToInt()}",
+                                fontFamily = GolfFonts.NumberFontFamily,
+                                fontWeight = FontWeight.Bold,
+                                color = GolfTokens.TextPrimary,
+                            )
+                        }
+                        Button(
+                            onClick = { viewModel.difficulty = (viewModel.difficulty + 1f).coerceIn(0f, 5f) },
+                            modifier = Modifier.size(40.dp),
+                            contentPadding = PaddingValues(0.dp),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = GolfTokens.ObBorder),
+                        ) { Text("+") }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(
+                            value = viewModel.region,
+                            onValueChange = { viewModel.region = it },
+                            label = { Text("지역") },
+                            modifier = Modifier.weight(1f),
+                        )
+                        OutlinedTextField(
+                            value = viewModel.distance,
+                            onValueChange = { viewModel.distance = it },
+                            label = { Text("거리") },
+                            modifier = Modifier.weight(1f),
+                        )
+                        OutlinedTextField(
+                            value = viewModel.travelTime,
+                            onValueChange = { viewModel.travelTime = it },
+                            label = { Text("시간") },
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = viewModel.oneLineReview,
+                        onValueChange = { viewModel.oneLineReview = it },
+                        label = { Text("한줄평") },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = viewModel.transportInfo,
+                        onValueChange = { viewModel.transportInfo = it },
+                        label = { Text("교통 (거리, 경로 등)") },
+                        minLines = 3,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = viewModel.clubhouseInfo,
+                        onValueChange = { viewModel.clubhouseInfo = it },
+                        label = { Text("클럽하우스 (외관/내관, 소품 등)") },
+                        minLines = 3,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = viewModel.courseInfo,
+                        onValueChange = { viewModel.courseInfo = it },
+                        label = { Text("코스 (티샷, 코스, 그린 등)") },
+                        minLines = 3,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+
+                    Spacer(Modifier.height(24.dp))
+                    HorizontalDivider(color = GolfTokens.Divider)
+                    Spacer(Modifier.height(16.dp))
+                    if (viewModel.existingCourseId == null) {
+                        SectionHeader("유튜브 링크")
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "코스를 저장한 후에 유튜브 링크를 추가할 수 있어요.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = GolfTokens.TextSecondary,
+                        )
+                    } else {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            SectionHeader("유튜브 링크")
+                            TextButton(onClick = { showAddLinkDialog = true }) { Text("링크 추가") }
+                        }
+                        if (youtubeLinks.isEmpty()) {
+                            Text(
+                                "아직 추가한 링크가 없어요.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = GolfTokens.TextSecondary,
+                            )
+                        }
+                        YoutubeCategory.entries.forEach { category ->
+                            val links = youtubeLinks.filter { it.category == category.name }
+                            if (links.isNotEmpty()) {
+                                Text(category.displayLabel, style = MaterialTheme.typography.labelMedium, color = GolfTokens.TextPrimary)
+                                links.forEach { link ->
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth()
+                                            .clickable {
+                                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(link.url)))
+                                            }
+                                            .padding(vertical = 6.dp),
                                     ) {
-                                        VideoThumbnail(link.thumbnailUrl)
-                                        Column {
-                                            Text(
-                                                link.title ?: link.url,
-                                                style = MaterialTheme.typography.bodySmall,
-                                                maxLines = 2,
-                                                overflow = TextOverflow.Ellipsis,
-                                            )
-                                            link.channelTitle?.let {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth().padding(end = 56.dp),
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        ) {
+                                            VideoThumbnail(link.thumbnailUrl)
+                                            Column {
                                                 Text(
-                                                    it,
-                                                    style = MaterialTheme.typography.labelSmall,
-                                                    color = MaterialTheme.colorScheme.outline,
+                                                    link.title ?: link.url,
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = GolfTokens.TextPrimary,
+                                                    maxLines = 2,
+                                                    overflow = TextOverflow.Ellipsis,
                                                 )
+                                                link.channelTitle?.let {
+                                                    Text(
+                                                        it,
+                                                        style = MaterialTheme.typography.labelSmall,
+                                                        color = GolfTokens.TextSecondary,
+                                                    )
+                                                }
                                             }
                                         }
+                                        TextButton(
+                                            onClick = { pendingDeleteLink = link },
+                                            modifier = Modifier.align(Alignment.CenterEnd),
+                                        ) { Text("삭제") }
                                     }
-                                    TextButton(
-                                        onClick = { pendingDeleteLink = link },
-                                        modifier = Modifier.align(Alignment.CenterEnd),
-                                    ) { Text("삭제") }
                                 }
                             }
                         }
