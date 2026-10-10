@@ -275,7 +275,9 @@ fun RoundSummaryScreen(
                     IconButton(onClick = onHome) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "홈으로", tint = GolfTokens.CardBackground)
                     }
-                    Column {
+                    // 제목이 남는 폭을 전부 차지하고(weight) 순위 칩/삭제 버튼은 먼저 측정돼 항상
+                    // 제 크기를 지킨다 — 코스 이름이 길면 제목이 줄바꿈될 뿐 버튼이 밀려나지 않는다.
+                    Column(modifier = Modifier.weight(1f)) {
                         Row {
                             Text(
                                 courseName.ifBlank { "라운드 결과" },
@@ -291,7 +293,6 @@ fun RoundSummaryScreen(
                             }
                         }
                     }
-                    Spacer(Modifier.weight(1f))
                     val recentRank by viewModel.recentRank.collectAsStateWithLifecycle()
                     recentRank?.let { (rank, pool) ->
                         Text(
