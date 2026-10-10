@@ -17,7 +17,7 @@
 - DB 마이그레이션 규칙(`C:\github\k-golf\CLAUDE.md`) 준수: `fallbackToDestructiveMigration` 금지, 명시적 `Migration` 작성, 실기기 업그레이드로 기존 라운딩/코스 데이터 보존 확인(재설치로 우회 검증 금지), `exportSchema = true`이므로 `app/schemas/`에 버전별 JSON 남김.
 - 안드로이드 앱 검증 그라운드룰(`C:\github\CLAUDE.md`): 실기기 화면이 "어떻게 보이는지/제대로 동작하는지"는 전부 사용자가 직접 확인한다. Claude는 빌드·설치(force-stop 후 `install -r`)·실행·`logcat`·DB 값 직접 조회까지만 하고, 화면을 직접 넘겨가며 캡처/확인하지 않는다.
 - UX 공통 규칙(`ux-conventions` skill)의 버튼 배치·TopAppBar·"더 있음" 표시 등은 이 리디자인에서도 계속 지킨다 — 단, 색상/글꼴/모서리/아이콘 같은 "값"은 이 스펙의 `GolfTokens`가 ux-conventions의 기존 하드코딩값(예: 섹션 헤더 배지의 연한 녹색)보다 우선한다. 레이아웃 규칙(버튼 위치, 삭제 확인 다이얼로그 등) 자체는 바뀌지 않는다.
-- **컨벤션 충돌 (확인 필요)**: `ux-conventions`는 뒤로가기를 `TopAppBar`의 `navigationIcon`에 `Text("< 뒤로")` 텍스트로 규정하는데, 이번 시안(모든 화면)은 텍스트 없는 아이콘 전용 버튼이다. 이 스펙은 시안을 따라 **전 화면 공통으로 아이콘 버튼으로 전환**하는 것을 기본안으로 제안한다 — `ux-conventions` 쪽 규칙도 이 리디자인이 끝나면 함께 갱신해야 한다(갱신 안 하면 다음에 새 화면 만들 때 다시 `< 뒤로` 텍스트로 돌아가는 혼선이 생김). 사용자가 이 스펙을 검토할 때 명시적으로 동의해야 하는 지점.
+- **`ux-conventions`는 수정하지 않는다** (사용자 결정, 2026-10-10): 이 리디자인은 K-Golf를 상용화 트랙으로 올리기 위한 개선이고, `ux-conventions`는 계속 "개인용 심플 앱" 기준으로 다른 프로젝트(`k-home-note`, `k-ott` 등)에 쓰이는 공용 스킬이라 건드리지 않는다. 대신 **새 스킬 `C:\github\.claude\skills\ux-conventions-commercial\SKILL.md`**를 만들어 이 리디자인에서 `ux-conventions`와 달라지는 규칙만 담는다 — 뒤로가기(텍스트 `< 뒤로` 대신 아이콘 전용 버튼), `GolfTokens`(색상/모서리/터치영역이 ux-conventions의 하드코딩값보다 우선), 카드 탭→펼침 뒤 "상세 보기" 링크 패턴 등. 그 외(버튼 배치, TopAppBar 사용, 섹션 헤더 배지, "더 있음" 표시, 삭제 확인 다이얼로그 등)는 `ux-conventions`를 계속 참조하게 하여 중복을 피한다. K-Golf의 `CLAUDE.md`에 "UX 작업 시 `ux-conventions-commercial`을 `ux-conventions`보다 먼저/우선 참조"하도록 한 줄 추가한다. 이 스킬 작성은 스테이지 1(디자인 시스템) 산출물에 포함한다.
 - 버전 관리(`C:\github\CLAUDE.md`): 앱 코드가 바뀌는 커밋마다 `versionName` PATCH +1, 제목에 `(vX.Y.Z)`. 각 스테이지가 끝날 때마다 실기기 설치 확인 후 커밋.
 - 각 스테이지가 끝날 때마다 실기기에 설치해 확인한다(브리프 원칙 4).
 - 스코어카드 공유(이미지 생성+공유 인텐트)는 이 스펙 범위 밖 — 별도 기능으로 추후 브레인스토밍한다.
@@ -90,6 +90,8 @@ val NumberFontFamily = FontFamily(Font(R.font.barlow_condensed_medium, FontWeigh
 ## 2. 스테이지 1 — 디자인 시스템 뼈대
 
 `GolfTokens.kt` + 글꼴 리소스 번들 + 위 공용 컴포넌트를 빈 틀로 작성한다. 이 스테이지는 어떤 화면도 아직 교체하지 않는다(컴파일만 통과, 기존 화면은 그대로) — 스테이지 2에서 화면마다 실제로 이 토큰/컴포넌트를 적용한다.
+
+이 스테이지에 `C:\github\.claude\skills\ux-conventions-commercial\SKILL.md` 작성도 포함한다(Global Constraints 참고) — `ux-conventions`는 건드리지 않고, 이 리디자인에서 달라지는 규칙(뒤로가기 아이콘 버튼, `GolfTokens` 우선순위, 카드 펼침 후 상세 링크 패턴)만 새 스킬에 담는다.
 
 ## 3. 스테이지 2 — 기존 화면 디자인 교체 (기능 변화 없음)
 
