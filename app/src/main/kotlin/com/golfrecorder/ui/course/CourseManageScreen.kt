@@ -14,13 +14,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -36,10 +39,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -54,6 +59,7 @@ import com.golfrecorder.ui.common.MoreBelowIndicator
 import com.golfrecorder.ui.common.PrimaryCtaButton
 import com.golfrecorder.ui.common.dragElevation
 import com.golfrecorder.ui.common.dragHandle
+import com.golfrecorder.ui.common.VideoThumbnail
 import com.golfrecorder.ui.common.rememberDragDropListState
 import com.golfrecorder.ui.theme.GolfTokens
 import kotlinx.coroutines.flow.Flow
@@ -256,19 +262,47 @@ fun CourseManageScreen(
                                                 fontWeight = FontWeight.Bold,
                                                 color = GolfTokens.FieldGreen,
                                             )
+                                            // 시안: 회색 둥근 카드 안에 64x36 썸네일(없으면 진녹색 자리 + 재생 아이콘) + 제목.
                                             youtubeLinks.forEach { link ->
-                                                Text(
-                                                    "▶ ${link.title ?: link.url}",
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    color = GolfTokens.FieldGreen,
-                                                    maxLines = 1,
-                                                    overflow = TextOverflow.Ellipsis,
+                                                Row(
                                                     modifier = Modifier.fillMaxWidth()
+                                                        .padding(top = 6.dp)
+                                                        .clip(RoundedCornerShape(12.dp))
+                                                        .background(GolfTokens.Background)
                                                         .clickable {
                                                             context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(link.url)))
                                                         }
-                                                        .padding(vertical = 4.dp),
-                                                )
+                                                        .padding(6.dp),
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                                ) {
+                                                    Box(
+                                                        modifier = Modifier.size(width = 64.dp, height = 36.dp)
+                                                            .clip(RoundedCornerShape(8.dp))
+                                                            .background(GolfTokens.FieldGreenDark),
+                                                        contentAlignment = Alignment.Center,
+                                                    ) {
+                                                        if (link.thumbnailUrl != null) {
+                                                            VideoThumbnail(link.thumbnailUrl, width = 64.dp, height = 36.dp)
+                                                        } else {
+                                                            Icon(
+                                                                Icons.Filled.PlayArrow,
+                                                                contentDescription = null,
+                                                                modifier = Modifier.size(16.dp),
+                                                                tint = GolfTokens.CardBackground,
+                                                            )
+                                                        }
+                                                    }
+                                                    Text(
+                                                        link.title ?: link.url,
+                                                        modifier = Modifier.weight(1f),
+                                                        fontSize = 12.sp,
+                                                        lineHeight = 17.sp,
+                                                        color = GolfTokens.TextPrimary,
+                                                        maxLines = 2,
+                                                        overflow = TextOverflow.Ellipsis,
+                                                    )
+                                                }
                                             }
                                         }
                                     }

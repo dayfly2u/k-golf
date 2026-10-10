@@ -2,12 +2,14 @@ package com.golfrecorder.ui.course
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -50,6 +52,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -61,6 +64,8 @@ import com.golfrecorder.data.repository.RoundRepository
 import com.golfrecorder.data.repository.isValidYoutubeUrl
 import com.golfrecorder.domain.model.YoutubeCategory
 import com.golfrecorder.domain.model.YoutubeSearchResult
+import com.golfrecorder.ui.common.DifficultyBars
+import com.golfrecorder.ui.common.RatingStars
 import com.golfrecorder.ui.common.SectionHeader
 import com.golfrecorder.ui.common.VideoThumbnail
 import com.golfrecorder.ui.theme.GolfFonts
@@ -85,6 +90,52 @@ fun difficultyLabel(level: Int): String = when (level) {
     4 -> "중상"
     5 -> "상"
     else -> ""
+}
+
+/** 시안(CourseEdit.dc.html)의 평점/난이도 한 줄 — 라벨(46dp) + 시각화(별/막대, 남는 폭) + −(44dp) + 값 + +(44dp).
+ * 버튼은 최소 터치 영역 44dp를 지킨다(시안의 40dp보다 크게). */
+@Composable
+private fun ScoreInputRow(
+    label: String,
+    valueText: String,
+    onDown: () -> Unit,
+    onUp: () -> Unit,
+    upColor: Color,
+    upContentColor: Color,
+    visual: @Composable RowScope.() -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(label, fontSize = 13.sp, color = GolfTokens.TextSecondary, modifier = Modifier.width(46.dp))
+        visual()
+        OutlinedButton(
+            onClick = onDown,
+            modifier = Modifier.size(GolfTokens.MinTouchTarget),
+            contentPadding = PaddingValues(0.dp),
+            shape = RoundedCornerShape(10.dp),
+            border = BorderStroke(1.5.dp, GolfTokens.Border),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = GolfTokens.TextPrimary),
+        ) { Text("−", fontSize = 20.sp) }
+        Text(
+            valueText,
+            modifier = Modifier.width(36.dp),
+            textAlign = TextAlign.Center,
+            fontFamily = GolfFonts.NumberFontFamily,
+            fontWeight = FontWeight.Bold,
+            fontSize = 22.sp,
+            color = GolfTokens.TextPrimary,
+        )
+        Button(
+            onClick = onUp,
+            modifier = Modifier.size(GolfTokens.MinTouchTarget),
+            contentPadding = PaddingValues(0.dp),
+            shape = RoundedCornerShape(10.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = upColor, contentColor = upContentColor),
+        ) { Text("+", fontSize = 20.sp) }
+    }
 }
 
 class CourseEditViewModel(
@@ -487,67 +538,26 @@ fun CourseEditScreen(
                 ) {
                     SectionHeader("리뷰 (선택 입력)")
                     Spacer(Modifier.height(10.dp))
-                    Text(
-                        if (viewModel.rating <= 0f) "평점: 없음" else "평점: ${"%.1f".format(viewModel.rating)}",
-                        color = GolfTokens.TextPrimary,
+                    ScoreInputRow(
+                        label = "평점",
+                        valueText = if (viewModel.rating <= 0f) "-" else "%.1f".format(viewModel.rating),
+                        onDown = { viewModel.rating = (viewModel.rating - 0.5f).coerceIn(0f, 5f) },
+                        onUp = { viewModel.rating = (viewModel.rating + 0.5f).coerceIn(0f, 5f) },
+                        upColor = GolfTokens.FieldGreen,
+                        upContentColor = GolfTokens.CardBackground,
+                        visual = { RatingStars(viewModel.rating, Modifier.weight(1f)) },
                     )
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedButton(
-                            onClick = { viewModel.rating = (viewModel.rating - 0.5f).coerceIn(0f, 5f) },
-                            modifier = Modifier.size(40.dp),
-                            contentPadding = PaddingValues(0.dp),
-                            shape = RoundedCornerShape(10.dp),
-                        ) { Text("−") }
-                        Box(modifier = Modifier.width(44.dp), contentAlignment = Alignment.Center) {
-                            Text(
-                                "%.1f".format(viewModel.rating),
-                                fontFamily = GolfFonts.NumberFontFamily,
-                                fontWeight = FontWeight.Bold,
-                                color = GolfTokens.TextPrimary,
-                            )
-                        }
-                        Button(
-                            onClick = { viewModel.rating = (viewModel.rating + 0.5f).coerceIn(0f, 5f) },
-                            modifier = Modifier.size(40.dp),
-                            contentPadding = PaddingValues(0.dp),
-                            shape = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = GolfTokens.FieldGreen),
-                        ) { Text("+") }
-                    }
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        if (viewModel.difficulty <= 0f) {
-                            "난이도: 없음"
-                        } else {
-                            val level = viewModel.difficulty.roundToInt()
-                            "난이도: ${difficultyLabel(level)} ($level)"
-                        },
-                        color = GolfTokens.TextPrimary,
+                    Spacer(Modifier.height(12.dp))
+                    // 난이도는 Int? 컬럼이라 1단위로만 바꾼다(0.5단위는 하지 않기로 했다) — 막대도 칸 단위로 채운다.
+                    ScoreInputRow(
+                        label = "난이도",
+                        valueText = if (viewModel.difficulty <= 0f) "-" else "${viewModel.difficulty.roundToInt()}",
+                        onDown = { viewModel.difficulty = (viewModel.difficulty - 1f).coerceIn(0f, 5f) },
+                        onUp = { viewModel.difficulty = (viewModel.difficulty + 1f).coerceIn(0f, 5f) },
+                        upColor = GolfTokens.ObBorder,
+                        upContentColor = GolfTokens.TextPrimary,
+                        visual = { DifficultyBars(viewModel.difficulty.roundToInt().toFloat(), Modifier.weight(1f)) },
                     )
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        // 난이도는 아직 Int? 컬럼이라 1단위로만 바꾼다(0.5단위는 스테이지 4 마이그레이션 이후).
-                        OutlinedButton(
-                            onClick = { viewModel.difficulty = (viewModel.difficulty - 1f).coerceIn(0f, 5f) },
-                            modifier = Modifier.size(40.dp),
-                            contentPadding = PaddingValues(0.dp),
-                            shape = RoundedCornerShape(10.dp),
-                        ) { Text("−") }
-                        Box(modifier = Modifier.width(44.dp), contentAlignment = Alignment.Center) {
-                            Text(
-                                "${viewModel.difficulty.roundToInt()}",
-                                fontFamily = GolfFonts.NumberFontFamily,
-                                fontWeight = FontWeight.Bold,
-                                color = GolfTokens.TextPrimary,
-                            )
-                        }
-                        Button(
-                            onClick = { viewModel.difficulty = (viewModel.difficulty + 1f).coerceIn(0f, 5f) },
-                            modifier = Modifier.size(40.dp),
-                            contentPadding = PaddingValues(0.dp),
-                            shape = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = GolfTokens.ObBorder),
-                        ) { Text("+") }
-                    }
                     Spacer(Modifier.height(8.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedTextField(

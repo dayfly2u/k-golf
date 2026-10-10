@@ -45,6 +45,9 @@ object GolfTokens {
     val ScoreTier3 = Color(0xFFFFCDD2)
     val ScoreTier4 = Color(0xFFC62828)
 
+    // 코스 수정 평점 별의 테두리(시안 CourseEdit.dc.html) — 채움은 Accent, 빈 별은 흰색.
+    val StarStroke = Color(0xFFC9971F)
+
     // 홈: 아직 안 끝난 라운드의 점수 배지(회색), 펼친 카드의 리뷰 인용 박스(베이지) — 시안 Main.dc.html
     val BadgePlain = Color(0xFFEEF0E8)
     val QuoteBackground = Color(0xFFF7F4E8)
