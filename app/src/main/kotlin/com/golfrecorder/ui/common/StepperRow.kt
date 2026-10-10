@@ -1,6 +1,7 @@
 package com.golfrecorder.ui.common
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -41,7 +42,7 @@ private fun StepperRowScaffold(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(label, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                Text(label, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = GolfTokens.TextPrimary)
                 Text(hint, fontSize = 12.sp, color = GolfTokens.TextSecondary)
             }
             trailing()
@@ -70,20 +71,22 @@ fun StepperRow(
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = GolfTokens.TextPrimary),
                 border = androidx.compose.foundation.BorderStroke(1.5.dp, GolfTokens.Border),
             ) { Text("−", fontSize = 20.sp) }
-            Text(
-                "$value",
-                fontFamily = GolfFonts.NumberFontFamily,
-                fontWeight = FontWeight.Bold,
-                fontSize = 30.sp,
-                modifier = Modifier.size(STEPPER_BUTTON_SIZE_DP.dp),
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-            )
+            Box(modifier = Modifier.size(STEPPER_BUTTON_SIZE_DP.dp), contentAlignment = Alignment.Center) {
+                Text(
+                    "$value",
+                    fontFamily = GolfFonts.NumberFontFamily,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 30.sp,
+                    color = GolfTokens.TextPrimary,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                )
+            }
             Button(
                 onClick = onIncrement,
                 modifier = Modifier.size(STEPPER_BUTTON_SIZE_DP.dp),
                 shape = RoundedCornerShape(14.dp),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = GolfTokens.Accent),
+                colors = ButtonDefaults.buttonColors(containerColor = GolfTokens.Accent, contentColor = GolfTokens.TextPrimary),
             ) { Text("+", fontSize = 20.sp) }
         }
     }
@@ -103,6 +106,7 @@ fun ReadOnlyStepperRow(
             fontFamily = GolfFonts.NumberFontFamily,
             fontWeight = FontWeight.Bold,
             fontSize = 30.sp,
+            color = GolfTokens.TextPrimary,
         )
     }
 }

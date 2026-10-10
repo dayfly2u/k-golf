@@ -28,6 +28,7 @@ private fun StatCell(item: StatItem, modifier: Modifier = Modifier) {
                 fontFamily = GolfFonts.NumberFontFamily,
                 fontWeight = FontWeight.Bold,
                 fontSize = 24.sp,
+                color = GolfTokens.TextPrimary,
             )
             if (item.sub != null) {
                 Text(
@@ -48,6 +49,7 @@ private fun StatCell(item: StatItem, modifier: Modifier = Modifier) {
  * 안전한 방식이다. */
 @Composable
 fun StatGrid(items: List<StatItem>, columns: Int, modifier: Modifier = Modifier) {
+    require(columns > 0) { "columns must be positive, was $columns" }
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         items.chunked(columns).forEach { rowItems ->
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {

@@ -31,10 +31,9 @@ fun PenaltyButton(text: String, color: PenaltyColor, onClick: () -> Unit, modifi
     OutlinedButton(
         onClick = onClick,
         modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(GolfTokens.ButtonCorner),
         // ButtonDefaults(OutlinedButtonDefaults가 아님)가 buttonColors()/outlinedButtonColors()/
-        // textButtonColors() 등을 전부 제공하는 단일 객체다 — Task 7에서 같은 실수로 한 번
-        // 고친 적 있음(OutlinedButtonDefaults는 실제로 존재하지 않는 클래스).
+        // textButtonColors() 등을 전부 제공하는 단일 객체다.
         colors = ButtonDefaults.outlinedButtonColors(
             containerColor = palette.background,
             contentColor = palette.text,
