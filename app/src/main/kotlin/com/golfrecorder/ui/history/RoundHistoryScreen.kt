@@ -58,11 +58,15 @@ import com.golfrecorder.data.repository.ShotRepository
 import com.golfrecorder.domain.model.DriverDistanceStats
 import com.golfrecorder.domain.model.HoleResult
 import com.golfrecorder.domain.model.calculateDriverDistanceStats
+import com.golfrecorder.domain.model.computeRoundAggregates
+import com.golfrecorder.domain.model.formatToPar
 import com.golfrecorder.ui.common.GirSummaryLines
 import com.golfrecorder.ui.common.GolfCard
 import com.golfrecorder.ui.common.MoreBelowIndicator
 import com.golfrecorder.ui.common.PrimaryCtaButton
 import com.golfrecorder.ui.common.RoundStatsLine
+import com.golfrecorder.ui.common.StatGrid
+import com.golfrecorder.ui.common.StatItem
 import com.golfrecorder.ui.theme.GolfFonts
 import com.golfrecorder.ui.theme.GolfTokens
 import kotlinx.coroutines.flow.Flow
@@ -132,23 +136,19 @@ private fun formatRoundPeriod(playedAt: Long, finishedAt: Long?): String {
     return "$date $start~$end (${formatDuration(playedAt, finishedAt)})"
 }
 
-private val STROKE_LIGHT_BLUE = Color(0xFFBBDEFB)
-private val STROKE_LIGHT_GREEN = Color(0xFFC8E6C9)
-private val STROKE_LIGHT_RED = Color(0xFFFFCDD2) // 연한 빨강 — RoundSummaryScreen의 DOUBLE_BOGEY_COLOR와 동일 톤
-private val STROKE_DARK_RED = Color(0xFFC62828) // 진한 빨강 — RoundSummaryScreen의 GIR_MISS_BG_COLOR와 동일 톤
-
+// GolfTokens의 "스코어 셀(파 이하/보기/더블 이상)" 3단계를 재사용한다(redesign-spec.md
+// 3.7) — 80대는 "파 이하"급 좋은 구간, 90대는 "보기"급 보통 구간, 95타 이상은 전부
+// "더블 이상"급 나쁜 구간으로 묶는다(이전엔 95~99/100+가 연한/진한 빨강으로 따로
+// 나뉘어 있었지만, GolfTokens에 그 두 단계를 구분하는 토큰이 없다).
 private fun strokeScoreColor(strokes: Int): Color? = when {
-    strokes in 80..89 -> STROKE_LIGHT_BLUE
-    strokes in 90..94 -> STROKE_LIGHT_GREEN
-    strokes in 95..99 -> STROKE_LIGHT_RED
-    strokes >= 100 -> STROKE_DARK_RED
+    strokes in 80..89 -> GolfTokens.ScoreUnderParBorder
+    strokes in 90..94 -> GolfTokens.ScoreBogeyBackground
+    strokes >= 95 -> GolfTokens.ScoreDoubleOrWorseBackground
     else -> null
 }
 
-// 진한 빨강 배경은 검정 텍스트로는 대비가 약해서 흰 글자로 바꾼다 — RoundSummaryScreen의
-// scoreRowTextColor와 동일한 패턴.
 private fun strokeScoreTextColor(strokes: Int): Color =
-    if (strokes >= 100) Color.White else Color.Unspecified
+    if (strokes >= 95) GolfTokens.CardBackground else GolfTokens.TextPrimary
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -278,6 +278,21 @@ fun RoundHistoryScreen(
                     bottom = GolfTokens.PrimaryButtonHeight + 32.dp,
                 ),
             ) {
+                val aggregates = computeRoundAggregates(rounds)
+                if (aggregates != null) {
+                    item {
+                        GolfCard(modifier = Modifier.padding(bottom = 10.dp)) {
+                            StatGrid(
+                                items = listOf(
+                                    StatItem(label = "평균 스코어", value = "%.1f".format(aggregates.avgTotalStrokes)),
+                                    StatItem(label = "베스트 스코어", value = "${aggregates.bestTotalStrokes}"),
+                                    StatItem(label = "평균 퍼팅", value = "%.1f".format(aggregates.avgPutts)),
+                                ),
+                                columns = 3,
+                            )
+                        }
+                    }
+                }
                 items(rounds, key = { it.roundId }) { round ->
                     val expanded = round.roundId in expandedRoundIds
                     GolfCard(
@@ -320,20 +335,29 @@ fun RoundHistoryScreen(
                                 }
                             }
                             val backgroundColor = strokeScoreColor(round.totalStrokes)
-                            Text(
-                                "${round.totalStrokes}",
-                                fontFamily = GolfFonts.NumberFontFamily,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = MaterialTheme.typography.headlineSmall.fontSize,
-                                color = strokeScoreTextColor(round.totalStrokes),
-                                modifier = (
-                                    if (backgroundColor != null) {
-                                        Modifier.background(backgroundColor, RoundedCornerShape(8.dp))
-                                    } else {
-                                        Modifier
-                                    }
-                                ).padding(horizontal = 8.dp, vertical = 2.dp),
-                            )
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text(
+                                    "${round.totalStrokes}",
+                                    fontFamily = GolfFonts.NumberFontFamily,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = MaterialTheme.typography.headlineSmall.fontSize,
+                                    color = strokeScoreTextColor(round.totalStrokes),
+                                    modifier = (
+                                        if (backgroundColor != null) {
+                                            Modifier.background(backgroundColor, RoundedCornerShape(8.dp))
+                                        } else {
+                                            Modifier
+                                        }
+                                    ).padding(horizontal = 8.dp, vertical = 2.dp),
+                                )
+                                if (round.totalPar > 0) {
+                                    Text(
+                                        formatToPar(round.totalStrokes - round.totalPar),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = GolfTokens.TextSecondary,
+                                    )
+                                }
+                            }
                         }
                         if (expanded) {
                             val holeResults by remember(round.roundId) { viewModel.getHoleResults(round.roundId) }
