@@ -21,4 +21,7 @@ interface PenaltyDao {
 
     @Query("SELECT * FROM penalties WHERE roundId = :roundId AND holeNumber = :holeNumber")
     fun getPenalties(roundId: Long, holeNumber: Int): Flow<List<PenaltyEntity>>
+
+    @Query("SELECT * FROM penalties WHERE roundId = :roundId")
+    fun getPenaltiesForRound(roundId: Long): Flow<List<PenaltyEntity>>
 }
