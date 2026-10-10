@@ -170,11 +170,6 @@ private fun formatToPar(scoreToPar: Int): String = when {
     else -> "$scoreToPar"
 }
 
-private val PAR_COLOR = Color(0xFFC8E6C9) // 연한 그린
-private val BIRDIE_OR_BETTER_COLOR = Color(0xFFBBDEFB) // 연한 파랑
-private val DOUBLE_BOGEY_COLOR = Color(0xFFFFCDD2) // 연한 빨강
-private val WORSE_THAN_DOUBLE_BOGEY_COLOR = Color(0xFFB71C1C) // 진한 빨강
-
 // GIR(그린 적중) 실패("그린 N"), 숏어프로치 발생("숏 N", 50m 이하 숏은 곧 그린을 놓쳤다는
 // 뜻), 3퍼팅 이상("퍼팅 N") 공통 경고 스타일. 전부 꽉 찬 빨강 배경 + 흰 글씨였던 적도,
 // 테두리만 있는 앰버 칩이었던 적도 있었다 — 빨강 계열은 더블보기+2타 이상 홀의 진한
@@ -196,16 +191,17 @@ private fun WarningBadge(text: String) {
     )
 }
 
+// GolfTokens의 3단계(파 이하/보기/더블 이상)로 다시 묶는다(redesign-spec.md 3.7) —
+// "파 이하"(버디 이하 + 파)는 배경 없음, "보기"(+1)는 처음으로 배경을 받고,
+// "더블 이상"(+2부터 전부)은 기존에 나뉘어 있던 연한/진한 빨강을 하나로 합친다.
 private fun scoreRowColor(scoreToPar: Int): Color = when {
-    scoreToPar == 0 -> PAR_COLOR
-    scoreToPar <= -1 -> BIRDIE_OR_BETTER_COLOR
-    scoreToPar == 2 -> DOUBLE_BOGEY_COLOR
-    scoreToPar >= 3 -> WORSE_THAN_DOUBLE_BOGEY_COLOR
+    scoreToPar == 1 -> GolfTokens.ScoreBogeyBackground
+    scoreToPar >= 2 -> GolfTokens.ScoreDoubleOrWorseBackground
     else -> Color.Transparent
 }
 
 private fun scoreRowTextColor(scoreToPar: Int): Color =
-    if (scoreToPar >= 3) Color.White else Color.Unspecified
+    if (scoreToPar >= 2) GolfTokens.CardBackground else GolfTokens.TextPrimary
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
