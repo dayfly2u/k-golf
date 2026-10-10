@@ -37,6 +37,22 @@ class RoundRankTest {
     }
 
     @Test
+    fun `다른 끝나지 않은 라운드는 순위 경쟁에서 제외한다`() {
+        val abandoned = round(2, 400, 12).copy(finishedAt = null)
+        val rounds = listOf(round(1, 500, 100), abandoned, round(3, 300, 90))
+        // 12타짜리 미완료 라운드가 1위를 차지하면 안 된다 — id=3(90타)이 1위, id=1(100타)이 2위.
+        assertEquals(2 to 2, computeRecentRank(rounds, targetRoundId = 1))
+        assertEquals(1 to 2, computeRecentRank(rounds, targetRoundId = 3))
+    }
+
+    @Test
+    fun `보고 있는 라운드 자신은 끝나지 않았어도 포함한다`() {
+        val viewing = round(1, 500, 40).copy(finishedAt = null)
+        val rounds = listOf(viewing, round(2, 400, 90))
+        assertEquals(1 to 2, computeRecentRank(rounds, targetRoundId = 1))
+    }
+
+    @Test
     fun `최근 5개 밖의 라운드를 보면 null`() {
         val rounds = (1..6L).map { id -> round(id, playedAt = id * 100, strokes = 90) }
         // id=6이 가장 최근(playedAt=600), 최근 5개는 id=2..6 — id=1(playedAt=100)은 밖.

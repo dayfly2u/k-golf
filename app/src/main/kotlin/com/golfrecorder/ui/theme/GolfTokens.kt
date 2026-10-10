@@ -12,6 +12,7 @@ object GolfTokens {
     // 기본
     val FieldGreen = Color(0xFF1F5C3F)
     val FieldGreenDark = Color(0xFF123A28)
+    val FieldGreenTint = Color(0xFFDCEBE1) // 선택된 행 등 연한 녹색 배경(GolfTheme의 primaryContainer)
     val Accent = Color(0xFFF2C14E) // CTA, 현재 홀
     val Background = Color(0xFFF4F5EF)
     val CardBackground = Color(0xFFFFFFFF)

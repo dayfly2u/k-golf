@@ -13,8 +13,8 @@ import androidx.compose.runtime.Composable
 private val GolfColorScheme = lightColorScheme(
     primary = GolfTokens.FieldGreen,
     onPrimary = GolfTokens.CardBackground,
-    primaryContainer = GolfTokens.FieldGreen,
-    onPrimaryContainer = GolfTokens.CardBackground,
+    primaryContainer = GolfTokens.FieldGreenTint,
+    onPrimaryContainer = GolfTokens.FieldGreenDark,
     secondary = GolfTokens.Accent,
     onSecondary = GolfTokens.TextPrimary,
     secondaryContainer = GolfTokens.Accent,
@@ -23,10 +23,19 @@ private val GolfColorScheme = lightColorScheme(
     onBackground = GolfTokens.TextPrimary,
     surface = GolfTokens.CardBackground,
     onSurface = GolfTokens.TextPrimary,
-    surfaceVariant = GolfTokens.Background,
+    surfaceVariant = GolfTokens.Divider,
     onSurfaceVariant = GolfTokens.TextSecondary,
-    outline = GolfTokens.Border,
-    outlineVariant = GolfTokens.Divider,
+    // 다이얼로그/시트 컨테이너(surfaceContainer*)를 안 정해두면 M3 기본 연보라가 남는다.
+    surfaceContainerLowest = GolfTokens.CardBackground,
+    surfaceContainerLow = GolfTokens.CardBackground,
+    surfaceContainer = GolfTokens.CardBackground,
+    surfaceContainerHigh = GolfTokens.CardBackground,
+    surfaceContainerHighest = GolfTokens.Divider, // 꺼진 Switch 트랙 등
+    // outline은 보조 텍스트/Switch 꺼진 상태/입력창 테두리처럼 "읽혀야 하는" 곳에 쓰여
+    // 진한 회색이어야 한다(옅은 Border를 쓰면 배경과 1.4:1로 거의 안 보인다). 옅은 구분선은
+    // outlineVariant(HorizontalDivider 기본색)로 보낸다.
+    outline = GolfTokens.TextSecondary,
+    outlineVariant = GolfTokens.Border,
 )
 
 private val baseTypography = Typography()

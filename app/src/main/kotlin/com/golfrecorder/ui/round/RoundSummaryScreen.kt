@@ -323,6 +323,8 @@ fun RoundSummaryScreen(
             )
             val penaltyCounts by viewModel.penaltyCounts.collectAsStateWithLifecycle()
             val (obCount, hazardCount) = penaltyCounts
+            // 표시명과 코드명이 반대다 — "GIR"은 strictGirCount(isStrictGreenInRegulation),
+            // "L-GIR"은 girCount(isGreenInRegulation)(redesign-spec.md 4.1, 표시만 교체).
             StatGrid(
                 items = listOf(
                     StatItem(label = "GIR", value = "$strictGirCount", sub = "/${holeResults.size}"),

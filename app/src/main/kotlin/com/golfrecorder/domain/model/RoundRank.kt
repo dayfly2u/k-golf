@@ -9,7 +9,12 @@ import com.golfrecorder.data.local.dto.RoundSummary
  * (순위, 그 구간에 실제로 들어간 라운드 수) — 전체 라운드가 [windowSize]개보다
  * 적으면 두 번째 값이 그 실제 개수로 줄어든다. */
 fun computeRecentRank(rounds: List<RoundSummary>, targetRoundId: Long, windowSize: Int = 5): Pair<Int, Int>? {
-    val recent = rounds.sortedByDescending { it.playedAt }.take(windowSize)
+    // 끝나지 않은 다른 라운드(실수로 시작만 하고 나간 라운드 등)는 지나온 홀 몫의 타수만 있어
+    // 1위를 가로채므로 뺀다. 지금 보는 라운드는 진행 중이어도 반드시 포함한다(스펙).
+    val recent = rounds
+        .filter { it.finishedAt != null || it.roundId == targetRoundId }
+        .sortedByDescending { it.playedAt }
+        .take(windowSize)
     if (recent.none { it.roundId == targetRoundId }) return null
     val ranked = recent.sortedWith(compareBy({ it.totalStrokes }, { -it.playedAt }))
     val rank = ranked.indexOfFirst { it.roundId == targetRoundId } + 1

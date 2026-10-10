@@ -12,9 +12,10 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import kotlin.math.roundToInt
 
-/** GIR N/M (P%) + 엄격 GIR N/M (P%, 빨강). RoundSummaryScreen(상세, 기본 두 줄
- * titleMedium/bodyMedium)과 RoundHistoryScreen(첫 화면 리스트 펼침, [singleLine]=true
- * 한 줄 bodyMedium)이 같은 계산 로직을 공유한다. */
+/** L-GIR N/M (P%) + GIR N/M (P%, 빨강) — 표시명은 코드명과 반대다(girCount는 "L-GIR",
+ * strictGirCount는 "GIR", redesign-spec.md 4.1). 지금은 RoundHistoryScreen(첫 화면 리스트
+ * 펼침, [singleLine]=true 한 줄 bodyMedium)만 쓴다 — 결과 화면은 6칸 StatGrid로 바뀌었다.
+ * 기본 두 줄 분기는 현재 호출처가 없다. */
 @Composable
 fun GirSummaryLines(
     girCount: Int,
