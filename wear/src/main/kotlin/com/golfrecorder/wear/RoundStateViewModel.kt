@@ -20,6 +20,9 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
+/** 바로 이전 홀의 결과 — 워치 "홀 이동" 화면의 "{n}번 홀 {타수}타 · {등급}"용. */
+data class PreviousHole(val strokes: Int, val par: Int)
+
 data class RoundUiState(
     val roundActive: Boolean = false,
     val holeNumber: Int = 1,
@@ -32,6 +35,10 @@ data class RoundUiState(
     /** 이 라운드가 샷 위치를 워치 GPS 기준으로 기록하는지 — true면 워치가 자체
      * GPS를 계속 추적하고 타수 증가 액션에 좌표를 실어 보낸다. */
     val useWatchLocation: Boolean = false,
+    /** 현재 홀 이전까지의 파 대비 합 — 폰이 보내지 않으면(구버전) 0. */
+    val scoreBefore: Int = 0,
+    /** 바로 이전 홀의 결과 — 1번 홀이거나 그 홀 타수가 0이면 null(폰이 키를 안 보냄). */
+    val previousHole: PreviousHole? = null,
 )
 
 private enum class Counter { TO_GREEN, PUTT }
@@ -133,6 +140,17 @@ class RoundStateViewModel(application: Application) :
             holeCount = map.getInt(WearSync.KEY_HOLE_COUNT, 18),
             lastFailedAt = map.getLong(WearSync.KEY_LAST_FAILED_AT, 0L),
             useWatchLocation = map.getBoolean(WearSync.KEY_USE_WATCH_LOCATION, false),
+            scoreBefore = map.getInt(WearSync.KEY_SCORE_BEFORE, 0),
+            previousHole = if (
+                map.containsKey(WearSync.KEY_PREV_HOLE_STROKES) && map.containsKey(WearSync.KEY_PREV_HOLE_PAR)
+            ) {
+                PreviousHole(
+                    strokes = map.getInt(WearSync.KEY_PREV_HOLE_STROKES),
+                    par = map.getInt(WearSync.KEY_PREV_HOLE_PAR),
+                )
+            } else {
+                null
+            },
         )
         // 홀이 바뀌었으면 이전 홀 기준으로 쌓아뒀던 낙관적 증감분은 더 이상 의미가 없다.
         if (newServerState.holeNumber != serverState.holeNumber) {
