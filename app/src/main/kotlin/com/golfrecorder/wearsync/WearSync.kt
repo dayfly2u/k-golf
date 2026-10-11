@@ -52,4 +52,11 @@ object WearSync {
      * 코스 선택 화면에서 라운드 시작 시 정한 값. 워치는 이 값이 true일 때만 자체
      * GPS를 계속 추적하고, INCREMENT_* 액션에 좌표를 실어 보낸다. */
     const val KEY_USE_WATCH_LOCATION = "useWatchLocation"
+    /** 현재 홀보다 번호가 작은 홀 중 타수가 1 이상인 홀의 (타수 − 파) 합 — 워치 "합계"의
+     * 기준값(워치는 여기에 현재 홀의 파 대비를 더한다). 구버전 폰이 보내지 않으면 0으로 본다. */
+    const val KEY_SCORE_BEFORE = "scoreBefore"
+    /** 바로 이전 홀의 총타수와 파 — 둘은 항상 같이 있거나 같이 없다(이전 홀이 없거나 그 홀
+     * 타수가 0이면 둘 다 보내지 않는다). 워치 "홀 이동" 화면의 "{n}번 홀 {타수}타 · {등급}"용. */
+    const val KEY_PREV_HOLE_STROKES = "prevHoleStrokes"
+    const val KEY_PREV_HOLE_PAR = "prevHolePar"
 }

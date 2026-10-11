@@ -16,6 +16,7 @@ import com.golfrecorder.di.AppContainer
 import com.golfrecorder.domain.model.LocationSource
 import com.golfrecorder.domain.model.ShotPhase
 import com.golfrecorder.domain.model.StrokeCalculator
+import com.golfrecorder.domain.model.WatchRoundSummaryCalculator
 import com.golfrecorder.location.LatLng as AppLatLng
 import com.golfrecorder.location.LocationCapture
 import com.golfrecorder.location.LocationTracker
@@ -222,6 +223,21 @@ class RoundRecordingService : Service() {
                     StrokeCalculator.currentTotal(shots, penalties, ShotPhase.SHORT_GAME) +
                         StrokeCalculator.currentTotal(shots, penalties, ShotPhase.PUTT),
                 )
+                // 워치 "합계"와 "홀 이동" 화면용 — hole_records가 아니라 샷·벌타에서 구한다
+                // (WatchRoundSummaryCalculator 참고). 파는 위에서 읽은 코스 홀의 파.
+                val roundShots = container.shotRepository.getShotsForRound(roundId).first()
+                val roundPenalties = container.penaltyRepository.getPenaltiesForRound(roundId).first()
+                val summary = WatchRoundSummaryCalculator.calculate(
+                    currentHoleNumber = holeNumber,
+                    parByHole = course?.holes.orEmpty().associate { it.holeNumber to it.par },
+                    shots = roundShots,
+                    penalties = roundPenalties,
+                )
+                dataMap.putInt(WearSync.KEY_SCORE_BEFORE, summary.scoreBefore)
+                summary.previousHole?.let { previous ->
+                    dataMap.putInt(WearSync.KEY_PREV_HOLE_STROKES, previous.strokes)
+                    dataMap.putInt(WearSync.KEY_PREV_HOLE_PAR, previous.par)
+                }
                 val locationSource = container.roundRepository.getLocationSource(roundId)
                 dataMap.putBoolean(WearSync.KEY_USE_WATCH_LOCATION, locationSource == LocationSource.WATCH.name)
             }
