@@ -235,13 +235,8 @@ fun RoundHistoryScreen(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Column {
-                            Text(
-                                if (sortMode == RoundSortMode.SCORE) "타수 순위" else "최근 라운드",
-                                fontSize = 17.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = GolfTokens.TextPrimary,
-                            )
-                            Text("총 ${rounds.size}회", fontSize = 12.sp, color = GolfTokens.TextSecondary)
+                            Text("총 라운드", fontSize = 17.sp, fontWeight = FontWeight.Bold, color = GolfTokens.TextPrimary)
+                            Text("${rounds.size}회", fontSize = 12.sp, color = GolfTokens.TextSecondary)
                         }
                         RoundSortToggle(selected = sortMode, onSelect = { sortMode = it })
                     }
