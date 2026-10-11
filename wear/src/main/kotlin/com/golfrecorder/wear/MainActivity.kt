@@ -13,36 +13,21 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.MaterialTheme
-import androidx.wear.compose.material.Text
 import com.golfrecorder.wearsync.WearSync
 import kotlinx.coroutines.delay
 
 private const val FAIL_VIBRATION_MS = 200L
 private const val GPS_FAILURE_MESSAGE_MS = 2500L
-private const val RECONNECTED_MESSAGE_MS = 2500L
 
 private fun vibrateFailure(context: Context) {
     val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -53,9 +38,6 @@ private fun vibrateFailure(context: Context) {
     }
     vibrator.vibrate(VibrationEffect.createOneShot(FAIL_VIBRATION_MS, VibrationEffect.DEFAULT_AMPLITUDE))
 }
-
-// 버튼 크기는 그대로 두고 +/- 표기만 눈에 더 잘 띄게 키운다.
-private val STROKE_BUTTON_TEXT_SIZE = 22.sp
 
 class MainActivity : ComponentActivity() {
     private val viewModel: RoundStateViewModel by viewModels()
@@ -75,20 +57,6 @@ fun RoundControlScreen(viewModel: RoundStateViewModel) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val isPhoneConnected by viewModel.isPhoneConnected.collectAsStateWithLifecycle()
     val context = LocalContext.current
-
-    // 끊김은 계속 보여주고(그동안 눌러도 큐에만 쌓이고 있다는 걸 알아야 하니), 다시
-    // 붙었을 때는 잠깐만 확인 메시지를 띄운다 — GPS 실패 문구와 같은 패턴. 앱을 막
-    // 열었을 때(처음부터 연결돼 있던 경우)는 "재연결" 메시지를 띄우지 않는다.
-    var lastSeenConnected by remember { mutableStateOf<Boolean?>(null) }
-    var showReconnectedMessage by remember { mutableStateOf(false) }
-    LaunchedEffect(isPhoneConnected) {
-        if (lastSeenConnected == false && isPhoneConnected) {
-            showReconnectedMessage = true
-            delay(RECONNECTED_MESSAGE_MS)
-            showReconnectedMessage = false
-        }
-        lastSeenConnected = isPhoneConnected
-    }
 
     // 폰 화면의 "위치를 가져오지 못해 기록되지 않았습니다" Toast와 같은 의도 — 워치는
     // 화면이 작아 텍스트 대신 진동 + 잠깐 뜨는 안내 문구로 알려준다. 처음 값을 받을
@@ -135,66 +103,30 @@ fun RoundControlScreen(viewModel: RoundStateViewModel) {
         }
     }
 
-    Column(
-        modifier = Modifier.fillMaxSize().padding(8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        if (!isPhoneConnected) {
-            Text("폰 연결 끊김", color = Color.Red, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-        } else if (showReconnectedMessage) {
-            Text("폰 연결됨", color = Color(0xFF4CAF50), fontWeight = FontWeight.Bold, fontSize = 12.sp)
-        }
+    // ◀/▶를 누르면 홀 이동 요청을 세우고 액션을 보낸다 — 폰이 처리해서 홀 번호가 실제로
+    // 바뀌면 홀 이동 화면이 잠깐 뜬다(HoleMoveOverlayState 참고).
+    val overlay = rememberHoleMoveOverlay(state.holeNumber)
+    val onMove: (HoleMoveDirection) -> Unit = { direction ->
+        overlay.request(direction)
+        viewModel.sendAction(
+            if (direction == HoleMoveDirection.NEXT) WearSync.ACTION_NEXT_HOLE else WearSync.ACTION_PREV_HOLE,
+        )
+    }
 
-        if (!state.roundActive) {
-            Text(
-                "라운드가 시작되지 않았습니다.\n폰에서 라운드를 시작해주세요.",
-                textAlign = TextAlign.Center,
-            )
-            return@Column
-        }
-
-        if (showGpsFailureMessage) {
-            Text(
-                "GPS 신호 없음",
-                color = Color.Red,
-                fontWeight = FontWeight.Bold,
-                fontSize = 12.sp,
-            )
-        }
-
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Button(
-                onClick = { viewModel.sendAction(WearSync.ACTION_PREV_HOLE) },
-                enabled = state.holeNumber > 1,
-            ) { Text("◀") }
-            Text(" ${state.holeNumber}홀 (파${state.par}) ")
-            Button(
-                onClick = { viewModel.sendAction(WearSync.ACTION_NEXT_HOLE) },
-                enabled = state.holeNumber < state.holeCount,
-            ) { Text("▶") }
-        }
-
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("그린까지: ${state.strokesToGreen} ")
-            Button(
-                onClick = { viewModel.sendAction(WearSync.ACTION_DECREMENT_TO_GREEN) },
-                enabled = state.strokesToGreen > 0,
-            ) { Text("-", fontSize = STROKE_BUTTON_TEXT_SIZE, fontWeight = FontWeight.Bold) }
-            Button(onClick = { viewModel.sendAction(WearSync.ACTION_INCREMENT_TO_GREEN) }) {
-                Text("+", fontSize = STROKE_BUTTON_TEXT_SIZE, fontWeight = FontWeight.Bold)
-            }
-        }
-
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("숏/퍼팅: ${state.strokesPutt} ")
-            Button(
-                onClick = { viewModel.sendAction(WearSync.ACTION_DECREMENT_PUTT) },
-                enabled = state.strokesPutt > 0,
-            ) { Text("-", fontSize = STROKE_BUTTON_TEXT_SIZE, fontWeight = FontWeight.Bold) }
-            Button(onClick = { viewModel.sendAction(WearSync.ACTION_INCREMENT_PUTT) }) {
-                Text("+", fontSize = STROKE_BUTTON_TEXT_SIZE, fontWeight = FontWeight.Bold)
-            }
-        }
+    val shownDirection = overlay.shownDirection
+    when {
+        !state.roundActive -> WatchIdleScreen(isPhoneConnected = isPhoneConnected)
+        shownDirection != null -> WatchHoleScreen(
+            state = state,
+            direction = shownDirection,
+            onMove = onMove,
+            onDismiss = overlay::dismiss,
+        )
+        else -> WatchPlayScreen(
+            state = state,
+            badge = statusBadge(isPhoneConnected, showGpsFailureMessage),
+            onAction = viewModel::sendAction,
+            onMove = onMove,
+        )
     }
 }
