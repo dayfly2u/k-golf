@@ -61,6 +61,8 @@ import com.golfrecorder.domain.model.PenaltyType
 import com.golfrecorder.domain.model.calculateDriverDistanceStats
 import com.golfrecorder.domain.model.computeRecentRank
 import com.golfrecorder.domain.model.formatToPar
+import com.golfrecorder.domain.model.locationSourceLabel
+import com.golfrecorder.domain.model.mapProviderLabel
 import com.golfrecorder.ui.common.StatGrid
 import com.golfrecorder.ui.common.formatRoundPeriod
 import com.golfrecorder.ui.common.StatItem
@@ -176,6 +178,12 @@ class RoundSummaryViewModel(
     val courseName: StateFlow<String> = combine(roundWithRecords, liveCourse) { round, course ->
         course?.course?.name ?: round?.round?.courseName.orEmpty()
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
+
+    /** (위치 기록 기준, 지도 종류) 표시 이름 — 라운드를 시작할 때 코스 선택 화면에서 정한 값이라
+     * 라운드 내내 고정이다. 설정 노트(홀 결과 비율 카드 아래)에 쓴다. */
+    val setupNote: StateFlow<Pair<String, String>?> = roundWithRecords
+        .map { rwr -> rwr?.round?.let { locationSourceLabel(it.locationSource) to mapProviderLabel(it.mapProvider) } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 }
 
 class RoundSummaryViewModelFactory(
@@ -204,6 +212,7 @@ fun RoundSummaryScreen(
     val penaltyCounts by viewModel.penaltyCounts.collectAsStateWithLifecycle()
     val roundTimes by viewModel.roundTimes.collectAsStateWithLifecycle()
     val recentRank by viewModel.recentRank.collectAsStateWithLifecycle()
+    val setupNote by viewModel.setupNote.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showReviewDialog by remember { mutableStateOf(false) }
@@ -372,7 +381,9 @@ fun RoundSummaryScreen(
                 items = listOf(
                     StatItem(label = "GIR", value = "${percentOfHoles(strictGirCount)}%", sub = "$strictGirCount/$totalHoles"),
                     StatItem(label = "L-GIR", value = "${percentOfHoles(girCount)}%", sub = "$girCount/$totalHoles"),
-                    StatItem(label = "퍼팅", value = "$totalPutts", sub = "홀당 ${"%.1f".format(avgPutts)}"),
+                    // 홀당 평균이 주 값이고 전체 개수는 작은 보조 값 — 라운드 길이(9/18홀)와 무관하게
+                    // 비교할 수 있는 쪽을 크게 보여준다.
+                    StatItem(label = "홀당 퍼팅", value = "%.1f".format(avgPutts), sub = "총 $totalPutts"),
                     StatItem(
                         label = "드라이버 평균",
                         value = driverStats.avgMeters?.roundToInt()?.toString() ?: "-",
@@ -393,6 +404,9 @@ fun RoundSummaryScreen(
                 cardCells = true,
             )
             HoleResultRatioCard(holeResults = holeResults)
+            setupNote?.let { (locationLabel, mapLabel) ->
+                RoundSetupNote(locationLabel = locationLabel, mapLabel = mapLabel)
+            }
             ScoreCardGrid(
                 holeResults = holeResults,
                 enabled = viewModel.courseId != null,
