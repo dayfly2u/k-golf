@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>K-Golf 워치 대기</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#8CC48A}a:hover{color:#B5DDB3}
+</style>
+</helmet>
+<div style="width: 360px; height: 360px; border-radius: 50%; background: #000000; color: #FFFFFF; font-family: 'IBM Plex Sans KR', sans-serif; position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px">
+  <div style="position: absolute; left: 0; right: 0; top: 46px; display: flex; justify-content: center">
+    <div style="display: flex; align-items: center; gap: 6px; background: #3A2A0E; color: #F2C14E; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 600">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 2l20 20"/><path d="M8.5 16.5a5 5 0 0 1 7 0"/><path d="M5 12.9a10 10 0 0 1 5.2-2.8"/><path d="M19 12.9a10 10 0 0 0-2.3-1.6"/><circle cx="12" cy="20" r="0.8" fill="currentColor"/></svg>
+      폰 연결 끊김
+    </div>
+  </div>
+
+  <div style="width: 64px; height: 64px; border-radius: 20px; background: {{accent}}; display: flex; align-items: center; justify-content: center">
+    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 21V3l10 4-10 4"/><path d="M4 21h12"/></svg>
+  </div>
+  <div style="font-size: 20px; font-weight: 700; letter-spacing: -0.3px">K-Golf</div>
+  <div style="font-size: 14px; color: #C9D1CB; text-align: center; line-height: 1.5">폰에서 라운드를 시작하면<br>여기에 홀이 표시돼요</div>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 48px; text-align: center; font-size: 11px; color: #7E8A82">연결되면 자동으로 따라와요</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#2E7D4F","options":["#2E7D4F","#1F5C3F","#0F7C8C"]},"$preview":{"width":360,"height":360}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#2E7D4F' };
+  }
+}
+</script>
+</body>
+</html>
