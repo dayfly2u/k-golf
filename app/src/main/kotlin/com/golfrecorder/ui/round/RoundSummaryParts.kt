@@ -36,12 +36,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.golfrecorder.domain.model.HoleResult
@@ -219,13 +215,15 @@ private fun ScoreCardHalf(
 }
 
 /** 시안 "스코어카드" 카드 — OUT(1~9)/IN(10~18) 격자(홀 번호 / 파 / 타수 + 합계). 타수 칸을
- * 누르면 그 홀 상세로 간다([enabled]는 코스가 남아있을 때만 true). */
+ * 누르면 그 홀 상세로 간다([enabled]는 코스가 남아있을 때만 true). 헤더 우측에는 이 라운드의
+ * 위치·지도 설정([setupNote], 예: "와치 GPS · 카카오맵")과 홀 누름 안내를 두 줄로 쌓는다. */
 @Composable
 internal fun ScoreCardGrid(
     holeResults: List<HoleResult>,
     enabled: Boolean,
     onHoleClick: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    setupNote: String? = null,
 ) {
     if (holeResults.isEmpty()) return
     GolfCard(modifier = modifier) {
@@ -235,8 +233,13 @@ internal fun ScoreCardGrid(
             verticalAlignment = Alignment.Bottom,
         ) {
             Text("스코어카드", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = GolfTokens.TextPrimary)
-            if (enabled) {
-                Text("홀을 누르면 샷 경로와 거리", fontSize = 11.sp, color = GolfTokens.TextSecondary)
+            Column(horizontalAlignment = Alignment.End) {
+                setupNote?.let { note ->
+                    Text(note, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = GolfTokens.TextSecondary)
+                }
+                if (enabled) {
+                    Text("홀을 누르면 샷 경로와 거리", fontSize = 11.sp, color = GolfTokens.TextSecondary)
+                }
             }
         }
         Spacer(Modifier.height(4.dp))
@@ -244,26 +247,6 @@ internal fun ScoreCardGrid(
             .filter { (_, holes) -> holes.isNotEmpty() }
             .forEach { (name, holes) -> ScoreCardHalf(name, holes, enabled, onHoleClick) }
     }
-}
-
-/** 홀 결과 비율 카드와 스코어카드 사이의 한 줄 노트 — 이 라운드를 시작할 때 코스 선택 화면에서
- * 정한 위치 기록 기준(와치/핸드폰 GPS)과 지도 종류(카카오맵/구글맵)를 작게 알려준다. 카드가
- * 아니라 노트라서 카드 사이에서 눈에 덜 띄게 둔다. */
-@Composable
-internal fun RoundSetupNote(locationLabel: String, mapLabel: String, modifier: Modifier = Modifier) {
-    val valueStyle = SpanStyle(fontWeight = FontWeight.SemiBold, color = GolfTokens.TextPrimary)
-    Text(
-        text = buildAnnotatedString {
-            append("위치 ")
-            withStyle(valueStyle) { append(locationLabel) }
-            append("  ·  지도 ")
-            withStyle(valueStyle) { append(mapLabel) }
-        },
-        modifier = modifier.fillMaxWidth().padding(horizontal = 4.dp),
-        fontSize = 12.sp,
-        color = GolfTokens.TextSecondary,
-        textAlign = TextAlign.Center,
-    )
 }
 
 private val reviewPriceFormat = NumberFormat.getNumberInstance(Locale.KOREA)

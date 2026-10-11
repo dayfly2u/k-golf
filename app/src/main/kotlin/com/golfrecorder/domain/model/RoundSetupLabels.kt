@@ -11,3 +11,7 @@ fun locationSourceLabel(locationSource: String): String =
 
 fun mapProviderLabel(mapProvider: String): String =
     if (mapProvider == MapProvider.GOOGLE.name) "구글맵" else "카카오맵"
+
+/** 스코어카드 헤더 우측에 보이는 한 줄 — 예: "와치 GPS · 카카오맵". */
+fun roundSetupNote(locationSource: String, mapProvider: String): String =
+    "${locationSourceLabel(locationSource)} · ${mapProviderLabel(mapProvider)}"

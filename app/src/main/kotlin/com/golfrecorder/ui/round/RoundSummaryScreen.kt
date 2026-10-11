@@ -61,8 +61,7 @@ import com.golfrecorder.domain.model.PenaltyType
 import com.golfrecorder.domain.model.calculateDriverDistanceStats
 import com.golfrecorder.domain.model.computeRecentRank
 import com.golfrecorder.domain.model.formatToPar
-import com.golfrecorder.domain.model.locationSourceLabel
-import com.golfrecorder.domain.model.mapProviderLabel
+import com.golfrecorder.domain.model.roundSetupNote
 import com.golfrecorder.ui.common.StatGrid
 import com.golfrecorder.ui.common.formatRoundPeriod
 import com.golfrecorder.ui.common.StatItem
@@ -179,10 +178,10 @@ class RoundSummaryViewModel(
         course?.course?.name ?: round?.round?.courseName.orEmpty()
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
 
-    /** (위치 기록 기준, 지도 종류) 표시 이름 — 라운드를 시작할 때 코스 선택 화면에서 정한 값이라
-     * 라운드 내내 고정이다. 설정 노트(홀 결과 비율 카드 아래)에 쓴다. */
-    val setupNote: StateFlow<Pair<String, String>?> = roundWithRecords
-        .map { rwr -> rwr?.round?.let { locationSourceLabel(it.locationSource) to mapProviderLabel(it.mapProvider) } }
+    /** "와치 GPS · 카카오맵" 같은 위치·지도 설정 한 줄 — 라운드를 시작할 때 코스 선택 화면에서
+     * 정한 값이라 라운드 내내 고정이다. 스코어카드 헤더 우측에 쓴다. */
+    val setupNote: StateFlow<String?> = roundWithRecords
+        .map { rwr -> rwr?.round?.let { roundSetupNote(it.locationSource, it.mapProvider) } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 }
 
@@ -404,13 +403,11 @@ fun RoundSummaryScreen(
                 cardCells = true,
             )
             HoleResultRatioCard(holeResults = holeResults)
-            setupNote?.let { (locationLabel, mapLabel) ->
-                RoundSetupNote(locationLabel = locationLabel, mapLabel = mapLabel)
-            }
             ScoreCardGrid(
                 holeResults = holeResults,
                 enabled = viewModel.courseId != null,
                 onHoleClick = onEditHole,
+                setupNote = setupNote,
             )
             ReviewCard(
                 price = viewModel.price,
