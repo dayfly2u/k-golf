@@ -63,23 +63,69 @@ class RoundYearsTest {
     }
 
     @Test
-    fun `연도 구분선은 전체 + 최신순에서만 넣고 기록이 한 해뿐이어도 넣는다`() {
-        assertTrue(showYearHeaders(yearFilter = null, sortMode = RoundSortMode.RECENT))
-        // 연도를 고르면(필터) 한 해만 보이므로 구분선이 필요 없다
-        assertFalse(showYearHeaders(yearFilter = 2026, sortMode = RoundSortMode.RECENT))
-        // 점수순은 연도가 뒤섞인다
-        assertFalse(showYearHeaders(yearFilter = null, sortMode = RoundSortMode.SCORE))
+    fun `최신순은 연도를 최신부터 묶고 각 연도 안에서 날짜 내림차순`() {
+        val rounds = listOf(
+            round(1, 2025, month = 3), round(2, 2026, month = 4), round(3, 2025, month = 9), round(4, 2026, month = 8),
+        )
+        assertEquals(
+            listOf(4L, 2L, 3L, 1L),
+            sortRoundsByYear(rounds, RoundSortMode.RECENT, seoul).map { it.roundId },
+        )
+    }
+
+    @Test
+    fun `점수순도 연도 묶음은 유지하고 각 연도 안에서만 총타수 오름차순`() {
+        // 2025에 80타(전체 1등)가 있어도 연도 묶음이 먼저라 2026 목록 뒤에 온다.
+        val rounds = listOf(
+            round(1, 2026, strokes = 95), round(2, 2025, strokes = 80),
+            round(3, 2026, strokes = 90), round(4, 2025, strokes = 99),
+        )
+        assertEquals(
+            listOf(3L, 1L, 2L, 4L),
+            sortRoundsByYear(rounds, RoundSortMode.SCORE, seoul).map { it.roundId },
+        )
+    }
+
+    @Test
+    fun `점수순 동점은 최근 라운드가 위, 안 끝난 라운드는 각 연도의 맨 뒤`() {
+        val rounds = listOf(
+            round(1, 2026, strokes = 90, month = 3),
+            round(2, 2026, strokes = 90, month = 8),
+            round(3, 2026, strokes = 20, finished = false, month = 9),
+            round(4, 2025, strokes = 70, month = 1),
+        )
+        assertEquals(
+            listOf(2L, 1L, 3L, 4L),
+            sortRoundsByYear(rounds, RoundSortMode.SCORE, seoul).map { it.roundId },
+        )
+    }
+
+    @Test
+    fun `점수순에서도 연도마다 구분선이 하나씩 들어간다`() {
+        val rounds = listOf(
+            round(1, 2026, strokes = 95), round(2, 2025, strokes = 80),
+            round(3, 2026, strokes = 90), round(4, 2025, strokes = 100),
+        )
+        val sorted = sortRoundsByYear(rounds, RoundSortMode.SCORE, seoul)
+        val entries = buildHomeListEntries(sorted, withYearHeaders = true, zone = seoul)
+        assertEquals(
+            listOf(
+                HomeListEntry.YearHeader(2026, roundCount = 2, avgTotalStrokes = 92.5),
+                HomeListEntry.Round(sorted[0]),
+                HomeListEntry.Round(sorted[1]),
+                HomeListEntry.YearHeader(2025, roundCount = 2, avgTotalStrokes = 90.0),
+                HomeListEntry.Round(sorted[2]),
+                HomeListEntry.Round(sorted[3]),
+            ),
+            entries,
+        )
     }
 
     @Test
     fun `한 해뿐인 기록도 전체 보기에는 연도 구분선이 하나 들어간다`() {
-        val sorted = listOf(round(1, 2026, strokes = 90), round(2, 2026, strokes = 100))
+        val sorted = sortRoundsByYear(listOf(round(1, 2026, strokes = 90), round(2, 2026, strokes = 100)), RoundSortMode.RECENT, seoul)
         assertFalse(hasYearFilter(roundYears(sorted, seoul)))
-        val entries = buildHomeListEntries(
-            sorted,
-            withYearHeaders = showYearHeaders(yearFilter = null, sortMode = RoundSortMode.RECENT),
-            zone = seoul,
-        )
+        val entries = buildHomeListEntries(sorted, withYearHeaders = true, zone = seoul)
         assertEquals(HomeListEntry.YearHeader(2026, roundCount = 2, avgTotalStrokes = 95.0), entries.first())
         assertEquals(3, entries.size)
     }

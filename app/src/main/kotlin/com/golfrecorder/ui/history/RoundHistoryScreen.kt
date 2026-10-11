@@ -63,8 +63,7 @@ import com.golfrecorder.domain.model.computeRoundAggregates
 import com.golfrecorder.domain.model.effectiveYearFilter
 import com.golfrecorder.domain.model.filterByYear
 import com.golfrecorder.domain.model.roundYears
-import com.golfrecorder.domain.model.showYearHeaders
-import com.golfrecorder.domain.model.sortRounds
+import com.golfrecorder.domain.model.sortRoundsByYear
 import com.golfrecorder.ui.common.GolfCard
 import com.golfrecorder.ui.common.MoreBelowIndicator
 import com.golfrecorder.ui.common.PrimaryCtaButton
@@ -139,10 +138,11 @@ fun RoundHistoryScreen(
     val years = remember(rounds) { roundYears(rounds) }
     val yearFilter = effectiveYearFilter(selectedYear, years)
     val visibleRounds = remember(rounds, yearFilter) { filterByYear(rounds, yearFilter) }
-    val sortedRounds = remember(visibleRounds, sortMode) { sortRounds(visibleRounds, sortMode) }
-    // 전체 + 최신순일 때 연도 구분선을 넣는다 — 기록이 한 해뿐이어도 넣는다(showYearHeaders 참고).
-    val listEntries = remember(sortedRounds, yearFilter, sortMode) {
-        buildHomeListEntries(sortedRounds, withYearHeaders = showYearHeaders(yearFilter, sortMode))
+    // 연도별로 묶고(최신 연도부터) 그 안에서 최신순/점수순으로 정렬한다 — 점수순도 같은 연도 안에서만 줄 세운다.
+    val sortedRounds = remember(visibleRounds, sortMode) { sortRoundsByYear(visibleRounds, sortMode) }
+    // 전체 보기에서는 정렬 방식과 상관없이, 기록이 한 해뿐이어도 연도 구분선을 넣는다. 연도를 고르면 한 해만 보이니 없다.
+    val listEntries = remember(sortedRounds, yearFilter) {
+        buildHomeListEntries(sortedRounds, withYearHeaders = yearFilter == null)
     }
     val overallAggregates = remember(rounds) { computeRoundAggregates(rounds) }
     val yearAggregates = remember(visibleRounds) { computeRoundAggregates(visibleRounds) }

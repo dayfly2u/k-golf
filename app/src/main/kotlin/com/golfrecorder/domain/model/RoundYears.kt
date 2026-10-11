@@ -27,12 +27,19 @@ fun effectiveYearFilter(selected: Int?, years: List<Int>): Int? =
     selected?.takeIf { hasYearFilter(years) && it in years }
 
 /**
- * 연도 구분선(`2026 ────── N회 · 평균 94.8`)을 넣을지 — 전체([yearFilter]가 null) + 최신순일 때, 기록이 한 해뿐이어도
- * 넣는다(전체 보기의 시안 모양). 연도 *필터*([hasYearFilter])만 2개년 이상일 때 나오고 구분선과는 무관하다.
- * 점수순은 연도가 뒤섞여 구분선이 의미가 없다.
+ * 연도별로 묶어(최신 연도부터) 각 연도 안에서 [mode]로 정렬한다 — 점수순도 같은 연도 안에서만 줄 세운다. 전체 보기에서
+ * 연도 구분선(`2026 ────── N회 · 평균 94.8`)이 정렬 방식과 상관없이 항상 나오려면 같은 연도 라운드가 이어져 있어야 해서다.
+ * 연도 필터를 건 목록(한 해뿐)에서는 [sortRounds]와 결과가 같다.
  */
-fun showYearHeaders(yearFilter: Int?, sortMode: RoundSortMode): Boolean =
-    yearFilter == null && sortMode == RoundSortMode.RECENT
+fun sortRoundsByYear(
+    rounds: List<RoundSummary>,
+    mode: RoundSortMode,
+    zone: ZoneId = ZoneId.systemDefault(),
+): List<RoundSummary> =
+    rounds.groupBy { roundYear(it, zone) }
+        .toSortedMap(reverseOrder())
+        .values
+        .flatMap { yearRounds -> sortRounds(yearRounds, mode) }
 
 /** [year]가 null이면 전체를 그대로 돌려준다. */
 fun filterByYear(rounds: List<RoundSummary>, year: Int?, zone: ZoneId = ZoneId.systemDefault()): List<RoundSummary> =
@@ -49,8 +56,8 @@ sealed interface HomeListEntry {
 
 /**
  * [sortedRounds]를 목록 줄로 바꾼다. [withYearHeaders]가 true면 연도가 바뀌는 곳마다 [HomeListEntry.YearHeader]를
- * 끼워 넣는다 — 같은 연도 라운드가 이어져 있다고 가정하므로 최신순(`playedAt` 내림차순)일 때만 켠다
- * (점수순은 연도가 뒤섞여 구분선이 의미가 없다).
+ * 끼워 넣는다 — 같은 연도 라운드가 이어져 있다고 가정하므로 [sortRoundsByYear] 결과를 넘긴다. 전체 보기에서는
+ * 기록이 한 해뿐이어도, 최신순/점수순 어느 쪽이든 켠다(연도를 고른 필터 목록에서는 끈다).
  */
 fun buildHomeListEntries(
     sortedRounds: List<RoundSummary>,
