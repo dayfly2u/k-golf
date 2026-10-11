@@ -56,6 +56,7 @@ import com.golfrecorder.domain.model.DriverDistanceStats
 import com.golfrecorder.domain.model.HoleResult
 import com.golfrecorder.domain.model.RoundSortMode
 import com.golfrecorder.domain.model.calculateDriverDistanceStats
+import com.golfrecorder.domain.model.computeEstimatedHandicap
 import com.golfrecorder.domain.model.computeRoundAggregates
 import com.golfrecorder.domain.model.sortRounds
 import com.golfrecorder.ui.common.GolfCard
@@ -180,7 +181,11 @@ fun RoundHistoryScreen(
 
     Scaffold(
         topBar = {
-            HomeHeader(aggregates = computeRoundAggregates(rounds), onManageCourses = onManageCourses)
+            HomeHeader(
+                aggregates = computeRoundAggregates(rounds),
+                handicap = remember(rounds) { computeEstimatedHandicap(rounds) },
+                onManageCourses = onManageCourses,
+            )
         },
         bottomBar = {
             Row(

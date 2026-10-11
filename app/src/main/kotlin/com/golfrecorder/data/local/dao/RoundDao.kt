@@ -48,7 +48,8 @@ interface RoundDao {
                r.price AS price, r.companions AS companions, r.review AS review,
                SUM(hr.strokesToGreen + hr.strokesGreenToHoleOut) AS totalStrokes,
                SUM(hr.par) AS totalPar,
-               SUM(hr.strokesPutt) AS totalPutts
+               SUM(MIN(hr.strokesToGreen + hr.strokesGreenToHoleOut, hr.par + 5)) AS adjustedStrokes,
+               COUNT(hr.holeNumber) AS holesPlayed
         FROM rounds r
         LEFT JOIN courses c ON c.id = r.courseId
         LEFT JOIN hole_records hr ON hr.roundId = r.id
