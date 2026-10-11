@@ -215,8 +215,9 @@ private fun ScoreCardHalf(
 }
 
 /** 시안 "스코어카드" 카드 — OUT(1~9)/IN(10~18) 격자(홀 번호 / 파 / 타수 + 합계). 타수 칸을
- * 누르면 그 홀 상세로 간다([enabled]는 코스가 남아있을 때만 true). 헤더 우측에는 이 라운드의
- * 위치·지도 설정([setupNote], 예: "와치 GPS · 카카오맵")과 홀 누름 안내를 두 줄로 쌓는다. */
+ * 누르면 그 홀 상세로 간다([enabled]는 코스가 남아있을 때만 true이고, 이때만 점수 아래에
+ * "* 각 홀을 누르면 …" 각주를 보인다). 헤더 우측에는 이 라운드의 위치·지도 설정
+ * ([setupNote], 예: "와치 GPS · 카카오맵")을 한 줄로 둔다. */
 @Composable
 internal fun ScoreCardGrid(
     holeResults: List<HoleResult>,
@@ -227,26 +228,29 @@ internal fun ScoreCardGrid(
 ) {
     if (holeResults.isEmpty()) return
     GolfCard(modifier = modifier) {
-        // 우측이 두 줄이 될 수 있어 제목은 좌측 최상단에 붙인다(Bottom이면 두 줄 아래로 내려간다).
+        // 제목(14sp)이 우측 설정 줄(11sp)보다 높아서 Bottom 정렬이어도 제목은 좌측 최상단에 붙는다.
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Top,
+            verticalAlignment = Alignment.Bottom,
         ) {
             Text("스코어카드", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = GolfTokens.TextPrimary)
-            Column(horizontalAlignment = Alignment.End) {
-                setupNote?.let { note ->
-                    Text(note, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = GolfTokens.TextSecondary)
-                }
-                if (enabled) {
-                    Text("홀을 누르면 샷 경로와 거리", fontSize = 11.sp, color = GolfTokens.TextSecondary)
-                }
+            setupNote?.let { note ->
+                Text(note, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = GolfTokens.TextSecondary)
             }
         }
         Spacer(Modifier.height(4.dp))
         listOf("OUT" to holeResults.take(SLOTS_PER_HALF), "IN" to holeResults.drop(SLOTS_PER_HALF))
             .filter { (_, holes) -> holes.isNotEmpty() }
             .forEach { (name, holes) -> ScoreCardHalf(name, holes, enabled, onHoleClick) }
+        if (enabled) {
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "* 각 홀을 누르면 홀 상세정보와 각 샷의 거리가 나옵니다",
+                fontSize = 11.sp,
+                color = GolfTokens.TextSecondary,
+            )
+        }
     }
 }
 
