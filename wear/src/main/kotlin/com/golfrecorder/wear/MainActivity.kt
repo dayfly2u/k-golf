@@ -20,9 +20,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.wear.compose.material.LocalTextStyle
 import androidx.wear.compose.material.MaterialTheme
+import androidx.wear.compose.material.ProvideTextStyle
 import com.golfrecorder.wearsync.WearSync
 import kotlinx.coroutines.delay
 
@@ -46,7 +50,19 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             MaterialTheme {
-                RoundControlScreen(viewModel)
+                // 한 줄 글자의 높이가 lineHeight와 같도록 줄 높이 동작을 명시한다(WatchScale.lineSp 참고).
+                ProvideTextStyle(
+                    value = LocalTextStyle.current.merge(
+                        TextStyle(
+                            lineHeightStyle = LineHeightStyle(
+                                alignment = LineHeightStyle.Alignment.Center,
+                                trim = LineHeightStyle.Trim.None,
+                            ),
+                        ),
+                    ),
+                ) {
+                    RoundControlScreen(viewModel)
+                }
             }
         }
     }

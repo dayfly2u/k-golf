@@ -24,6 +24,13 @@ class WatchScale private constructor(private val factor: Float) {
      * 글자의 줄 높이 — [sp]와 같은 크기의 [LINE_HEIGHT_RATIO]배. wear `MaterialTheme`의 기본
      * 본문 스타일은 줄 높이가 20sp라서, 줄 높이를 직접 주지 않으면 10~13sp 글자도 20sp짜리
      * 줄 상자를 차지해 198dp 화면에서 세로로 넘친다.
+     *
+     * 이 값이 실제 줄 상자 높이가 되려면 `MainActivity`가 `ProvideTextStyle`로 깔아 둔
+     * `LineHeightStyle`(alignment = Center, trim = Trim.None)에 기대야 한다. 줄 높이 스타일을
+     * 명시하지 않으면 Compose 버전에 따라 한 줄 글자의 위·아래 여백을 잘라내(trim) `lineHeight`가
+     * 무시되고 글꼴 고유 높이(Barlow 숫자 약 1.2배, 시스템 한글 약 1.3~1.45배)로 그려질 수 있다.
+     * 그러면 198dp 화면의 세로 예산이 어긋나 맨 아래 합계 줄이 잘린다 — 한 줄 글자의 높이가
+     * `lineHeight`와 같아야 예산이 맞는다.
      */
     fun lineSp(designPx: Float, minSp: Float = MIN_TEXT_SP): TextUnit = sp(designPx, minSp) * LINE_HEIGHT_RATIO
 
