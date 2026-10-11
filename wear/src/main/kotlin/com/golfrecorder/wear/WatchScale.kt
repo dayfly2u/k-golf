@@ -20,6 +20,13 @@ class WatchScale private constructor(private val factor: Float) {
     /** 글자 — 비례하되 [minSp] 아래로는 내려가지 않는다. */
     fun sp(designPx: Float, minSp: Float = MIN_TEXT_SP): TextUnit = maxOf(designPx * factor, minSp).sp
 
+    /**
+     * 글자의 줄 높이 — [sp]와 같은 크기의 [LINE_HEIGHT_RATIO]배. wear `MaterialTheme`의 기본
+     * 본문 스타일은 줄 높이가 20sp라서, 줄 높이를 직접 주지 않으면 10~13sp 글자도 20sp짜리
+     * 줄 상자를 차지해 198dp 화면에서 세로로 넘친다.
+     */
+    fun lineSp(designPx: Float, minSp: Float = MIN_TEXT_SP): TextUnit = sp(designPx, minSp) * LINE_HEIGHT_RATIO
+
     /** 눌러야 하는 원형 버튼 지름 — 비례하되 [minDp] 아래로는 내려가지 않는다. */
     fun touch(designPx: Float, minDp: Float = MIN_TOUCH_DP): Dp = maxOf(designPx * factor, minDp).dp
 
@@ -27,6 +34,7 @@ class WatchScale private constructor(private val factor: Float) {
         const val DESIGN_SIZE = 360f
         const val MIN_TEXT_SP = 10f
         const val MIN_TOUCH_DP = 38f
+        const val LINE_HEIGHT_RATIO = 1.2f
 
         fun forScreen(minSide: Dp): WatchScale = WatchScale(minSide.value / DESIGN_SIZE)
     }

@@ -51,6 +51,7 @@ fun WatchHoleScreen(
             modifier = Modifier.align(Alignment.TopCenter).padding(top = scale.dp(52f).coerceAtLeast(26.dp)),
             color = WatchColors.Label,
             fontSize = scale.sp(12f),
+            lineHeight = scale.lineSp(12f),
             maxLines = 1,
         )
 
@@ -113,6 +114,7 @@ fun WatchHoleScreen(
                     },
                     color = WatchColors.Label,
                     fontSize = scale.sp(12f),
+                    lineHeight = scale.lineSp(12f),
                     maxLines = 1,
                 )
             }

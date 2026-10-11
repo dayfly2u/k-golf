@@ -25,6 +25,14 @@ class WatchScaleTest {
     }
 
     @Test
+    fun `lineSp is the font size times 1_2 so the text does not keep a 20sp default line box`() {
+        // 11px → 6.05sp는 하한 10sp로 올라가고, 줄 높이는 그 10sp의 1.2배.
+        assertEquals(12f, scale.lineSp(11f).value, 0.01f)
+        // 96px → 52.8sp (하한 40sp 위) → 63.36sp.
+        assertEquals(63.36f, scale.lineSp(96f, minSp = 40f).value, 0.01f)
+    }
+
+    @Test
     fun `touch targets never go below their floor`() {
         assertEquals(38f, scale.touch(52f).value, 0.001f)
         assertEquals(34f, scale.touch(44f, minDp = 34f).value, 0.001f)

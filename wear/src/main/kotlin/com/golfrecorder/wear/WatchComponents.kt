@@ -61,6 +61,7 @@ fun WatchParChip(par: Int, designFontPx: Float, scale: WatchScale) {
             "파 $par",
             color = Color.Black,
             fontSize = scale.sp(designFontPx),
+            lineHeight = scale.lineSp(designFontPx),
             fontWeight = FontWeight.SemiBold,
             maxLines = 1,
         )
@@ -81,5 +82,12 @@ fun WatchTotalLine(total: Int, labelDesignPx: Float, valueDesignPx: Float, value
             ),
         ) { append(formatTotal(total)) }
     }
-    Text(text, color = WatchColors.Label, fontSize = scale.sp(labelDesignPx), maxLines = 1)
+    Text(
+        text,
+        color = WatchColors.Label,
+        fontSize = scale.sp(labelDesignPx),
+        // 값(Barlow) 글자가 더 크므로 그 크기 기준으로 줄 높이를 정한다.
+        lineHeight = scale.lineSp(valueDesignPx, minSp = valueMinSp),
+        maxLines = 1,
+    )
 }

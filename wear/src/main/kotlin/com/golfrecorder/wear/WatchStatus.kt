@@ -29,7 +29,13 @@ fun WatchStatusLine(badge: StatusBadge, scale: WatchScale) {
                 Modifier.size(scale.dp(6f).coerceAtLeast(4.dp)).clip(CircleShape)
                     .background(WatchColors.ConnectedDot),
             )
-            Text("폰 연결됨", color = WatchColors.Label, fontSize = scale.sp(11f), maxLines = 1)
+            Text(
+                "폰 연결됨",
+                color = WatchColors.Label,
+                fontSize = scale.sp(11f),
+                lineHeight = scale.lineSp(11f),
+                maxLines = 1,
+            )
         }
         StatusBadge.DISCONNECTED -> WatchAmberPill("폰 연결 끊김", showWifiOff = true, scale = scale)
         StatusBadge.GPS_FAILURE -> WatchAmberPill("GPS 신호 없음", showWifiOff = false, scale = scale)
@@ -57,6 +63,7 @@ fun WatchAmberPill(text: String, showWifiOff: Boolean, scale: WatchScale) {
             text,
             color = WatchColors.Yellow,
             fontSize = scale.sp(12f),
+            lineHeight = scale.lineSp(12f),
             fontWeight = FontWeight.SemiBold,
             maxLines = 1,
         )

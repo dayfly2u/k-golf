@@ -49,6 +49,7 @@ fun WatchIdleScreen(isPhoneConnected: Boolean) {
                 "K-Golf",
                 color = WatchColors.White,
                 fontSize = scale.sp(20f, minSp = 15f),
+                lineHeight = scale.lineSp(20f, minSp = 15f),
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
             )
@@ -67,6 +68,7 @@ fun WatchIdleScreen(isPhoneConnected: Boolean) {
                 .padding(bottom = scale.dp(48f).coerceAtLeast(22.dp)),
             color = WatchColors.IdleHint,
             fontSize = scale.sp(11f),
+            lineHeight = scale.lineSp(11f),
             maxLines = 1,
         )
     }

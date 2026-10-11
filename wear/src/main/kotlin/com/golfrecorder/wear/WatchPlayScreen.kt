@@ -113,6 +113,8 @@ fun WatchPlayScreen(
                     },
                     color = WatchColors.White,
                     fontSize = scale.sp(13f, minSp = 11f),
+                    // 더 키가 큰 Barlow 숫자(17f/13f) 기준 — 기본 20sp 줄 높이가 남지 않게.
+                    lineHeight = scale.lineSp(17f, minSp = 13f),
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
                 )
@@ -149,7 +151,14 @@ private fun StepperRow(
             background = WatchColors.ButtonDark,
             description = "$label 빼기",
             enabled = canDecrement,
-        ) { Text("−", color = WatchColors.White, fontSize = scale.sp(26f, minSp = 18f)) }
+        ) {
+            Text(
+                "−",
+                color = WatchColors.White,
+                fontSize = scale.sp(26f, minSp = 18f),
+                lineHeight = scale.lineSp(26f, minSp = 18f),
+            )
+        }
         Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 label,
@@ -173,6 +182,13 @@ private fun StepperRow(
             size = scale.touch(52f),
             background = WatchColors.Accent,
             description = "$label 더하기",
-        ) { Text("+", color = WatchColors.White, fontSize = scale.sp(26f, minSp = 18f)) }
+        ) {
+            Text(
+                "+",
+                color = WatchColors.White,
+                fontSize = scale.sp(26f, minSp = 18f),
+                lineHeight = scale.lineSp(26f, minSp = 18f),
+            )
+        }
     }
 }
