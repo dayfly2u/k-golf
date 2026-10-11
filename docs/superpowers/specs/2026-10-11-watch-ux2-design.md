@@ -63,13 +63,16 @@
 | `WatchIdleScreen.kt`, `WatchPlayScreen.kt`, `WatchHoleScreen.kt` | 화면별 Composable |
 | `WatchRing.kt` | 진행 링(Canvas) |
 | `WatchTokens.kt` | 시안의 색(`#000`, `#1E2A22`, `#26332B`, `#F2C14E`, `#2E7D4F`, `#9AA59C`, `#4CAF50`, `#3A2A0E` …)과 Barlow 글꼴 |
-| `RoundDisplay.kt` | 순수 로직: 등급 이름, 합계/이 홀 문자열, 링 칸 상태 계산 |
+| `WatchScale.kt` | 시안 360 기준 → 실제 화면 배율 + 글자·터치 영역 하한(아래 참고) |
+| `WatchComponents.kt`, `WatchIcons.kt`, `WatchStatus.kt` | 공용 부품: 원형 버튼, 파 칩, 합계 줄, 아이콘(깃발·쉐브론·Wi-Fi 끊김), 연결 상태 줄/알약 |
+| `HoleMoveOverlay.kt` | 홀 이동 화면 표시 상태 홀더(타이머 포함, 단위 테스트 대상) |
+| `RoundDisplay.kt` | 순수 로직: 등급 이름, 합계/이 홀 문자열, 링 칸 상태, 연결 배지 우선순위 |
 | `res/font/barlow_condensed_*.ttf` | 숫자 글꼴(폰 앱 것을 복사) |
 
-- 화면 크기: `BoxWithConstraints`로 `scale = min(폭, 높이) / 360`을 구해 모든 크기에 곱한다.
+- **화면 배율과 하한:** `BoxWithConstraints`로 `factor = min(폭, 높이) / 360`을 구해 도형·간격·위치에 곱한다. 대상 워치(SM-R900)는 396×396px, 320dpi라 **198×198dp → factor 0.55**이고, 시안의 글자·버튼을 그대로 곱하면 11px 라벨이 약 6sp, 52px 버튼이 약 29dp가 되어 읽거나 누르기 어렵다. 그래서 **글자는 역할별 최소 크기(기본 10sp), 눌러야 하는 원형 버튼은 최소 34~38dp**를 두고 나머지는 비례로 둔다. 세로 배치는 시안의 절대 위치 대신 `SpaceBetween` 열로 두어 남는 간격을 고르게 나눈다. 수치는 `WatchScale`과 각 화면 파일 상단 상수에 모여 있어, 실기기 확인 후 한 곳에서 조절한다.
 - 통신·낙관적 표시·GPS 서비스(`RoundStateViewModel`, `WatchLocationService`)는 새 필드 읽기 외에는 바꾸지 않는다.
-- 홀 이동 화면 표시 상태는 `MainActivity` 안의 `remember` 상태로 관리한다. ◀/▶를 누를 때 "이동 요청" 표시를 켜고, 이후 `holeNumber`가 바뀌면 화면을 2.5초 보여준 뒤 끈다(요청 표시는 5초 후 자동 해제).
-- 의존성: 별도 네비게이션 라이브러리는 쓰지 않는다. wear 모듈에 `testImplementation(libs.junit)`만 추가.
+- 홀 이동 화면 표시 상태는 `HoleMoveOverlayState`(Compose 상태 + 코루틴 타이머)가 맡는다. ◀/▶를 누르면 "이동 요청"이 서고(5초 뒤 자동 해제), 이후 `holeNumber`가 바뀌면 화면을 2.5초 보여준 뒤 끈다. 이동 화면이 떠 있는 동안 홀이 또 바뀌면(연속 이동 포함) 타이머를 처음부터 다시 센다.
+- 의존성: 별도 네비게이션 라이브러리는 쓰지 않는다. wear 모듈에 `testImplementation`으로 `libs.junit`, `libs.kotlinx.coroutines.test`만 추가.
 
 ## 5. 상태·예외 처리
 - 연결 끊김: 대기/기록 두 화면 모두 호박색 알약. 끊긴 동안 눌러도 기존처럼 큐에 쌓이고 숫자는 낙관적으로 바로 바뀐다.
