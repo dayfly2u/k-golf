@@ -26,6 +26,14 @@ fun hasYearFilter(years: List<Int>): Boolean = years.size >= MIN_YEARS_FOR_FILTE
 fun effectiveYearFilter(selected: Int?, years: List<Int>): Int? =
     selected?.takeIf { hasYearFilter(years) && it in years }
 
+/**
+ * 연도 구분선(`2026 ────── N회 · 평균 94.8`)을 넣을지 — 전체([yearFilter]가 null) + 최신순일 때, 기록이 한 해뿐이어도
+ * 넣는다(전체 보기의 시안 모양). 연도 *필터*([hasYearFilter])만 2개년 이상일 때 나오고 구분선과는 무관하다.
+ * 점수순은 연도가 뒤섞여 구분선이 의미가 없다.
+ */
+fun showYearHeaders(yearFilter: Int?, sortMode: RoundSortMode): Boolean =
+    yearFilter == null && sortMode == RoundSortMode.RECENT
+
 /** [year]가 null이면 전체를 그대로 돌려준다. */
 fun filterByYear(rounds: List<RoundSummary>, year: Int?, zone: ZoneId = ZoneId.systemDefault()): List<RoundSummary> =
     if (year == null) rounds else rounds.filter { roundYear(it, zone) == year }

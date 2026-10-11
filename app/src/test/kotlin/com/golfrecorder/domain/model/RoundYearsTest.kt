@@ -63,6 +63,28 @@ class RoundYearsTest {
     }
 
     @Test
+    fun `연도 구분선은 전체 + 최신순에서만 넣고 기록이 한 해뿐이어도 넣는다`() {
+        assertTrue(showYearHeaders(yearFilter = null, sortMode = RoundSortMode.RECENT))
+        // 연도를 고르면(필터) 한 해만 보이므로 구분선이 필요 없다
+        assertFalse(showYearHeaders(yearFilter = 2026, sortMode = RoundSortMode.RECENT))
+        // 점수순은 연도가 뒤섞인다
+        assertFalse(showYearHeaders(yearFilter = null, sortMode = RoundSortMode.SCORE))
+    }
+
+    @Test
+    fun `한 해뿐인 기록도 전체 보기에는 연도 구분선이 하나 들어간다`() {
+        val sorted = listOf(round(1, 2026, strokes = 90), round(2, 2026, strokes = 100))
+        assertFalse(hasYearFilter(roundYears(sorted, seoul)))
+        val entries = buildHomeListEntries(
+            sorted,
+            withYearHeaders = showYearHeaders(yearFilter = null, sortMode = RoundSortMode.RECENT),
+            zone = seoul,
+        )
+        assertEquals(HomeListEntry.YearHeader(2026, roundCount = 2, avgTotalStrokes = 95.0), entries.first())
+        assertEquals(3, entries.size)
+    }
+
+    @Test
     fun `연도로 거르고 null이면 전체`() {
         val rounds = listOf(round(1, 2026), round(2, 2025), round(3, 2026))
         assertEquals(listOf(1L, 3L), filterByYear(rounds, 2026, seoul).map { it.roundId })
