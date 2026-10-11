@@ -9,7 +9,7 @@ class RoundAggregatesTest {
     private fun round(strokes: Int) = RoundSummary(
         roundId = 1, courseId = 1, playedAt = 0, finishedAt = 1000,
         courseName = "course", price = null, companions = null, review = null,
-        totalStrokes = strokes, totalPar = 72,
+        totalStrokes = strokes, totalPar = 72, holesPlayed = 18,
     )
 
     @Test
@@ -28,6 +28,21 @@ class RoundAggregatesTest {
     @Test
     fun `끝난 라운드가 하나도 없으면 null`() {
         assertNull(computeRoundAggregates(listOf(round(12).copy(finishedAt = null))))
+    }
+
+    @Test
+    fun `끝난 9홀 라운드는 집계에서 제외한다`() {
+        val nineHoles = round(45).copy(holesPlayed = 9)
+        val result = computeRoundAggregates(listOf(nineHoles, round(90), round(100)))
+        assertEquals(95.0, result!!.avgTotalStrokes, 0.01)
+        assertEquals(90, result.bestTotalStrokes)
+    }
+
+    @Test
+    fun `18홀이 아닌 라운드뿐이면 null`() {
+        val nineHoles = round(45).copy(holesPlayed = 9)
+        val partial = round(60).copy(holesPlayed = 12)
+        assertNull(computeRoundAggregates(listOf(nineHoles, partial)))
     }
 
     @Test

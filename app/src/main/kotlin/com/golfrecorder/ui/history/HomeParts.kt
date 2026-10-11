@@ -74,7 +74,7 @@ private fun RowScope.HeaderStat(label: String, value: String) {
 }
 
 /** 시안 홈 헤더 — 로고(깃발 아이콘) + "K-Golf", 테두리 pill "코스 관리"(핀 아이콘), 그 아래 반투명 타일 3칸
- * (평균 스코어/베스트스코어/핸디캡 추정). 타일은 끝난 라운드가 있을 때만([aggregates]가 null이면 생략). */
+ * (평균 스코어/베스트스코어/핸디캡 추정). 타일은 끝난 18홀 라운드가 있을 때만([aggregates]가 null이면 생략). */
 @Composable
 internal fun HomeHeader(aggregates: RoundAggregates?, handicap: Double?, onManageCourses: () -> Unit) {
     Column(
