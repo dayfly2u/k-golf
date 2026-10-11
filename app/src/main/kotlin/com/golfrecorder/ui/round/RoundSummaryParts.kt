@@ -227,10 +227,11 @@ internal fun ScoreCardGrid(
 ) {
     if (holeResults.isEmpty()) return
     GolfCard(modifier = modifier) {
+        // 우측이 두 줄이 될 수 있어 제목은 좌측 최상단에 붙인다(Bottom이면 두 줄 아래로 내려간다).
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Bottom,
+            verticalAlignment = Alignment.Top,
         ) {
             Text("스코어카드", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = GolfTokens.TextPrimary)
             Column(horizontalAlignment = Alignment.End) {
