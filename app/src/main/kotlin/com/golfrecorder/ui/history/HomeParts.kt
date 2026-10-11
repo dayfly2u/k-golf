@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
@@ -26,6 +27,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -35,6 +38,7 @@ import com.golfrecorder.data.local.dto.RoundSummary
 import com.golfrecorder.domain.model.DriverDistanceStats
 import com.golfrecorder.domain.model.HoleResult
 import com.golfrecorder.domain.model.RoundAggregates
+import com.golfrecorder.domain.model.RoundSortMode
 import com.golfrecorder.domain.model.formatToPar
 import com.golfrecorder.domain.model.strokeScoreTier
 import com.golfrecorder.ui.theme.GolfFonts
@@ -151,6 +155,39 @@ internal fun RoundScoreBadge(round: RoundSummary) {
                 fontWeight = FontWeight.SemiBold,
                 color = content,
             )
+        }
+    }
+}
+
+/** 목록 정렬 토글 `최신순 | 점수순` — 회색 알약 트랙 안에서 선택된 쪽만 진녹색 알약으로 채운다. */
+@Composable
+internal fun RoundSortToggle(
+    selected: RoundSortMode,
+    onSelect: (RoundSortMode) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val pill = RoundedCornerShape(GolfTokens.ChipCorner)
+    Row(
+        modifier = modifier.clip(pill).background(GolfTokens.BadgePlain).padding(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        listOf(RoundSortMode.RECENT to "최신순", RoundSortMode.SCORE to "점수순").forEach { (mode, label) ->
+            val on = mode == selected
+            Box(
+                modifier = Modifier.height(36.dp)
+                    .clip(pill)
+                    .background(if (on) GolfTokens.FieldGreen else Color.Transparent)
+                    .selectable(selected = on, role = Role.RadioButton, onClick = { onSelect(mode) })
+                    .padding(horizontal = 14.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    label,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (on) GolfTokens.CardBackground else GolfTokens.TextSecondary,
+                )
+            }
         }
     }
 }

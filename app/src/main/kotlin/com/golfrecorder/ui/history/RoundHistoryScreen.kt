@@ -35,6 +35,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,8 +54,10 @@ import com.golfrecorder.data.repository.RoundRepository
 import com.golfrecorder.data.repository.ShotRepository
 import com.golfrecorder.domain.model.DriverDistanceStats
 import com.golfrecorder.domain.model.HoleResult
+import com.golfrecorder.domain.model.RoundSortMode
 import com.golfrecorder.domain.model.calculateDriverDistanceStats
 import com.golfrecorder.domain.model.computeRoundAggregates
+import com.golfrecorder.domain.model.sortRounds
 import com.golfrecorder.ui.common.GolfCard
 import com.golfrecorder.ui.common.MoreBelowIndicator
 import com.golfrecorder.ui.common.PrimaryCtaButton
@@ -121,6 +124,9 @@ fun RoundHistoryScreen(
 ) {
     val rounds by viewModel.rounds.collectAsStateWithLifecycle()
     var expandedRoundIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
+    // 화면을 돌려도 정렬이 유지되도록 rememberSaveable. 점수순은 단순 총타수 오름차순(sortRounds 참고).
+    var sortMode by rememberSaveable { mutableStateOf(RoundSortMode.RECENT) }
+    val sortedRounds = remember(rounds, sortMode) { sortRounds(rounds, sortMode) }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
@@ -224,15 +230,23 @@ fun RoundHistoryScreen(
             ) {
                 item {
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(start = 4.dp, end = 4.dp, bottom = 8.dp),
+                        modifier = Modifier.fillMaxWidth().padding(start = 4.dp, bottom = 8.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.Bottom,
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text("최근 라운드", fontSize = 17.sp, fontWeight = FontWeight.Bold, color = GolfTokens.TextPrimary)
-                        Text("총 ${rounds.size}회", fontSize = 12.sp, color = GolfTokens.TextSecondary)
+                        Column {
+                            Text(
+                                if (sortMode == RoundSortMode.SCORE) "타수 순위" else "최근 라운드",
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = GolfTokens.TextPrimary,
+                            )
+                            Text("총 ${rounds.size}회", fontSize = 12.sp, color = GolfTokens.TextSecondary)
+                        }
+                        RoundSortToggle(selected = sortMode, onSelect = { sortMode = it })
                     }
                 }
-                items(rounds, key = { it.roundId }) { round ->
+                items(sortedRounds, key = { it.roundId }) { round ->
                     val expanded = round.roundId in expandedRoundIds
                     GolfCard(
                         modifier = Modifier.padding(bottom = 10.dp),
