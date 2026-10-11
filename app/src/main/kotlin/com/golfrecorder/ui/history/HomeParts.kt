@@ -74,7 +74,7 @@ private fun RowScope.HeaderStat(label: String, value: String) {
 }
 
 /** 시안 홈 헤더 — 로고(깃발 아이콘) + "K-Golf", 테두리 pill "코스 관리"(핀 아이콘), 그 아래 반투명 타일 3칸
- * (평균 스코어/베스트/핸디캡 추정). 타일은 끝난 라운드가 있을 때만([aggregates]가 null이면 생략). */
+ * (평균 스코어/베스트스코어/핸디캡 추정). 타일은 끝난 라운드가 있을 때만([aggregates]가 null이면 생략). */
 @Composable
 internal fun HomeHeader(aggregates: RoundAggregates?, handicap: Double?, onManageCourses: () -> Unit) {
     Column(
@@ -122,7 +122,7 @@ internal fun HomeHeader(aggregates: RoundAggregates?, handicap: Double?, onManag
         if (aggregates != null) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 HeaderStat("평균 스코어", "%.1f".format(aggregates.avgTotalStrokes))
-                HeaderStat("베스트", "${aggregates.bestTotalStrokes}")
+                HeaderStat("베스트스코어", "${aggregates.bestTotalStrokes}")
                 // 추정 핸디캡(computeEstimatedHandicap) — 18홀 끝난 라운드가 3개 미만이면 "-".
                 HeaderStat("핸디캡(추정)", handicap?.let { formatHandicap(it) } ?: "-")
             }
