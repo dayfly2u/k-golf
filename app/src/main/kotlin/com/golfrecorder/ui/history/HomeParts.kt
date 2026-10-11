@@ -175,8 +175,9 @@ private fun RowScope.StatTile(value: String, label: String) {
     }
 }
 
-/** 카드를 펼쳤을 때의 내용(시안 순서): 구분선 → 그린피·동반자 → 리뷰 인용 박스(없으면 "리뷰 남기기" 링크) →
- * 4칸 통계 타일(GIR/퍼팅/드라이버/벌타) → "상세 결과 보기 ›". GIR 표시명은 코드명과 반대라 strict가 "GIR". */
+/** 카드를 펼쳤을 때의 내용(사용자 요청으로 시안과 순서가 다르다): 구분선 → 그린피·동반자 →
+ * 4칸 통계 타일(GIR/퍼팅/드라이버/벌타) → 리뷰 인용 박스(없으면 "리뷰 남기기" 링크) → "상세 결과 보기 ›".
+ * GIR 표시명은 코드명과 반대라 strict가 "GIR". */
 @Composable
 internal fun RoundCardDetails(
     round: RoundSummary,
@@ -196,6 +197,16 @@ internal fun RoundCardDetails(
         ).joinToString(" | ")
         if (infoLine.isNotBlank()) {
             Text(infoLine, fontSize = 12.sp, color = GolfTokens.TextSecondary)
+        }
+        if (holeResults.isNotEmpty()) {
+            val total = holeResults.size
+            val girPercent = (holeResults.count { it.isStrictGreenInRegulation } * 100.0 / total).roundToInt()
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                StatTile("$girPercent%", "GIR")
+                StatTile("${holeResults.sumOf { it.strokesPutt }}", "퍼팅")
+                StatTile(driverStats.avgMeters?.let { "${it.roundToInt()}m" } ?: "-", "드라이버")
+                StatTile("$penaltyCount", "벌타")
+            }
         }
         val review = round.review?.trim()?.takeIf { it.isNotEmpty() }
         if (review != null) {
@@ -218,16 +229,6 @@ internal fun RoundCardDetails(
             ) {
                 Icon(Icons.Filled.Edit, contentDescription = null, modifier = Modifier.size(14.dp), tint = GolfTokens.FieldGreen)
                 Text("리뷰 남기기", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = GolfTokens.FieldGreen)
-            }
-        }
-        if (holeResults.isNotEmpty()) {
-            val total = holeResults.size
-            val girPercent = (holeResults.count { it.isStrictGreenInRegulation } * 100.0 / total).roundToInt()
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                StatTile("$girPercent%", "GIR")
-                StatTile("${holeResults.sumOf { it.strokesPutt }}", "퍼팅")
-                StatTile(driverStats.avgMeters?.let { "${it.roundToInt()}m" } ?: "-", "드라이버")
-                StatTile("$penaltyCount", "벌타")
             }
         }
         Text(
