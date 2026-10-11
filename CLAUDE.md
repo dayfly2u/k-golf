@@ -20,3 +20,13 @@
 ## UX 작업 시 참고 스킬
 
 화면 UI/UX를 새로 만들거나 고치는 작업이면 `ux-conventions-commercial` 스킬을 `ux-conventions`보다 먼저 참조한다 — 이 프로젝트는 상용화 트랙이라 그 스킬에 이 프로젝트에서만 다른 규칙(뒤로가기 아이콘 버튼, GolfTokens 색상 우선순위, 카드 탭→펼침→상세 링크 패턴 등)이 정리돼 있다. 그 외(버튼 배치, TopAppBar, 삭제 확인 다이얼로그 등)는 `ux-conventions`를 그대로 따른다.
+
+## 버전 관리 (폰 앱 + 워치 앱 공용, 2026-10-12 이후)
+
+이 프로젝트는 폰 앱(`app/`)과 워치 앱(`wear/`)이 `applicationId`가 같고 `WearSync` 통신 규약을 같이 맞춰야 해서 **버전을 하나로 통일**한다 (워크스페이스 `C:\github\CLAUDE.md`의 "버전 관리"를 이 프로젝트 구조에 맞춘 것 — `android/`/`web/` 구분 없이 `app/`과 `wear/`가 대상).
+
+- **버전은 루트 `gradle.properties` 한 곳에서만 올린다**: `appVersionName`, `appVersionCode`. `app/build.gradle.kts`와 `wear/build.gradle.kts`는 이 값을 읽기만 하므로 두 모듈 파일에는 버전 숫자를 직접 쓰지 않는다.
+- **커밋마다 PATCH**: `app/` 또는 `wear/` 코드·빌드 설정이 바뀌는 커밋은 `appVersionName`의 PATCH를 +1 하고 커밋 제목 끝에 `(vX.Y.Z)`를 붙인다. 폰만 바뀌든 워치만 바뀌든 번호는 하나의 줄로 이어진다.
+- **문서/설정 전용 커밋**(CLAUDE.md, README, `docs/**` 등 앱 코드에 영향 없는 것)은 버전을 올리지 않고 제목에 버전도 붙이지 않는다.
+- **MINOR/MAJOR와 `appVersionCode`는 태그 찍을 때만** 올린다(사용자가 태그를 요청했을 때). 태그 이름은 `appVersionName`과 `v` 접두사만 다르다.
+- 폰과 워치에 설치된 `versionName`이 같으면 서로 맞는 빌드라는 뜻이다. 통신 규약(`WearSync`)을 바꾼 뒤에는 둘 다 설치한다.

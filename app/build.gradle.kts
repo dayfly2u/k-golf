@@ -12,6 +12,10 @@ val localProperties = Properties().apply {
     if (file.exists()) file.inputStream().use { load(it) }
 }
 
+// 폰/워치 공용 버전 — 값은 루트 gradle.properties 한 곳에서만 올린다.
+val appVersionName: String by project
+val appVersionCode: String by project
+
 android {
     namespace = "com.golfrecorder"
     compileSdk = 36
@@ -20,8 +24,8 @@ android {
         applicationId = "com.golfrecorder"
         minSdk = 26
         targetSdk = 36
-        versionCode = 11
-        versionName = "0.10.5"
+        versionCode = appVersionCode.toInt()
+        versionName = appVersionName
 
         buildConfigField(
             "String",

@@ -3,6 +3,11 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+// 폰/워치 공용 버전 — 값은 루트 gradle.properties 한 곳에서만 올린다(폰 앱과 같은 버전을 써야 서로 맞는
+// 빌드인지 바로 알 수 있다).
+val appVersionName: String by project
+val appVersionCode: String by project
+
 android {
     namespace = "com.golfrecorder.wear"
     compileSdk = 36
@@ -24,8 +29,8 @@ android {
         applicationId = "com.golfrecorder"
         minSdk = 30
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = appVersionCode.toInt()
+        versionName = appVersionName
     }
 
     buildTypes {
