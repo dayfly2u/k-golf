@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -41,6 +43,7 @@ import com.golfrecorder.domain.model.RoundAggregates
 import com.golfrecorder.domain.model.RoundSortMode
 import com.golfrecorder.domain.model.formatHandicap
 import com.golfrecorder.domain.model.formatToPar
+import com.golfrecorder.domain.model.hasYearFilter
 import com.golfrecorder.domain.model.strokeScoreTier
 import com.golfrecorder.ui.theme.GolfFonts
 import com.golfrecorder.ui.theme.GolfIcons
@@ -73,10 +76,92 @@ private fun RowScope.HeaderStat(label: String, value: String) {
     }
 }
 
-/** 시안 홈 헤더 — 로고(깃발 아이콘) + "K-Golf", 테두리 pill "코스 관리"(핀 아이콘), 그 아래 반투명 타일 3칸
- * (평균 스코어/베스트스코어/핸디캡 추정). 타일은 끝난 18홀 라운드가 있을 때만([aggregates]가 null이면 생략). */
+/** 연도 칩 줄 `전체 · 2026 · 2025 …` — 선택된 칩은 흰 바탕 + 진녹색 굵은 글자, 나머지는 투명 바탕 + 반투명
+ * 흰 테두리(시안 Main.dc.html). 연도가 많으면 가로로 스크롤한다. [selectedYear]가 null이면 "전체". */
 @Composable
-internal fun HomeHeader(aggregates: RoundAggregates?, handicap: Double?, onManageCourses: () -> Unit) {
+private fun YearChipRow(years: List<Int>, selectedYear: Int?, onSelect: (Int?) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        YearChip("전체", selected = selectedYear == null) { onSelect(null) }
+        years.forEach { year -> YearChip("$year", selected = selectedYear == year) { onSelect(year) } }
+    }
+}
+
+/** 바깥 44dp가 터치 영역이고 안쪽 34dp가 눈에 보이는 칩이다. */
+@Composable
+private fun YearChip(label: String, selected: Boolean, onClick: () -> Unit) {
+    val pill = RoundedCornerShape(GolfTokens.ChipCorner)
+    Box(
+        modifier = Modifier.height(44.dp).selectable(selected = selected, role = Role.Tab, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            modifier = Modifier.height(34.dp)
+                .clip(pill)
+                .then(
+                    if (selected) {
+                        Modifier.background(GolfTokens.CardBackground)
+                    } else {
+                        Modifier.border(1.dp, GolfTokens.CardBackground.copy(alpha = 0.35f), pill)
+                    },
+                )
+                .padding(horizontal = 14.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                label,
+                fontSize = 14.sp,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                color = if (selected) GolfTokens.FieldGreen else GolfTokens.CardBackground,
+            )
+        }
+    }
+}
+
+/** 전체 보기(최신순)에서 연도마다 앞에 들어가는 구분선 — `2026 ────── 12회 · 평균 94.8`.
+ * [avgTotalStrokes]가 null(그 해에 끝난 18홀 라운드가 없음)이면 평균은 생략한다. */
+@Composable
+internal fun YearDividerRow(year: Int, roundCount: Int, avgTotalStrokes: Double?, modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier.fillMaxWidth().padding(start = 4.dp, end = 4.dp, top = 8.dp, bottom = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Text(
+            "$year",
+            fontFamily = GolfFonts.NumberFontFamily,
+            fontWeight = FontWeight.Bold,
+            fontSize = 22.sp,
+            color = GolfTokens.FieldGreen,
+        )
+        HorizontalDivider(modifier = Modifier.weight(1f), thickness = 1.dp, color = GolfTokens.Border)
+        Text(
+            buildString {
+                append("${roundCount}회")
+                if (avgTotalStrokes != null) append(" · 평균 ${"%.1f".format(avgTotalStrokes)}")
+            },
+            fontSize = 12.sp,
+            color = GolfTokens.TextSecondary,
+        )
+    }
+}
+
+/** 시안 홈 헤더 — 로고(깃발 아이콘) + "K-Golf", 테두리 pill "코스 관리"(핀 아이콘), [years]가 2개년 이상이면 연도 칩 줄,
+ * 그 아래 반투명 타일 3칸(평균 스코어/베스트스코어/핸디캡 추정). 타일은 전체 기록에 끝난 18홀 라운드가 있을 때만
+ * ([showSummary]) 보이고, 선택한 연도에 그런 라운드가 없으면 평균/베스트스코어는 "-"([aggregates]가 null).
+ * 핸디캡은 연도와 무관하게 최근 기록 기준이라 [handicap]을 그대로 쓴다. */
+@Composable
+internal fun HomeHeader(
+    aggregates: RoundAggregates?,
+    handicap: Double?,
+    showSummary: Boolean,
+    years: List<Int>,
+    selectedYear: Int?,
+    onSelectYear: (Int?) -> Unit,
+    onManageCourses: () -> Unit,
+) {
     Column(
         modifier = Modifier.fillMaxWidth()
             .clip(RoundedCornerShape(bottomStart = 26.dp, bottomEnd = 26.dp))
@@ -119,10 +204,13 @@ internal fun HomeHeader(aggregates: RoundAggregates?, handicap: Double?, onManag
                 Text("코스 관리", color = GolfTokens.CardBackground, fontSize = 14.sp, fontWeight = FontWeight.Medium)
             }
         }
-        if (aggregates != null) {
+        if (hasYearFilter(years)) {
+            YearChipRow(years = years, selectedYear = selectedYear, onSelect = onSelectYear)
+        }
+        if (showSummary) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                HeaderStat("평균 스코어", "%.1f".format(aggregates.avgTotalStrokes))
-                HeaderStat("베스트스코어", "${aggregates.bestTotalStrokes}")
+                HeaderStat("평균 스코어", aggregates?.let { "%.1f".format(it.avgTotalStrokes) } ?: "-")
+                HeaderStat("베스트스코어", aggregates?.let { "${it.bestTotalStrokes}" } ?: "-")
                 // 추정 핸디캡(computeEstimatedHandicap) — 18홀 끝난 라운드가 3개 미만이면 "-".
                 HeaderStat("핸디캡(추정)", handicap?.let { formatHandicap(it) } ?: "-")
             }
