@@ -39,10 +39,9 @@ data class RoundUiState(
     val scoreBefore: Int = 0,
     /** 바로 이전 홀의 결과 — 1번 홀이거나 그 홀 타수가 0이면 null(폰이 키를 안 보냄). */
     val previousHole: PreviousHole? = null,
+    /** 코스의 홀별 파(1번 홀부터) — 홀 이동을 폰 확인 전에 먼저 보여줄 때 그 홀의 파로 쓴다. 구버전 폰이면 비어 있다. */
+    val holePars: List<Int> = emptyList(),
 )
-
-private enum class Counter { TO_GREEN, PUTT }
-private data class PendingDelta(val counter: Counter, val amount: Int)
 
 class RoundStateViewModel(application: Application) :
     AndroidViewModel(application),
@@ -50,11 +49,11 @@ class RoundStateViewModel(application: Application) :
 
     // 폰이 보내주는 원본(확정) 상태 — round-state DataItem을 받을 때만 갱신된다.
     private var serverState = RoundUiState()
-    // 아직 폰의 처리 완료 확인(=큐 아이템 삭제)을 못 받은 액션들의 증감분. 블루투스가
-    // 끊긴 동안 버튼을 눌러도 화면 숫자가 바로 움직이도록, 이 값을 serverState 위에
-    // 얹어서 보여준다 — 나중에 폰이 그 액션을 처리하면(큐 아이템 삭제 이벤트) 더는
-    // 겹쳐 더하지 않는다. 키는 sendAction에서 만든 큐 경로의 타임스탬프.
-    private val pendingDeltas = mutableMapOf<Long, PendingDelta>()
+    // 아직 폰의 처리 완료 확인을 못 받은 액션들(타수 ±, 홀 이동). 블루투스가 끊긴 동안 버튼을 눌러도
+    // 화면 숫자와 홀이 바로 움직이도록, 이 값을 serverState 위에 얹어서 보여준다(displayRound).
+    // 폰이 처리하면 round-state에 실린 lastProcessedSeq로(상태와 함께 도착해 이중으로 안 보인다),
+    // 또는 큐 아이템 삭제 이벤트로 빠진다. 키는 sendAction에서 만든 큐 경로의 타임스탬프.
+    private val pending = PendingActions()
     private val _state = MutableStateFlow(RoundUiState())
     val state: StateFlow<RoundUiState> = _state
 
@@ -115,10 +114,11 @@ class RoundStateViewModel(application: Application) :
                 }
             } else if (path.startsWith(WearSync.ACTION_QUEUE_PATH_PREFIX)) {
                 // 폰이 처리를 마치고 이 큐 아이템을 지우면(TYPE_DELETED) 그 액션이 확정된
-                // 것 — round-state에 이미 반영됐을 것이므로 낙관적 증감분을 지운다.
+                // 것 — round-state에 이미 반영됐을 것이므로 낙관적 표시에서 뺀다. (상태에 lastProcessedSeq가
+                // 실려 오면 그쪽이 먼저 정리해서 보통 여기선 뺄 게 없다.)
                 if (event.type == DataEvent.TYPE_DELETED) {
                     val seq = path.substringAfterLast('/').toLongOrNull()
-                    if (seq != null && pendingDeltas.remove(seq) != null) {
+                    if (seq != null && pending.remove(seq)) {
                         pendingChanged = true
                     }
                 }
@@ -151,42 +151,24 @@ class RoundStateViewModel(application: Application) :
             } else {
                 null
             },
+            holePars = map.getIntegerArrayList(WearSync.KEY_HOLE_PARS)?.toList().orEmpty(),
         )
-        // 홀이 바뀌었으면 이전 홀 기준으로 쌓아뒀던 낙관적 증감분은 더 이상 의미가 없다.
-        if (newServerState.holeNumber != serverState.holeNumber) {
-            pendingDeltas.clear()
+        // 폰이 이 상태에 이미 반영했다고 알려준 입력은 낙관적 표시에서 뺀다(없으면 0 → 뺄 것 없음).
+        pending.confirmThrough(map.getLong(WearSync.KEY_LAST_PROCESSED_SEQ, 0L))
+        // 라운드가 끝났거나 없어졌으면 쌓아둔 입력은 더 이상 의미가 없다.
+        if (!newServerState.roundActive) {
+            pending.clear()
         }
         serverState = newServerState
         _state.value = displayState()
     }
 
-    private fun displayState(): RoundUiState {
-        var toGreenDelta = 0
-        var puttDelta = 0
-        for (pending in pendingDeltas.values) {
-            when (pending.counter) {
-                Counter.TO_GREEN -> toGreenDelta += pending.amount
-                Counter.PUTT -> puttDelta += pending.amount
-            }
-        }
-        return serverState.copy(
-            strokesToGreen = (serverState.strokesToGreen + toGreenDelta).coerceAtLeast(0),
-            strokesPutt = (serverState.strokesPutt + puttDelta).coerceAtLeast(0),
-        )
-    }
+    private fun displayState(): RoundUiState = displayRound(serverState, pending.toList())
 
     /** 좌표를 함께 보내야 하는 액션인지 — 타수를 실제로 "추가"하는 두 액션만 위치가
      * 필요하다(감소/홀 이동은 기록할 좌표가 없다). */
     private fun needsLocation(action: String): Boolean =
         action == WearSync.ACTION_INCREMENT_TO_GREEN || action == WearSync.ACTION_INCREMENT_PUTT
-
-    private fun pendingDeltaFor(action: String): PendingDelta? = when (action) {
-        WearSync.ACTION_INCREMENT_TO_GREEN -> PendingDelta(Counter.TO_GREEN, 1)
-        WearSync.ACTION_DECREMENT_TO_GREEN -> PendingDelta(Counter.TO_GREEN, -1)
-        WearSync.ACTION_INCREMENT_PUTT -> PendingDelta(Counter.PUTT, 1)
-        WearSync.ACTION_DECREMENT_PUTT -> PendingDelta(Counter.PUTT, -1)
-        else -> null
-    }
 
     fun sendAction(action: String) {
         // DataItem 큐에 넣는다 — MessageClient(옛 방식)는 그 순간 폰과 블루투스가
@@ -200,15 +182,14 @@ class RoundStateViewModel(application: Application) :
             null
         }
         val seq = System.currentTimeMillis()
-        // 누른 순간 화면에 보이던 홀 — 폰이 이 입력을 늦게(예: 워치가 꺼졌다 재연결된 뒤) 받았을 때 지금 홀과
-        // 다르면 낡은 입력으로 버릴 수 있게 같이 보낸다(WearSync.KEY_QUEUED_HOLE).
+        // 누른 순간 화면에 보이던 홀(아직 폰이 확인 안 한, 먼저 넘어간 홀 포함) — 폰이 이 입력을 늦게
+        // (예: 워치가 꺼졌다 재연결된 뒤) 받았을 때 지금 홀과 다르면 낡은 입력으로 버릴 수 있게 같이
+        // 보낸다(WearSync.KEY_QUEUED_HOLE).
         val pressedHole = _state.value.holeNumber
-        // 폰의 처리 확인(큐 삭제 이벤트)을 기다리지 않고 버튼을 누른 즉시 화면에
-        // 반영한다 — 블루투스가 끊겨 있어도 누른 게 바로 보여야 하기 때문.
-        pendingDeltaFor(action)?.let { pending ->
-            pendingDeltas[seq] = pending
-            _state.value = displayState()
-        }
+        // 폰의 처리 확인을 기다리지 않고 버튼을 누른 즉시 화면에 반영한다(타수·홀 이동 모두) — 블루투스가
+        // 끊겨 있어도 누른 게 바로 보여야 하기 때문.
+        pending.add(seq, PendingAction(action, pressedHole))
+        _state.value = displayState()
         viewModelScope.launch {
             try {
                 val request = PutDataMapRequest.create(
@@ -226,7 +207,7 @@ class RoundStateViewModel(application: Application) :
             } catch (e: Exception) {
                 Log.e(TAG, "sendAction($action) FAILED", e)
                 // 큐에 넣는 것조차 실패했으면(로컬 저장 실패 등) 낙관적 표시도 되돌린다.
-                if (pendingDeltas.remove(seq) != null) {
+                if (pending.remove(seq)) {
                     _state.value = displayState()
                 }
             }

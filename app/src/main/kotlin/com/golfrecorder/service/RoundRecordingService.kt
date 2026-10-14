@@ -48,6 +48,9 @@ class RoundRecordingService : Service() {
     // 워치에서 누른 버튼이 GPS를 못 잡아 기록되지 않았을 때, 그 시각을 남겨뒀다가
     // pushState()에서 워치로 실어 보낸다(워치는 이 값이 바뀌면 진동으로 알려준다).
     private var lastFailedAt: Long = 0L
+    // 폰이 지금까지 처리한 워치 액션 중 가장 큰 큐 시퀀스 — pushState()에서 워치로 실어 보내, 워치가 "이 상태에는
+    // 그 액션들이 이미 반영됐다"고 알게 한다(워치의 낙관적 표시와 겹쳐 이중으로 보이는 걸 막는다).
+    private var lastProcessedSeq: Long = 0L
     // 큐에 쌓인 DataItem들을 시퀀스(경로 접미사) 순서대로, 반드시 하나씩 순서대로
     // 처리하기 위한 잠금 — onDataChanged가 여러 번 겹쳐 호출돼도 increment/decrement가
     // 뒤섞여 적용되지 않도록 한다.
@@ -68,7 +71,7 @@ class RoundRecordingService : Service() {
         pending.sortBy { it.first }
         serviceScope.launch {
             actionQueueMutex.withLock {
-                for ((_, uri, map) in pending) {
+                for ((seq, uri, map) in pending) {
                     val action = map.getString(WearSync.KEY_QUEUED_ACTION)
                     if (action != null) {
                         val hasLat = map.containsKey(WearSync.KEY_QUEUED_LAT)
@@ -83,7 +86,7 @@ class RoundRecordingService : Service() {
                         } else {
                             null
                         }
-                        handleAction(action, watchLocation, queuedHole)
+                        handleAction(action, watchLocation, queuedHole, seq)
                     }
                     try {
                         Wearable.getDataClient(this@RoundRecordingService).deleteDataItems(uri).await()
@@ -143,14 +146,17 @@ class RoundRecordingService : Service() {
         super.onDestroy()
     }
 
-    private suspend fun handleAction(action: String, watchLocation: AppLatLng?, queuedHole: Int?) {
+    /** [seq]는 이 액션의 큐 시퀀스 — 적용을 마친(또는 낡아서 버린) 뒤 상태를 보내기 직전에 [lastProcessedSeq]로
+     * 올려서, 워치가 그 액션이 이 상태에 반영됐다는 걸 상태와 함께 알게 한다. */
+    private suspend fun handleAction(action: String, watchLocation: AppLatLng?, queuedHole: Int?, seq: Long) {
         if (roundId <= 0 || courseId <= 0) return
         val holeNumber = container.roundRepository.getCurrentHoleNumber(roundId) ?: return
         // 워치가 누른 때 보던 홀이 지금 홀과 다르면 낡은 입력(워치가 꺼져 있다가 늦게 재연결된 경우 등)이라
         // 버린다 — 이전 홀의 워치 GPS 좌표가 다른 홀 샷으로 들어가거나 홀이 또 넘어가는 걸 막는다. 호출한 쪽이
-        // 큐 아이템은 지우므로(워치의 낙관적 표시도 그때 사라진다) 여기서는 워치 화면만 현재 상태로 맞춰준다.
+        // 큐 아이템은 지우므로 여기서는 처리 완료만 알리고 워치 화면을 현재 상태로 맞춰준다.
         if (isStaleWatchAction(queuedHole, holeNumber)) {
             Log.w(TAG, "drop stale watch action=$action queuedHole=$queuedHole currentHole=$holeNumber")
+            lastProcessedSeq = maxOf(lastProcessedSeq, seq)
             pushState()
             return
         }
@@ -162,6 +168,7 @@ class RoundRecordingService : Service() {
             WearSync.ACTION_NEXT_HOLE -> changeHole(holeNumber + 1)
             WearSync.ACTION_PREV_HOLE -> changeHole(holeNumber - 1)
         }
+        lastProcessedSeq = maxOf(lastProcessedSeq, seq)
         pushState()
     }
 
@@ -216,15 +223,20 @@ class RoundRecordingService : Service() {
             dataMap.putBoolean(WearSync.KEY_ROUND_ACTIVE, roundActive)
             dataMap.putLong(WearSync.KEY_UPDATED_AT, System.currentTimeMillis())
             dataMap.putLong(WearSync.KEY_LAST_FAILED_AT, lastFailedAt)
+            dataMap.putLong(WearSync.KEY_LAST_PROCESSED_SEQ, lastProcessedSeq)
             if (roundActive && courseId > 0) {
                 val holeNumber = container.roundRepository.getCurrentHoleNumber(roundId) ?: 1
                 val course = container.courseRepository.getCourseWithHoles(courseId).first()
                 val hole = course?.holes?.find { it.holeNumber == holeNumber }
+                val holeCount = course?.holes?.size ?: 18
+                val parByHole = course?.holes.orEmpty().associate { it.holeNumber to it.par }
                 val shots = container.shotRepository.getShots(roundId, holeNumber).first()
                 val penalties = container.penaltyRepository.getPenalties(roundId, holeNumber).first()
                 dataMap.putInt(WearSync.KEY_HOLE_NUMBER, holeNumber)
                 dataMap.putInt(WearSync.KEY_PAR, hole?.par ?: 4)
-                dataMap.putInt(WearSync.KEY_HOLE_COUNT, course?.holes?.size ?: 18)
+                dataMap.putInt(WearSync.KEY_HOLE_COUNT, holeCount)
+                // 홀별 파 — 워치가 홀 이동을 폰 확인 전에 먼저 보여줄 때 그 홀의 파를 알 수 있게(코스에 없는 홀은 4).
+                dataMap.putIntegerArrayList(WearSync.KEY_HOLE_PARS, ArrayList((1..holeCount).map { parByHole[it] ?: 4 }))
                 dataMap.putInt(
                     WearSync.KEY_STROKES_TO_GREEN,
                     StrokeCalculator.currentTotal(shots, penalties, ShotPhase.TO_GREEN),
@@ -243,7 +255,7 @@ class RoundRecordingService : Service() {
                 val roundPenalties = container.penaltyRepository.getPenaltiesForRound(roundId).first()
                 val summary = WatchRoundSummaryCalculator.calculate(
                     currentHoleNumber = holeNumber,
-                    parByHole = course?.holes.orEmpty().associate { it.holeNumber to it.par },
+                    parByHole = parByHole,
                     shots = roundShots,
                     penalties = roundPenalties,
                 )

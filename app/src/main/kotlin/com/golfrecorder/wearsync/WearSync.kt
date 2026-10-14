@@ -64,4 +64,12 @@ object WearSync {
      * 타수가 0이면 둘 다 보내지 않는다). 워치 "홀 이동" 화면의 "{n}번 홀 {타수}타 · {등급}"용. */
     const val KEY_PREV_HOLE_STROKES = "prevHoleStrokes"
     const val KEY_PREV_HOLE_PAR = "prevHolePar"
+    /** 폰 → 워치: 코스의 홀별 파 목록(1번 홀부터 [KEY_HOLE_COUNT]개, IntegerArrayList). 워치가 홀 이동을 폰
+     * 확인 전에 화면에 먼저 반영할 때 그 홀의 파를 알기 위해 쓴다. 없으면(구버전 폰) 현재 홀의 파
+     * ([KEY_PAR])를 그대로 쓴다. */
+    const val KEY_HOLE_PARS = "holePars"
+    /** 폰이 지금까지 처리한 워치 액션 중 가장 큰 큐 시퀀스(= 워치가 그 액션을 만든 시각, ms). 이 상태가
+     * 도착하면 워치는 그 시퀀스 이하의 대기 액션이 이미 이 상태에 반영됐다고 보고 낙관적 표시에서 뺀다 —
+     * 상태 도착과 큐 아이템 삭제 이벤트가 따로 와서 한순간 홀/타수가 이중으로 보이는 걸 막는다. 없으면 0. */
+    const val KEY_LAST_PROCESSED_SEQ = "lastProcessedSeq"
 }
