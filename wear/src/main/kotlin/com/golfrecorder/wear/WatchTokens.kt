@@ -15,6 +15,9 @@ object WatchColors {
     val Label = Color(0xFF9AA59C)
     val ConnectedDot = Color(0xFF4CAF50)
     val AmberPillBackground = Color(0xFF3A2A0E)
+    // 배터리 5% 미만(CRITICAL) 경고 — 시안에 없는 색이라 호박색 알약과 같은 톤으로 붉게 맞췄다.
+    val CriticalPillBackground = Color(0xFF3D1616)
+    val CriticalText = Color(0xFFFF8A80)
     val IdleBody = Color(0xFFC9D1CB)
     val IdleHint = Color(0xFF7E8A82)
     val White = Color(0xFFFFFFFF)

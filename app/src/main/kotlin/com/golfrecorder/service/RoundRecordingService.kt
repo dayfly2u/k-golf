@@ -62,6 +62,16 @@ class RoundRecordingService : Service() {
             if (event.type != DataEvent.TYPE_CHANGED) continue
             val uri = event.dataItem.uri
             val path = uri.path.orEmpty()
+            // 워치 배터리 상태 — 10%/5% 미만 경고를 폰 알림으로 보여준다(WatchBatteryNotifier 참고).
+            if (path == WearSync.BATTERY_PATH) {
+                val batteryMap = DataMapItem.fromDataItem(event.dataItem).dataMap
+                WatchBatteryNotifier.onReport(
+                    this@RoundRecordingService,
+                    level = batteryMap.getInt(WearSync.KEY_BATTERY_LEVEL, 0),
+                    warning = batteryMap.getInt(WearSync.KEY_BATTERY_WARNING, WearSync.BATTERY_WARNING_NONE),
+                )
+                continue
+            }
             if (!path.startsWith(WearSync.ACTION_QUEUE_PATH_PREFIX)) continue
             val seq = path.substringAfterLast('/').toLongOrNull() ?: continue
             pending.add(Triple(seq, uri, DataMapItem.fromDataItem(event.dataItem).dataMap))
@@ -133,6 +143,7 @@ class RoundRecordingService : Service() {
 
     override fun onDestroy() {
         Wearable.getDataClient(this).removeListener(dataListener)
+        WatchBatteryNotifier.clear(this)
         LocationTracker.stop(applicationContext)
         // 스코프를 취소하기 전에 "라운드 종료" 상태가 실제로 전송 완료(혹은 타임아웃)되도록
         // 기다린다 — serviceScope.launch { ... }로 던지고 바로 cancel()하면 코루틴이

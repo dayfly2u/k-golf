@@ -72,4 +72,18 @@ object WearSync {
      * 도착하면 워치는 그 시퀀스 이하의 대기 액션이 이미 이 상태에 반영됐다고 보고 낙관적 표시에서 뺀다 —
      * 상태 도착과 큐 아이템 삭제 이벤트가 따로 와서 한순간 홀/타수가 이중으로 보이는 걸 막는다. 없으면 0. */
     const val KEY_LAST_PROCESSED_SEQ = "lastProcessedSeq"
+
+    /** 워치 → 폰: 워치 배터리 상태 DataItem. 워치가 경고 단계가 바뀔 때(경고 시작/해제)와, 경고 중 퍼센트가
+     * 바뀔 때 보낸다. 폰은 받은 단계([KEY_BATTERY_WARNING])로 알림만 띄우고 지운다 — 단계 계산은 워치가
+     * 한다. 라운드 서비스가 떠 있을 때만 폰이 처리한다. [KEY_UPDATED_AT]도 같이 싣는다. */
+    const val BATTERY_PATH = "/watch-battery"
+    const val KEY_BATTERY_LEVEL = "batteryLevel"
+    const val KEY_BATTERY_CHARGING = "batteryCharging"
+    const val KEY_BATTERY_WARNING = "batteryWarning"
+    const val BATTERY_WARNING_NONE = 0
+    const val BATTERY_WARNING_LOW = 1
+    const val BATTERY_WARNING_CRITICAL = 2
+    /** 경고 임계값(%, 미만): 10% 미만이면 LOW, 5% 미만이면 CRITICAL. 충전 중이면 경고하지 않는다. */
+    const val BATTERY_LOW_PERCENT = 10
+    const val BATTERY_CRITICAL_PERCENT = 5
 }

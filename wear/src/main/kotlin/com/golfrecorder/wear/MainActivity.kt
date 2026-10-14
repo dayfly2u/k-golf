@@ -32,6 +32,7 @@ import kotlinx.coroutines.delay
 
 private const val FAIL_VIBRATION_MS = 200L
 private const val GPS_FAILURE_MESSAGE_MS = 2500L
+private const val BATTERY_ALERT_MS = 5000L
 
 private fun vibrateFailure(context: Context) {
     val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -48,6 +49,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // 워치 배터리 감시 시작(프로세스에 한 번만 등록) — 10%/5% 미만 경고는 WatchBatteryMonitor가 맡는다.
+        WatchBatteryMonitor.start(applicationContext)
         setContent {
             MaterialTheme {
                 // 한 줄 글자의 높이가 lineHeight와 같도록 줄 높이 동작을 명시한다(WatchScale.lineSp 참고).
@@ -119,6 +122,29 @@ fun RoundControlScreen(viewModel: RoundStateViewModel) {
         }
     }
 
+    // 워치 배터리가 10% 미만/5% 미만으로 떨어지면 라운드 중에 경고 화면을 5초(탭하면 바로) 띄우고, 경고 구간인 동안은
+    // 상태 줄 알약으로 계속 알린다. 진동은 WatchBatteryMonitor가 울리고, 폰에는 알림이 간다.
+    val battery by WatchBatteryMonitor.info.collectAsStateWithLifecycle()
+    val pendingBatteryAlert by WatchBatteryMonitor.pendingAlert.collectAsStateWithLifecycle()
+    var shownBatteryAlert by remember { mutableStateOf<Int?>(null) }
+    LaunchedEffect(state.roundActive) {
+        WatchBatteryMonitor.roundActive = state.roundActive
+        if (state.roundActive) WatchBatteryMonitor.resend(context)
+    }
+    LaunchedEffect(pendingBatteryAlert, state.roundActive) {
+        if (state.roundActive && pendingBatteryAlert != WearSync.BATTERY_WARNING_NONE) {
+            shownBatteryAlert = pendingBatteryAlert
+            WatchBatteryMonitor.consumeAlert()
+        }
+    }
+    // 닫는 타이머는 따로 둔다 — 위 효과는 대기 경고를 비우면 다시 시작되므로 거기서 delay를 걸면 취소돼 안 닫힌다.
+    LaunchedEffect(shownBatteryAlert) {
+        if (shownBatteryAlert != null) {
+            delay(BATTERY_ALERT_MS)
+            shownBatteryAlert = null
+        }
+    }
+
     // ◀/▶를 누르면 홀 이동 요청을 세우고 액션을 보낸다 — 폰이 처리해서 홀 번호가 실제로
     // 바뀌면 홀 이동 화면이 잠깐 뜬다(HoleMoveOverlayState 참고).
     val overlay = rememberHoleMoveOverlay(state.holeNumber)
@@ -130,8 +156,14 @@ fun RoundControlScreen(viewModel: RoundStateViewModel) {
     }
 
     val shownDirection = overlay.shownDirection
+    val batteryAlert = shownBatteryAlert
     when {
         !state.roundActive -> WatchIdleScreen(isPhoneConnected = isPhoneConnected)
+        batteryAlert != null -> WatchBatteryAlertScreen(
+            percent = battery?.percent ?: 0,
+            warning = batteryAlert,
+            onDismiss = { shownBatteryAlert = null },
+        )
         shownDirection != null -> WatchHoleScreen(
             state = state,
             direction = shownDirection,
@@ -141,6 +173,7 @@ fun RoundControlScreen(viewModel: RoundStateViewModel) {
         else -> WatchPlayScreen(
             state = state,
             badge = statusBadge(isPhoneConnected, showGpsFailureMessage),
+            battery = battery,
             onAction = viewModel::sendAction,
             onMove = onMove,
         )

@@ -25,6 +25,7 @@ import com.golfrecorder.wearsync.WearSync
 fun WatchPlayScreen(
     state: RoundUiState,
     badge: StatusBadge,
+    battery: BatteryInfo?,
     onAction: (String) -> Unit,
     onMove: (HoleMoveDirection) -> Unit,
 ) {
@@ -42,7 +43,7 @@ fun WatchPlayScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
-            WatchStatusLine(badge, scale)
+            WatchStatusLine(badge, battery, scale)
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
