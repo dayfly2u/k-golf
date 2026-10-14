@@ -200,6 +200,9 @@ class RoundStateViewModel(application: Application) :
             null
         }
         val seq = System.currentTimeMillis()
+        // 누른 순간 화면에 보이던 홀 — 폰이 이 입력을 늦게(예: 워치가 꺼졌다 재연결된 뒤) 받았을 때 지금 홀과
+        // 다르면 낡은 입력으로 버릴 수 있게 같이 보낸다(WearSync.KEY_QUEUED_HOLE).
+        val pressedHole = _state.value.holeNumber
         // 폰의 처리 확인(큐 삭제 이벤트)을 기다리지 않고 버튼을 누른 즉시 화면에
         // 반영한다 — 블루투스가 끊겨 있어도 누른 게 바로 보여야 하기 때문.
         pendingDeltaFor(action)?.let { pending ->
@@ -212,6 +215,7 @@ class RoundStateViewModel(application: Application) :
                     "${WearSync.ACTION_QUEUE_PATH_PREFIX}/$seq",
                 ).apply {
                     dataMap.putString(WearSync.KEY_QUEUED_ACTION, action)
+                    dataMap.putInt(WearSync.KEY_QUEUED_HOLE, pressedHole)
                     if (loc != null) {
                         dataMap.putDouble(WearSync.KEY_QUEUED_LAT, loc.first)
                         dataMap.putDouble(WearSync.KEY_QUEUED_LNG, loc.second)

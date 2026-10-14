@@ -17,6 +17,7 @@ import com.golfrecorder.domain.model.LocationSource
 import com.golfrecorder.domain.model.ShotPhase
 import com.golfrecorder.domain.model.StrokeCalculator
 import com.golfrecorder.domain.model.WatchRoundSummaryCalculator
+import com.golfrecorder.domain.model.isStaleWatchAction
 import com.golfrecorder.location.LatLng as AppLatLng
 import com.golfrecorder.location.LocationCapture
 import com.golfrecorder.location.LocationTracker
@@ -77,7 +78,12 @@ class RoundRecordingService : Service() {
                         } else {
                             null
                         }
-                        handleAction(action, watchLocation)
+                        val queuedHole = if (map.containsKey(WearSync.KEY_QUEUED_HOLE)) {
+                            map.getInt(WearSync.KEY_QUEUED_HOLE)
+                        } else {
+                            null
+                        }
+                        handleAction(action, watchLocation, queuedHole)
                     }
                     try {
                         Wearable.getDataClient(this@RoundRecordingService).deleteDataItems(uri).await()
@@ -137,9 +143,17 @@ class RoundRecordingService : Service() {
         super.onDestroy()
     }
 
-    private suspend fun handleAction(action: String, watchLocation: AppLatLng?) {
+    private suspend fun handleAction(action: String, watchLocation: AppLatLng?, queuedHole: Int?) {
         if (roundId <= 0 || courseId <= 0) return
         val holeNumber = container.roundRepository.getCurrentHoleNumber(roundId) ?: return
+        // 워치가 누른 때 보던 홀이 지금 홀과 다르면 낡은 입력(워치가 꺼져 있다가 늦게 재연결된 경우 등)이라
+        // 버린다 — 이전 홀의 워치 GPS 좌표가 다른 홀 샷으로 들어가거나 홀이 또 넘어가는 걸 막는다. 호출한 쪽이
+        // 큐 아이템은 지우므로(워치의 낙관적 표시도 그때 사라진다) 여기서는 워치 화면만 현재 상태로 맞춰준다.
+        if (isStaleWatchAction(queuedHole, holeNumber)) {
+            Log.w(TAG, "drop stale watch action=$action queuedHole=$queuedHole currentHole=$holeNumber")
+            pushState()
+            return
+        }
         when (action) {
             WearSync.ACTION_INCREMENT_TO_GREEN -> incrementStroke(holeNumber, ShotPhase.TO_GREEN, watchLocation)
             WearSync.ACTION_DECREMENT_TO_GREEN -> decrementStroke(holeNumber, ShotPhase.TO_GREEN)

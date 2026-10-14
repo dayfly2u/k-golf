@@ -20,6 +20,11 @@ object WearSync {
     const val KEY_QUEUED_ACTION = "action"
     const val KEY_QUEUED_LAT = "lat"
     const val KEY_QUEUED_LNG = "lng"
+    /** 워치가 이 액션을 누른 순간 화면에 보이던 홀 번호. 폰은 처리할 때 이 값이 라운드의 현재 홀과
+     * 다르면 그 액션을 버린다 — 워치가 꺼져 있다가 한참 뒤 재연결돼 오래된 입력이 늦게 도착해도
+     * 엉뚱한 홀에 타수가 더해지거나 홀이 또 넘어가지 않게 하려는 것이다. 이 키가 없으면(구버전 워치)
+     * 검사 없이 그대로 처리한다. */
+    const val KEY_QUEUED_HOLE = "hole"
 
     /** 폰 → 워치: 최신 라운드 상태. DataClient DataMap. */
     const val STATE_PATH = "/round-state"
