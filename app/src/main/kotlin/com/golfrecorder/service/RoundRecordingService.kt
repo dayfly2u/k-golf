@@ -110,6 +110,7 @@ class RoundRecordingService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        running = true
         container = AppContainer.getInstance(applicationContext)
         Wearable.getDataClient(this).addListener(dataListener)
         createNotificationChannel()
@@ -118,6 +119,13 @@ class RoundRecordingService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(TAG, "onStartCommand action=${intent?.action} roundId=${intent?.getLongExtra(EXTRA_ROUND_ID, -1)} courseId=${intent?.getLongExtra(EXTRA_COURSE_ID, -1)}")
+        // 라운드 정보 없이 갱신 요청(ACTION_REFRESH)만 받아 새로 만들어진 서비스는 할 일이 없다 — 그대로 두면 "라운딩
+        // 기록 중" 알림만 띄우고 GPS를 계속 폴링하는 좀비가 된다. refreshState()가 서비스가 없으면 요청을 보내지 않지만
+        // (끝난 라운드 리뷰에서 ◀▶를 누르면 실제로 이렇게 만들어졌었다) 그래도 들어오면 바로 끝낸다.
+        if (intent?.action == ACTION_REFRESH && roundId <= 0) {
+            stopSelf()
+            return START_NOT_STICKY
+        }
         // 서비스가 처음 뜰 때는 아직 위치 권한이 없을 수 있다(RoundPlayScreen이 권한
         // 허용을 기다리지 않고 서비스를 먼저 시작한다). ACTION_REFRESH는 폰에서 타수/홀이
         // 바뀔 때마다 오므로 여기서 매번 재시도해두면 권한이 늦게 허용돼도 구독이 살아난다.
@@ -142,6 +150,7 @@ class RoundRecordingService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
+        running = false
         Wearable.getDataClient(this).removeListener(dataListener)
         WatchBatteryNotifier.clear(this)
         LocationTracker.stop(applicationContext)
@@ -331,9 +340,16 @@ class RoundRecordingService : Service() {
             context.stopService(Intent(context, RoundRecordingService::class.java))
         }
 
+        /** 서비스가 떠 있을 때만 상태 갱신을 요청한다. 서비스가 없는데 startService로 부르면 새로 만들어져서(라운드
+         * 정보 없이) "라운딩 기록 중" 알림을 띄우고 GPS를 폴링하는 좀비가 된다 — 끝난 라운드를 리뷰하며 ◀▶를 누를
+         * 때마다 그랬다. 앱 프로세스 하나에서만 도는 서비스라 같은 프로세스의 플래그로 판단한다. */
         fun refreshState(context: Context) {
+            if (!running) return
             val intent = Intent(context, RoundRecordingService::class.java).setAction(ACTION_REFRESH)
             context.startService(intent)
         }
+
+        @Volatile
+        private var running = false
     }
 }
