@@ -3,58 +3,59 @@
 <head>
 <meta charset="utf-8">
 <title>K-Golf 사용 설명서</title>
-<meta name="description" content="골프 기록 앱 K-Golf를 처음 쓰는 사람을 위한 스크린샷 기반 사용 가이드">
+<meta name="description" content="골프 기록 앱 K-Golf(UX 2.0)를 처음 쓰는 사람을 위한 스크린샷 기반 사용 가이드">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;600;700;900&display=swap">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap">
 <style>
   :root { color-scheme: light dark; }
   :root {
-    --bg: #faf7fc;
+    /* K-Golf UX 2.0 디자인 토큰(GolfTokens)과 같은 색 */
+    --bg: #f4f5ef;
     --surface: #ffffff;
-    --ink: #251f2e;
-    --ink-muted: #6e6580;
-    --accent: #6c4fc4;
-    --accent-soft: #ece5fa;
-    --accent-soft-line: #ddd0f2;
-    --line: #e6dff2;
-    --green: #2e7d32;
-    --green-soft: #e6f2e7;
-    --orange: #e07a00;
-    --orange-soft: #fdf0dc;
+    --ink: #18241d;
+    --ink-muted: #56635a;
+    --accent: #1f5c3f;
+    --accent-2: #2e7d4f;
+    --accent-soft: #e3eee6;
+    --accent-soft-line: #c5d8cb;
+    --line: #cdd3c8;
+    --gold: #f2c14e;
+    --gold-soft: #fbf0d0;
+    --warn-ink: #8a4b00;
+    --red: #c62828;
     --blue: #1e6fd9;
-    --shadow: 0 1px 2px rgba(80, 48, 140, 0.06), 0 8px 24px rgba(80, 48, 140, 0.08);
+    --shadow: 0 1px 2px rgba(24, 36, 29, 0.06), 0 8px 24px rgba(24, 36, 29, 0.08);
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #1c1720;
-      --surface: #262030;
-      --ink: #f1ecf7;
-      --ink-muted: #b3a8c4;
-      --accent: #b79dfb;
-      --accent-soft: #362a4d;
-      --accent-soft-line: #4a3a68;
-      --line: #3a3148;
-      --green: #7fd989;
-      --green-soft: #263524;
-      --orange: #ffb35c;
-      --orange-soft: #3a2c18;
+      --bg: #101812;
+      --surface: #19251d;
+      --ink: #eef3ee;
+      --ink-muted: #a9b8ad;
+      --accent: #7fd3a0;
+      --accent-2: #4caf72;
+      --accent-soft: #1f3327;
+      --accent-soft-line: #2e4c3a;
+      --line: #2f3f34;
+      --gold-soft: #3a3016;
+      --warn-ink: #f2c14e;
       --blue: #8ab8f7;
       --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35);
     }
   }
   :root[data-theme="dark"] {
-    --bg: #1c1720;
-    --surface: #262030;
-    --ink: #f1ecf7;
-    --ink-muted: #b3a8c4;
-    --accent: #b79dfb;
-    --accent-soft: #362a4d;
-    --accent-soft-line: #4a3a68;
-    --line: #3a3148;
-    --green: #7fd989;
-    --green-soft: #263524;
-    --orange: #ffb35c;
-    --orange-soft: #3a2c18;
+    --bg: #101812;
+    --surface: #19251d;
+    --ink: #eef3ee;
+    --ink-muted: #a9b8ad;
+    --accent: #7fd3a0;
+    --accent-2: #4caf72;
+    --accent-soft: #1f3327;
+    --accent-soft-line: #2e4c3a;
+    --line: #2f3f34;
+    --gold-soft: #3a3016;
+    --warn-ink: #f2c14e;
     --blue: #8ab8f7;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35);
   }
@@ -63,15 +64,24 @@
   body {
     background: var(--bg);
     color: var(--ink);
-    font-family: "Noto Sans KR", "Malgun Gothic", sans-serif;
+    font-family: "IBM Plex Sans KR", "Noto Sans KR", "Malgun Gothic", sans-serif;
     padding: 0 20px;
     padding-block: 48px 80px;
+    margin: 0;
+    word-break: keep-all;
+    overflow-wrap: break-word;
   }
-  .wrap { max-width: 760px; margin: 0 auto; }
+  .wrap { max-width: 800px; margin: 0 auto; }
 
   h1, h2, .display {
-    font-family: "Gowun Dodum", "Noto Sans KR", sans-serif;
+    font-family: "IBM Plex Sans KR", "Noto Sans KR", sans-serif;
     text-wrap: balance;
+  }
+  code {
+    background: var(--accent-soft);
+    border-radius: 6px;
+    padding: 1px 6px;
+    font-size: 0.88em;
   }
 
   /* ---------- header ---------- */
@@ -85,19 +95,30 @@
     width: 52px;
     height: 52px;
     border-radius: 16px;
-    background: linear-gradient(155deg, var(--accent), #9b7ce8);
+    background: linear-gradient(155deg, var(--accent-2), #1f5c3f);
     color: #fff;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-family: "Gowun Dodum", sans-serif;
-    font-size: 22px;
+    font-family: "Barlow Condensed", sans-serif;
+    font-size: 28px;
     font-weight: 700;
     flex-shrink: 0;
     box-shadow: var(--shadow);
   }
   header h1 { font-size: 1.7rem; margin: 0 0 2px; font-weight: 700; }
   header p { margin: 0; color: var(--ink-muted); font-size: 0.95rem; }
+  .ver {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 9px;
+    border-radius: 999px;
+    background: var(--gold);
+    color: #18241d;
+    font-size: 0.72rem;
+    font-weight: 700;
+    vertical-align: middle;
+  }
 
   .intro {
     margin: 28px 0 44px;
@@ -136,6 +157,49 @@
     line-height: 1.6;
   }
   .install li::marker { color: var(--accent); font-weight: 700; }
+  .install a { color: var(--accent); font-weight: 600; }
+  .install:has(+ .install) { margin-bottom: 20px; }
+  .install.carry {
+    background: var(--gold-soft);
+    border-color: var(--gold);
+  }
+  .install .lead {
+    margin: 0 0 14px;
+    font-size: 0.95rem;
+    line-height: 1.7;
+    color: var(--ink-muted);
+  }
+  .install .lead strong, .install ol strong { color: var(--ink); font-weight: 600; }
+  .install .warn {
+    margin-top: 16px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    font-size: 0.88rem;
+    line-height: 1.65;
+    color: var(--ink-muted);
+  }
+  .install .warn .label {
+    display: inline-block;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--warn-ink);
+    background: var(--gold-soft);
+    border-radius: 999px;
+    padding: 2px 10px;
+    margin-bottom: 8px;
+  }
+  .install .warn ul {
+    margin: 0;
+    padding-left: 1.2em;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 0.88rem;
+  }
+  .install .warn li::marker { color: var(--accent); }
+  .install .warn strong { color: var(--ink); font-weight: 600; }
 
   /* ---------- steps ---------- */
   .steps { display: flex; flex-direction: column; gap: 56px; }
@@ -149,10 +213,10 @@
   .step.no-shot { grid-template-columns: 1fr; }
 
   .step-num {
-    font-family: "Gowun Dodum", sans-serif;
-    font-size: 0.85rem;
+    font-family: "Barlow Condensed", sans-serif;
+    font-size: 1rem;
     color: var(--accent);
-    letter-spacing: 0.04em;
+    letter-spacing: 0.06em;
     font-weight: 700;
     margin-bottom: 6px;
     display: block;
@@ -170,7 +234,7 @@
   }
   .step p:last-child { margin-bottom: 0; }
   .step strong { color: var(--ink); font-weight: 600; }
-  .step ol {
+  .step ol, .step ul {
     margin: 4px 0 16px;
     padding-left: 1.3em;
     display: flex;
@@ -180,8 +244,8 @@
     font-size: 0.96rem;
     line-height: 1.7;
   }
-  .step ol li::marker { color: var(--accent); font-weight: 700; }
-  .step ol strong { color: var(--ink); font-weight: 600; }
+  .step ol li::marker, .step ul li::marker { color: var(--accent); font-weight: 700; }
+  .step ol strong, .step ul strong { color: var(--ink); font-weight: 600; }
 
   .callout {
     margin-top: 14px;
@@ -195,7 +259,6 @@
   }
   .callout .label {
     display: inline-block;
-    font-family: "Gowun Dodum", sans-serif;
     font-size: 0.78rem;
     font-weight: 700;
     color: var(--accent);
@@ -204,8 +267,9 @@
     padding: 2px 10px;
     margin-bottom: 8px;
   }
+  .note { font-size: 0.85rem !important; }
 
-  .legend { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: 10px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: 10px; margin-bottom: 14px; }
   .legend span {
     display: inline-flex;
     align-items: center;
@@ -217,6 +281,33 @@
   .dot.red { background: #e5484d; }
   .dot.blue { background: var(--blue); }
   .dot.yellow { background: #f2c94c; }
+  .swatch { width: 14px; height: 14px; border-radius: 4px; flex-shrink: 0; border: 1px solid rgba(24, 36, 29, 0.12); }
+
+  /* 연도 필터 칩 예시 */
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0 14px; }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    height: 30px;
+    padding: 0 13px;
+    border-radius: 999px;
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    font-size: 0.82rem;
+    font-weight: 500;
+  }
+  .chip.on { background: #fff; color: #1f5c3f; font-weight: 700; border-color: #fff; }
+  .chips-bar {
+    display: inline-flex;
+    gap: 6px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: #1f5c3f;
+    margin: 4px 0 14px;
+  }
+  .chips-bar .chip { background: transparent; border-color: rgba(255, 255, 255, 0.4); }
+  .chips-bar .chip.on { background: #fff; color: #1f5c3f; border-color: #fff; }
 
   .shot {
     background: var(--surface);
@@ -224,6 +315,7 @@
     padding: 8px;
     box-shadow: var(--shadow);
     border: 1px solid var(--line);
+    margin: 0;
   }
   .shot img {
     width: 100%;
@@ -237,6 +329,23 @@
     padding: 8px 4px 2px;
   }
   .shot-pair { display: flex; flex-direction: column; gap: 14px; }
+
+  /* 워치 도안 3장 */
+  .watch-trio {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    margin: 6px 0 14px;
+  }
+  .watch-shot { margin: 0; text-align: center; }
+  .watch-shot img { width: 100%; max-width: 220px; display: block; margin: 0 auto; }
+  .watch-shot figcaption {
+    font-size: 0.8rem;
+    color: var(--ink-muted);
+    line-height: 1.55;
+    padding-top: 8px;
+  }
+  .watch-shot figcaption strong { display: block; color: var(--ink); font-size: 0.9rem; margin-bottom: 2px; }
 
   .switch-tag {
     display: inline-flex;
@@ -260,17 +369,21 @@
     line-height: 1.8;
   }
   footer .title {
-    font-family: "Gowun Dodum", sans-serif;
     color: var(--ink);
     font-size: 0.95rem;
     margin-bottom: 8px;
     display: block;
+    font-weight: 600;
   }
 
   @media (max-width: 680px) {
     .step, .step.no-shot { grid-template-columns: 1fr; }
     .step .shot { max-width: 260px; margin: 0 auto; }
+    .step .shot-pair { flex-direction: row; justify-content: center; flex-wrap: wrap; }
+    .step .shot-pair .shot { max-width: 240px; }
     header h1 { font-size: 1.4rem; }
+    .watch-trio { grid-template-columns: 1fr; }
+    .watch-shot img { max-width: 200px; }
   }
 </style>
 </head>
@@ -281,7 +394,7 @@
   <header>
     <div class="badge">K</div>
     <div>
-      <h1>K-Golf 사용 설명서</h1>
+      <h1>K-Golf 사용 설명서 <span class="ver">v0.11 · UX 2.0</span></h1>
       <p>처음 켜는 분을 위한 5분 가이드 — 코스 등록부터 라운드 결과 확인까지</p>
     </div>
   </header>
@@ -294,10 +407,29 @@
   <div class="install">
     <h2>0. 설치하기</h2>
     <ol>
-      <li>공유받은 <strong>app-debug.apk</strong> 파일을 폰에 다운로드해요.</li>
+      <li><a href="https://github.com/dayfly2u/k-golf/releases/latest">릴리즈 페이지</a>의 <strong>Assets</strong>에서 <strong>app-debug.apk</strong> 파일을 폰에 다운로드해요.</li>
       <li>파일을 눌렀을 때 "출처를 알 수 없는 앱" 경고가 뜨면 <strong>설치 허용</strong>을 눌러요 (앱스토어를 거치지 않고 직접 설치하는 파일이라 뜨는 정상적인 경고예요).</li>
-      <li>설치가 끝나면 <strong>K-Golf</strong> 아이콘을 눌러 실행해요.</li>
+      <li>설치가 끝나면 <strong>K-Golf</strong> 아이콘을 눌러 실행해요. 위치 권한은 <strong>"앱 사용 중에만 허용"</strong>으로 해주세요 (샷 위치를 기록하는 핵심 기능이에요).</li>
     </ol>
+    <p style="margin: 12px 0 0; font-size: 0.88rem; color: var(--ink-muted); line-height: 1.6;">이전 버전 위에 그대로 덮어 설치하면 코스와 라운드 기록이 그대로 유지돼요. 예전 버전(UX 1.0)에 기록이 있다면 설치 전에 아래 안내대로 백업부터 해두세요.</p>
+  </div>
+
+  <div class="install carry">
+    <h2>0-1. 이전 버전(UX 1.0)을 쓰고 있다면 — 기록 그대로 가져오기</h2>
+    <p class="lead">예전 K-Golf(v0.7.x 등 UX 1.0 화면)에 기록을 쌓아 두셨다면, 새 버전으로 바꾸기 전에 <strong>백업 파일</strong>을 하나 만들어 두세요. 코스(홀별 파·평점·리뷰·유튜브 링크 포함), 라운드, 샷 위치, 벌타가 파일 하나에 통째로 들어가요.</p>
+    <ol>
+      <li><strong>예전 버전에서 백업</strong> — 홈 화면 맨 아래 <strong>"백업"</strong>을 눌러요. 파일을 저장할 위치(예: 내 파일의 <code>Download</code> 폴더, 구글 드라이브)를 고르고 저장하면 <strong>"백업 완료"</strong>가 떠요. 파일 이름은 <code>golf_recorder_backup_날짜_시간.db</code> 모양이에요.</li>
+      <li><strong>새 버전 설치</strong> — 위 0번처럼 새 <strong>app-debug.apk</strong>를 설치해요. 예전 앱 위에 그대로 덮어 설치하면 기록이 이어지는 게 보통이지만, 만약을 위해 1번 백업은 꼭 먼저 해두세요.</li>
+      <li><strong>새 버전에서 복원</strong> — 새 버전 홈 화면 맨 아래 <strong>"복원"</strong> → 방금 저장한 백업 파일 선택 → <strong>"백업을 복원할까요?"</strong> 창에서 <strong>"복원"</strong>을 눌러요. 앱이 저절로 다시 켜지면서 예전 기록이 나타나요. 홈의 <strong>총 라운드</strong> 수와 <strong>코스 관리</strong>의 코스 목록이 예전과 같은지 확인해 보세요.</li>
+    </ol>
+    <div class="warn">
+      <span class="label">주의</span>
+      <ul>
+        <li><strong>복원은 "덮어쓰기"예요.</strong> 지금 기기에 있는 코스·라운드 기록이 전부 백업 파일 내용으로 바뀌고 되돌릴 수 없어요. 새 버전에서 새 라운드를 기록하기 <strong>전에</strong> 먼저 복원하세요.</li>
+        <li><strong>앱을 삭제하고 다시 설치하거나 폰을 바꾸는 경우</strong>엔 삭제하는 순간 폰 안의 기록이 모두 사라져요. 백업 파일이 폰 밖(구글 드라이브, PC, 메신저의 "나에게 보내기" 등)에도 있는지 확인한 뒤에 삭제하세요. 새 폰으로 옮길 때는 그 파일을 새 폰으로 받아서 위 3번대로 복원하면 돼요.</li>
+        <li><strong>백업/복원 메뉴는 v0.4.0 이후 버전부터 있어요.</strong> v0.3.0 이하(첫 릴리즈 v0.2.0 포함)의 아주 오래된 버전에는 백업 메뉴가 없어서 이 방법으로 옮길 수 없어요.</li>
+      </ul>
+    </div>
   </div>
 
   <div class="steps">
@@ -306,11 +438,16 @@
       <div>
         <span class="step-num">STEP 1</span>
         <h2>자주 가는 코스 등록하기</h2>
-        <p>맨 처음엔 등록된 코스가 없어요. 홈 화면 오른쪽 위 <strong>"코스 관리"</strong>를 눌러 <strong>"새 코스 추가"</strong>로 들어가면, 코스 이름과 18홀 각각의 파(3/4/5)를 정할 수 있어요.</p>
+        <p>맨 처음엔 등록된 코스가 없어요. 홈 화면 오른쪽 위 <strong>"코스 관리"</strong>를 눌러 맨 아래 <strong>"새 코스 추가"</strong>로 들어가면 코스를 만들 수 있어요.</p>
+        <ul>
+          <li><strong>코스 이름</strong>을 적고, <strong>홀별 파</strong>에서 18홀 각각의 파(3·4·5)를 눌러 정해요. 왼쪽이 전반(OUT 1~9), 오른쪽이 후반(IN 10~18)이고 맨 위에 <strong>총 파</strong>가 바로 계산돼요.</li>
+          <li>그 아래 <strong>리뷰 (선택 입력)</strong>에서 <strong>평점</strong>(별, −/+)과 <strong>난이도</strong>, 지역·거리·시간, 한줄평, 교통·클럽하우스·코스 메모를 남길 수 있어요. 안 적어도 라운드엔 지장 없어요.</li>
+          <li>코스를 한 번 저장하면 <strong>유튜브 링크</strong>도 붙일 수 있어요. 영상을 검색해서 고르거나 주소를 직접 붙여 넣어요.</li>
+        </ul>
         <p>한 번 등록해두면 다음부터는 라운드 시작할 때 목록에서 고르기만 하면 돼요.</p>
         <div class="callout">
           <span class="label">TIP</span><br>
-          코스 이름을 누르면 평점·리뷰도 남길 수 있고, 손잡이(≡)를 꾹 눌러 드래그하면 목록 순서를 바꿀 수 있어요.
+          코스 관리 목록에서 코스 카드를 누르면 상세 리뷰가 펼쳐지고, 손잡이(≡)를 꾹 눌러 드래그하면 순서를 바꿀 수 있어요. 오른쪽 연필 아이콘이 수정이에요.
         </div>
       </div>
       <div class="shot-pair">
@@ -319,8 +456,8 @@
           <figcaption>코스 관리 — 등록된 코스 목록</figcaption>
         </figure>
         <figure class="shot">
-          <img src="course-add.png" alt="코스 추가 화면, 홀별 파 선택">
-          <figcaption>코스 추가 — 홀마다 파 선택</figcaption>
+          <img src="course-edit.png" alt="코스 수정 화면, 홀별 파 선택과 평점·난이도">
+          <figcaption>코스 수정 — 홀마다 파, 평점·난이도</figcaption>
         </figure>
       </div>
     </div>
@@ -329,61 +466,64 @@
       <div>
         <span class="step-num">STEP 2</span>
         <h2>라운드 시작하기</h2>
-        <p>홈 화면에서 <strong>"새 라운딩 시작!"</strong>을 누르면 코스 목록이 뜨고, 맨 위에 스위치 두 개가 있어요. 대부분은 그냥 끈 채로 시작하면 되고, 아래 상황에서만 켜주면 돼요.</p>
+        <p>홈 화면 아래쪽 노란 <strong>"새 라운딩 시작!"</strong> 버튼을 누르면 <strong>"설정 &amp; 코스선택"</strong> 화면이 열려요. 맨 위에 스위치 두 개가 있고, 대부분은 그냥 끈 채로 시작하면 돼요. 아래 상황에서만 켜주세요.</p>
         <div class="callout">
           <span class="switch-tag">와치 GPS 켜기</span>
-          라운드 중 폰을 카트에 두고 다닐 때 — 워치가 대신 위치를 기록해줘요.
+          라운드 중 폰을 카트에 두고 다닐 때 — 워치가 대신 위치를 기록해줘요. (꺼져 있으면 폰 GPS를 써요.)
         </div>
         <div class="callout">
           <span class="switch-tag">해외 코스 (구글맵 사용)</span>
           국내가 아닌 해외 코스일 때 — 카카오맵은 국내만 지원해서, 해외에서는 이 스위치를 켜야 지도가 나와요.
         </div>
-        <p>코스를 누르면 바로 1홀부터 라운드가 시작돼요.</p>
+        <p style="margin-top: 14px;">코스 목록에는 각 코스의 <strong>평점(별)과 난이도, 지역 | 거리 | 소요시간</strong>이 같이 보여서 고르기 쉬워요. 코스를 누르면 바로 1홀부터 라운드가 시작돼요. (알림 권한을 물어보면 허용해주세요 — 라운드 중 워치 연동과 워치 배터리 경고에 쓰여요.)</p>
       </div>
-      <div class="shot">
-        <img src="course-select.png" alt="코스 선택 화면, 와치 GPS와 구글맵 스위치">
-        <figcaption>코스 선택 — 위쪽 스위치 두 개</figcaption>
-      </div>
+      <figure class="shot">
+        <img src="course-select.png" alt="설정 &amp; 코스선택 화면, 와치 GPS와 구글맵 스위치">
+        <figcaption>설정 &amp; 코스선택 — 위쪽 스위치 두 개</figcaption>
+      </figure>
     </div>
 
     <div class="step">
       <div>
         <span class="step-num">STEP 3</span>
         <h2>홀마다 타수 입력하기</h2>
-        <p>위성 지도 아래 버튼으로 <strong>그린까지 타수 · OB · 해저드 · 숏어프로치 · 퍼팅</strong>을 그때그때 +/-로 기록해요. 버튼을 누른 순간의 GPS 위치가 지도 위에 점으로 남아요.</p>
+        <p><strong>홀 기록</strong> 화면이에요. 위쪽에 <strong>HOLE 번호와 파</strong>, 그 아래 18칸 <strong>진행바</strong>(지나온 홀은 초록, 지금 홀은 노랑)가 있고, 오른쪽 위에는 지금까지의 <strong>현재 스코어</strong>(파 대비)가 떠요.</p>
+        <p>위성 지도 아래 카드에서 <strong>그린까지 · 숏어프로치 · 퍼팅</strong>을 −/+로 그때그때 기록해요. 버튼을 누른 순간의 GPS 위치가 지도 위에 점으로 남아요.</p>
         <div class="legend">
           <span><span class="dot red"></span>그린까지 친 샷</span>
           <span><span class="dot blue"></span>숏어프로치</span>
           <span><span class="dot yellow"></span>퍼팅</span>
         </div>
-        <p>지도가 내 위치와 다르게 보이면 오른쪽 위 <strong>"위치 조정"</strong>을 눌러 다시 맞출 수 있고, 한 홀이 끝나면 <strong>"다음 홀"</strong>로 넘어가면 돼요.</p>
+        <p><strong>벌타</strong>는 한 줄 버튼으로 기록해요 — <strong>OB +1</strong>, <strong>OB +2</strong>(특설티), <strong>해저드 +1</strong>. 잘못 눌렀으면 아래 <strong>"OB 0 · 탭해서 취소"</strong> 칩을 눌러 한 개씩 되돌려요.</p>
+        <p>지도가 내 위치와 다르게 보이면 지도 오른쪽 아래 <strong>"위치 조정"</strong>을 눌러 다시 맞출 수 있어요. 한 홀이 끝나면 아래 <strong>"다음 홀"</strong> 버튼으로 넘어가요 — 버튼에 "이 홀 2타 · 버디 이하"처럼 방금 홀의 타수와 결과가 같이 보여서 한 번 더 확인할 수 있어요. 앞 홀로 돌아갈 때는 <strong>"이전 홀"</strong>을 눌러요.</p>
+        <p class="note">※ 위 화면의 지도는 지금 있는 곳의 동네가 그대로 나와서 흐리게 처리했어요. 실제로는 코스 위성지도가 보여요.</p>
       </div>
-      <div class="shot">
-        <img src="round-play.png" alt="라운드 진행 화면, 지도와 타수 입력 버튼">
-        <figcaption>1홀 진행 중 — 타수 2개 입력한 모습</figcaption>
-      </div>
+      <figure class="shot">
+        <img src="round-play.png" alt="홀 기록 화면, 타수 입력 카드와 벌타 버튼">
+        <figcaption>홀 기록 — 그린까지 · 숏어프로치 · 퍼팅 · 벌타</figcaption>
+      </figure>
     </div>
 
     <div class="step">
       <div>
         <span class="step-num">STEP 4</span>
         <h2>결과 확인하고 리뷰 남기기</h2>
-        <p>화면 위 <strong>"&lt; 뒤로"</strong>를 누르면 언제든 지금까지의 결과 화면으로 이동해요. 총타수, GIR, 홀별 기록을 볼 수 있고 <strong>라운딩 가격·동반자·후기</strong>도 선택으로 남길 수 있어요.</p>
-        <p>이 화면은 라운드 도중에도, 다 끝낸 뒤에도 같은 곳에서 볼 수 있어요 — 홀을 다 안 돌아도 기록은 사라지지 않아요.</p>
-      </div>
-      <div class="shot">
-        <img src="round-summary.png" alt="라운드 결과 화면, 총타수와 GIR, 리뷰 입력란">
-        <figcaption>라운드 결과 — 스코어와 리뷰 입력</figcaption>
-      </div>
-    </div>
-
-    <div class="step">
-      <div>
-        <span class="step-num">STEP 5</span>
-        <h2>홈 화면에서 지난 기록 보기</h2>
-        <p>홈 화면엔 완료한 라운드가 최신순으로 쌓여요. 코스 이름 아래로 <strong>날짜·시간·소요시간</strong>, 그 아래로 <strong>그린피·동반자 이름과 각자 스코어</strong>가 한 줄씩 표시되고, 오른쪽엔 이번 라운드 스코어 배지가 떠요 — 배지 색으로 이븐(초록) · 언더파(파랑) 같은 결과를 한눈에 구분할 수 있어요. 라운드를 누르면 그때 기록을 다시 열어볼 수 있어요.</p>
-        <p>화면 맨 아래 <strong>백업 / 복원</strong>으로 전체 기록을 파일 하나로 저장해두는 것도 추천해요.</p>
-        <p>지난 라운드의 홀 하나를 다시 열어보면, 그 홀에서 친 샷들이 지도 위에 선으로 이어지고 <strong>샷과 샷 사이 실제 거리(m)</strong>가 같이 표시돼요.</p>
+        <p>홀 기록 화면 왼쪽 위 <strong>← 뒤로</strong>를 누르면 언제든 지금까지의 <strong>결과 화면</strong>으로 이동해요. 라운드 도중에도, 다 끝낸 뒤에도 같은 곳에서 볼 수 있어요 — 홀을 다 안 돌아도 기록은 사라지지 않아요.</p>
+        <ul>
+          <li><strong>맨 위 초록 영역</strong> — 총타수와 파 대비 점수. 최근 라운드와 비교한 <strong>"최근 5회 중 N위"</strong> 배지도 떠요.</li>
+          <li><strong>통계 카드</strong> — <strong>GIR</strong>(파−2타 이내로 그린에 올리고 숏어프로치 없이 마친 홀 비율), <strong>L-GIR</strong>(숏어프로치가 있었어도 파−2타 이내로 그린에 올린 홀 비율), <strong>홀당 퍼팅</strong>(작게 총 퍼팅 수), <strong>드라이버 평균·최장</strong> 거리, <strong>벌타</strong>(OB·해저드).</li>
+          <li><strong>홀 결과 비율</strong> — 버디 이하 · 파 · 보기 · 더블 · 트리플+가 18홀 중 얼마나 되는지 한 줄 막대로 보여줘요.</li>
+          <li><strong>스코어카드</strong> — 전반(OUT)과 후반(IN)의 홀별 파와 타수. 칸 색으로 홀 결과를 한눈에 구분해요. 카드 오른쪽 위의 <strong>"와치 GPS · 카카오맵"</strong>은 이 라운드를 시작할 때 고른 위치·지도 설정이에요.</li>
+        </ul>
+        <div class="legend">
+          <span><span class="swatch" style="background:#f2c14e"></span>버디 이하</span>
+          <span><span class="swatch" style="background:#1f5c3f"></span>파</span>
+          <span><span class="swatch" style="background:#c8e6c9"></span>보기</span>
+          <span><span class="swatch" style="background:#ffcdd2"></span>더블</span>
+          <span><span class="swatch" style="background:#c62828"></span>트리플 이상</span>
+        </div>
+        <p>화면 아래 <strong>"리뷰 쓰기"</strong>를 누르면 <strong>라운딩 가격·동반자·후기</strong>를 남길 수 있어요 (모두 선택). 오른쪽 위 <strong>"삭제"</strong>는 이 라운드를 지울 때 써요.</p>
+        <p>스코어카드의 <strong>타수 칸을 누르면 그 홀의 상세 화면</strong>이 열려요. 그 홀에서 친 샷들이 지도 위에 선으로 이어지고, <strong>샷과 샷 사이 실제 거리(m)</strong>가 같이 표시돼요. 아래 카드에는 그 홀의 그린까지·숏어프로치·퍼팅 타수와 벌타가 있고, 맨 아래 버튼으로 앞뒤 홀로 이동해요.</p>
         <div class="callout">
           <span class="label">TIP</span><br>
           이 거리는 GPS 좌표 사이의 직선 거리라, 고저차(오르막·내리막)는 반영되지 않아요 — 실제 체감 거리와는 조금 다를 수 있어요.
@@ -391,25 +531,64 @@
       </div>
       <div class="shot-pair">
         <figure class="shot">
-          <img src="home.png" alt="홈 화면, 완료된 라운드 목록">
-          <figcaption>홈 — 완료된 라운드 목록 (날짜·그린피·동반자 줄은 예시라 흐리게 처리)</figcaption>
+          <img src="round-summary.png" alt="라운드 결과 화면, 통계 카드와 스코어카드">
+          <figcaption>라운드 결과 — 통계 · 홀 결과 비율 · 스코어카드</figcaption>
         </figure>
         <figure class="shot">
-          <img src="hole-review-distance.png" alt="지난 라운드의 홀 리뷰 화면, 샷 사이 거리 표시">
-          <figcaption>홀 리뷰 — 샷마다 이동 거리(m) 표시</figcaption>
+          <img src="hole-review-distance.png" alt="홀 상세 화면, 샷 경로와 샷 사이 거리">
+          <figcaption>홀 상세 — 샷마다 이동 거리(m) 표시</figcaption>
         </figure>
       </div>
+    </div>
+
+    <div class="step">
+      <div>
+        <span class="step-num">STEP 5</span>
+        <h2>홈 화면에서 지난 기록 보기</h2>
+        <ul>
+          <li><strong>요약 타일 3개</strong> — <strong>평균 스코어</strong>와 <strong>베스트스코어</strong>는 끝난 <strong>18홀 라운드</strong>만으로 계산해요 (9홀이나 중간에 나온 라운드는 빠져요). <strong>핸디캡(추정)</strong>은 끝난 18홀 라운드가 3개 이상 쌓이면 나타나고, 그전에는 "-"로 보여요. 월드 핸디캡 시스템 방식을 따르되 코스 레이팅을 파로 가정한 <strong>추정값</strong>이라 공식 핸디캡과는 다를 수 있어요.</li>
+          <li><strong>총 라운드</strong> 목록 — 완료한 라운드가 <strong>연도별</strong>로 묶여 쌓여요. 연도마다 <strong>"2026 ──── 7회 · 평균 94.4"</strong>처럼 구분선이 있어서 그 해 라운드 수와 평균을 바로 볼 수 있어요. 목록 제목 오른쪽의 <strong>최신순 / 점수순</strong>으로 정렬을 바꿔요 (점수순은 각 연도 안에서 타수가 적은 순서예요).</li>
+          <li><strong>점수 배지</strong> — 카드 오른쪽 배지에 총타수와 파 대비가 떠요. 색으로 점수대를 구분해요.</li>
+        </ul>
+        <div class="legend">
+          <span><span class="swatch" style="background:#f2c14e"></span>82타 미만</span>
+          <span><span class="swatch" style="background:#1f5c3f"></span>82~89</span>
+          <span><span class="swatch" style="background:#c8e6c9"></span>90~94</span>
+          <span><span class="swatch" style="background:#ffcdd2"></span>95~99</span>
+          <span><span class="swatch" style="background:#c62828"></span>100타 이상</span>
+        </div>
+        <ul>
+          <li><strong>연도 필터</strong> — 기록이 <strong>2개 연도 이상</strong> 쌓이면 요약 타일 위에 아래와 같은 칩이 생겨요. 기본은 <strong>전체</strong>이고, 연도를 누르면 그 해 라운드만 보이며 평균 스코어·베스트스코어도 그 해 기준으로 바뀌어요 (핸디캡은 연도와 상관없이 최근 기록 기준 그대로예요).</li>
+        </ul>
+        <div class="chips-bar" aria-hidden="true">
+          <span class="chip on">전체</span><span class="chip">2026</span><span class="chip">2025</span><span class="chip">2024</span>
+        </div>
+        <ul>
+          <li><strong>카드를 누르면 펼쳐져요</strong> — 그린피·동반자, 통계 4칸(GIR · 퍼팅 · 드라이버 · 벌타), 후기가 보이고, 맨 아래 <strong>"상세 결과 보기 ›"</strong>로 위 STEP 4의 결과 화면을 열어요.</li>
+        </ul>
+        <p>화면 맨 아래 <strong>백업 / 복원</strong>으로 전체 기록을 파일 하나로 저장해두는 것도 추천해요. (예전 버전에서 기록을 옮겨 오는 방법은 위 "0-1. 이전 버전(UX 1.0)을 쓰고 있다면"을 참고하세요.)</p>
+        <p class="note">※ 위 화면은 실제 기록 예시라 날짜·시간 줄은 알아보기 어렵게 흐리게 처리했어요.</p>
+      </div>
+      <figure class="shot">
+        <img src="home.png" alt="홈 화면, 요약 타일과 라운드 목록">
+        <figcaption>홈 — 요약 타일 · 연도별 라운드 목록</figcaption>
+      </figure>
     </div>
 
     <div class="step no-shot">
       <div>
         <span class="step-num">STEP 6 · 선택</span>
         <h2>갤럭시 워치 연동 (선택 사항)</h2>
-        <p>폰만으로도 앱을 완전히 쓸 수 있어요. 워치 연동은 라운드 중 폰을 꺼내지 않고 손목에서 타수(그린까지·퍼팅)를 올리고 싶을 때만 필요한 선택 기능이에요.</p>
-        <p><strong>준비물</strong> — 폰과 이미 페어링된 Galaxy Watch(Wear OS), 그리고 릴리즈 Assets의 <strong>wear-debug.apk</strong>.</p>
+        <p>폰만으로도 앱을 완전히 쓸 수 있어요. 워치 연동은 라운드 중 폰을 꺼내지 않고 손목에서 타수를 올리고 싶을 때만 필요한 선택 기능이에요.</p>
+        <p><strong>준비물</strong></p>
+        <ul>
+          <li>Galaxy Watch (갤럭시 워치4 이후, Wear OS 3 이상) — 폰과 이미 페어링돼 있어야 해요 (갤럭시 웨어러블 앱으로 평소 하던 연결).</li>
+          <li>워치용 apk — 릴리즈 Assets의 <strong>wear-debug.apk</strong>.</li>
+          <li>폰 앱과 워치 앱은 <strong>버전이 같아야</strong> 해요 (이번 버전은 둘 다 0.11). 한쪽만 예전 버전이면 새 연동 기능이 일부만 동작해요.</li>
+        </ul>
         <p><strong>설치 방법</strong> — 워치는 폰처럼 apk를 눌러서 바로 설치할 수 없어서, 폰에 설치 도우미 앱을 하나 더 깔아야 해요.</p>
         <ol>
-          <li>워치에서 <strong>설정 → 워치 정보 → 소프트웨어</strong>로 들어가 <strong>빌드 번호</strong>를 5~7번 연속 탭해요 — "개발자 모드가 켜졌습니다" 안내가 뜨면 성공.</li>
+          <li>워치에서 <strong>설정 → 워치 정보(또는 정보) → 소프트웨어</strong>로 들어가 <strong>빌드 번호</strong>를 5~7번 연속 탭해요 — "개발자 모드가 켜졌습니다" 안내가 뜨면 성공.</li>
           <li>워치 <strong>설정 → 개발자 옵션</strong>에서 <strong>ADB 디버깅</strong>을 켜요.</li>
           <li>폰의 Play 스토어에서 <strong>"Wear Installer"</strong>(워치 apk 설치를 도와주는 앱)를 설치해요.</li>
           <li>Wear Installer를 열면 페어링된 워치를 자동으로 찾아줘요 — 연결되면 <strong>wear-debug.apk</strong> 파일을 골라 설치를 진행해요.</li>
@@ -419,8 +598,34 @@
           <span class="label">TIP</span><br>
           PC와 adb(안드로이드 개발자 도구)에 익숙하면, 워치 설정의 "무선 디버깅"으로 안내되는 IP·포트·코드를 <code>adb pair</code>/<code>adb connect</code>에 입력해 직접 설치할 수도 있어요.
         </div>
-        <p><strong>사용법</strong> — 폰에서 라운드를 시작하면 워치 화면에 자동으로 지금 홀·타수가 뜨고, 워치의 <strong>그린까지 +/-</strong>, <strong>퍼팅 +/-</strong>, <strong>이전 홀/다음 홀</strong> 버튼으로 조작할 수 있어요. 폰과 워치가 블루투스로 계속 통신하는 구조라, 둘이 멀어지면(폰을 카트에 두고 멀리 갈 때 등) 잠깐 반영이 늦어질 수 있지만 다시 가까워지면 자동으로 따라잡아요.</p>
-        <p>코스 선택(<strong>"설정 & 코스선택"</strong>) 화면의 <strong>"와치 GPS 켜기"</strong> 스위치를 켜면, 워치가 자체 GPS로 샷 위치를 기록해요 — 폰을 카트에 두고 다닐 때 유용해요.</p>
+
+        <p style="margin-top: 26px;"><strong>사용법</strong> — 워치 화면은 동그란 디자인이고, 상황에 따라 세 가지 화면이 나와요.</p>
+        <div class="watch-trio">
+          <figure class="watch-shot">
+            <img src="watch-idle.png" alt="워치 대기 화면">
+            <figcaption><strong>대기</strong>폰에서 라운드를 시작하기 전. 시작하면 자동으로 따라와요.</figcaption>
+          </figure>
+          <figure class="watch-shot">
+            <img src="watch-play.png" alt="워치 홀 기록 화면">
+            <figcaption><strong>홀 기록</strong>가장자리 <b>링</b>이 홀 진행을 보여줘요 (초록 = 지나온 홀, 노랑 = 지금 홀).</figcaption>
+          </figure>
+          <figure class="watch-shot">
+            <img src="watch-hole.png" alt="워치 홀 이동 화면">
+            <figcaption><strong>홀 이동</strong>◀ ▶로 홀을 넘기면 새 홀 번호가 크게 뜨고 이전 홀 결과와 합계를 요약해줘요.</figcaption>
+          </figure>
+        </div>
+        <p class="note">※ 워치 화면은 디자인 도안 이미지예요. 실제 기기에서는 글자 크기와 간격이 조금 다를 수 있어요.</p>
+        <ul>
+          <li><strong>홀 기록 화면</strong> — 위쪽에서 ◀ ▶로 홀을 넘기고, <strong>그린까지</strong>와 <strong>숏 · 퍼팅</strong> 숫자 옆의 <strong>− / +</strong>로 타수를 올리고 내려요. 아래쪽에는 <strong>"이 홀 4타 · 파"</strong> 같은 이 홀 결과와 <strong>합계</strong>(파 대비)가 바로 계산돼요. 워치의 <strong>＋</strong>는 퍼팅으로 기록돼요 — 숏어프로치를 따로 나누고 싶으면 폰에서 입력해요.</li>
+          <li><strong>홀 이동 화면</strong> — ◀ ▶를 누른 직후 2.5초쯤 뜨고, 화면을 누르면 바로 닫혀요. 폰에서 홀을 바꿀 때는 뜨지 않아요.</li>
+          <li><strong>폰과 멀어졌을 때</strong> — 폰을 카트에 두고 멀리 가면 맨 위에 호박색 <strong>"폰 연결 끊김"</strong>이 떠요. 그동안 눌러도 워치 화면에는 타수와 <strong>홀 이동까지 바로 반영</strong>되고, 다시 가까워지면 눌렀던 순서대로 폰에 반영돼요.</li>
+          <li><strong>와치 GPS</strong> — 코스 선택 화면에서 <strong>"와치 GPS 켜기"</strong>를 켜고 시작하면 워치가 자체 GPS로 샷 위치를 기록해요 (위치 권한을 물어보면 허용해주세요). 위치를 못 잡으면 워치가 진동하고 <strong>"GPS 신호 없음"</strong>이 잠깐 떠요.</li>
+          <li><strong>워치 배터리 경고</strong> — 워치 배터리가 <strong>10% 미만</strong>, <strong>5% 미만</strong>으로 떨어지면 워치가 진동하면서 경고 화면이 뜨고, 맨 위 줄에 <strong>"배터리 N%"</strong> 알약(10% 미만은 호박색, 5% 미만은 붉은색)이 계속 보여요. 폰에도 같은 알림이 떠요. 충전을 시작하면 경고가 사라져요.</li>
+        </ul>
+        <div class="callout">
+          <span class="label">TIP</span><br>
+          워치가 꺼져도 라운드는 그대로 이어져요. 이후엔 폰 화면에서 입력하면 되는데, 폰으로 입력한 샷은 폰이 있는 위치로 기록되니 폰을 카트에 두고 다닌다면 샷 위치(지도 경로)가 정확하지 않을 수 있어요. 타수 같은 스코어 기록에는 영향이 없어요.
+        </div>
       </div>
     </div>
 

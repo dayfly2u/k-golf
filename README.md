@@ -5,16 +5,16 @@
 
 ## 설치 방법 (APK 직접 설치)
 
-Play 스토어에 올리는 앱이 아니라서, [Releases 페이지](https://github.com/dayfly2u/golf-round-tracker/releases)에서 APK를 직접 받아 설치합니다.
+Play 스토어에 올리는 앱이 아니라서, [Releases 페이지](https://github.com/dayfly2u/k-golf/releases)에서 APK를 직접 받아 설치합니다.
 
-1. 폰의 브라우저(또는 이 저장소를 볼 수 있는 앱)로 [최신 릴리즈](https://github.com/dayfly2u/golf-round-tracker/releases/latest) 페이지를 연다.
+1. 폰의 브라우저(또는 이 저장소를 볼 수 있는 앱)로 [최신 릴리즈](https://github.com/dayfly2u/k-golf/releases/latest) 페이지를 연다.
 2. "Assets" 목록에서 `app-debug.apk` 파일을 탭해서 다운로드한다.
 3. 다운로드가 끝나면 알림을 눌러 파일을 연다.
    - 이때 "출처를 알 수 없는 앱 설치를 허용하시겠습니까?" 같은 안내가 뜨면 허용해야 설치가 진행된다 (앱마다/OS 버전마다 문구가 다를 수 있음. 보통 "설치" 버튼 옆에 "허용" 버튼이 같이 뜬다).
 4. "설치" 버튼을 눌러 설치를 마친다.
 5. 앱을 처음 열면 위치 권한을 물어본다 — GPS로 샷 위치를 기록하는 핵심 기능이라 "앱 사용 중에만 허용"을 선택해야 정상 동작한다.
 
-갤럭시 워치 연동은 선택 사항이며, Assets의 `wear-debug.apk`와 별도 설치 절차가 필요하다 — [사용 설명서](https://dayfly2u.github.io/golf-round-tracker/user-guide/) STEP 6 참고.
+갤럭시 워치 연동은 선택 사항이며, Assets의 `wear-debug.apk`와 별도 설치 절차가 필요하다 — [사용 설명서](https://dayfly2u.github.io/k-golf/user-guide/) STEP 6 참고.
 
 **참고**
 - Android 8.0(API 26) 이상 기기에서만 설치 가능하다.
@@ -23,7 +23,7 @@ Play 스토어에 올리는 앱이 아니라서, [Releases 페이지](https://gi
 
 ## 사용 설명서
 
-처음 써보는 분은 [사용 설명서](https://dayfly2u.github.io/golf-round-tracker/user-guide/)를 참고하세요 — 코스 등록부터 라운드 결과 확인까지 화면 캡처와 함께 안내합니다. (저장소 안에서 바로 보려면 [마크다운 버전](docs/user-guide.md)도 있어요.)
+처음 써보는 분은 [사용 설명서](https://dayfly2u.github.io/k-golf/user-guide/)를 참고하세요 — 코스 등록부터 라운드 결과 확인까지 화면 캡처와 함께 안내합니다. (저장소 안에서 바로 보려면 [마크다운 버전](docs/user-guide.md)도 있어요.)
 
 ## 지금까지 구현된 것 (1단계: 스코어 기록)
 
