@@ -121,7 +121,7 @@
   }
 
   .intro {
-    margin: 28px 0 44px;
+    margin: 28px 0 28px;
     padding: 18px 20px;
     background: var(--surface);
     border: 1px solid var(--line);
@@ -131,6 +131,54 @@
     line-height: 1.7;
   }
   .intro strong { color: var(--ink); font-weight: 600; }
+
+  /* ---------- 이 앱의 특징 ---------- */
+  .features { margin: 0 0 48px; }
+  .features h2 { font-size: 1.15rem; margin: 0 0 14px; font-weight: 700; }
+  .feature-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+  .feature {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 18px 18px 16px;
+    box-shadow: var(--shadow);
+  }
+  .feature .ico {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+  }
+  .feature .kicker {
+    display: block;
+    font-family: "Barlow Condensed", sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    line-height: 20px;
+    height: 20px;
+    margin-bottom: 4px;
+  }
+  .feature h3 { font-size: 1rem; margin: 0 0 8px; line-height: 1.45; font-weight: 700; }
+  .feature p { margin: 0; color: var(--ink-muted); font-size: 0.88rem; line-height: 1.7; }
+  .feature .fine {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--line);
+    font-size: 0.8rem;
+    line-height: 1.6;
+  }
+  .feature.tradeoff { background: var(--gold-soft); border-color: var(--gold); }
+  .feature.tradeoff .ico { background: var(--gold); color: #18241d; }
+  .feature.tradeoff .kicker { color: var(--warn-ink); }
+  .feature.tradeoff p { color: var(--ink); }
+  .feature.tradeoff .fine { border-top-color: var(--gold); color: var(--ink-muted); }
 
   /* ---------- step zero (install) ---------- */
   .install {
@@ -267,6 +315,14 @@
     padding: 2px 10px;
     margin-bottom: 8px;
   }
+  .callout.important {
+    background: var(--gold-soft);
+    border-color: var(--gold);
+    color: var(--ink);
+    font-size: 0.92rem;
+  }
+  .callout.important .label { background: var(--gold); color: #18241d; }
+  .callout.important strong { color: var(--ink); }
   .note { font-size: 0.85rem !important; }
 
   .legend { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: 10px; margin-bottom: 14px; }
@@ -383,6 +439,7 @@
     .step .shot-pair .shot { max-width: 240px; }
     header h1 { font-size: 1.4rem; }
     .watch-trio { grid-template-columns: 1fr; }
+    .feature-grid { grid-template-columns: 1fr; }
     .watch-shot img { max-width: 200px; }
   }
 </style>
@@ -403,6 +460,39 @@
     이 앱은 <strong>라운드마다 홀별 타수, 벌타, 샷 위치를 기록</strong>하고 끝나면 스코어를 정리해서 보여주는 골프 기록 앱이에요.
     아래 순서 그대로 따라 하면 5분 안에 첫 라운드를 시작할 수 있어요.
   </div>
+
+  <section class="features" aria-labelledby="features-title">
+    <h2 id="features-title">이 앱이 다른 앱과 다른 점</h2>
+    <div class="feature-grid">
+      <div class="feature">
+        <div class="ico" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6.5v13L9 17l6 2.5 6-2.5v-13L15 7 9 4z"></path><path d="M9 4v13M15 7v12.5"></path></svg>
+        </div>
+        <span class="kicker">POINT 1</span>
+        <h3>지도를 내려받을 필요가 없어요</h3>
+        <p>카카오맵·구글맵 위성지도를 그대로 쓰기 때문에 골프장 지도 데이터를 따로 받거나 업데이트할 일이 없고, 지도가 실제 코스와 어긋날 일도 없어요.</p>
+        <p class="fine">지도는 인터넷으로 불러와요. 통신이 약한 곳에서는 지도 배경만 빠지고 타수·위치 기록은 그대로 돼요.</p>
+      </div>
+      <div class="feature">
+        <div class="ico" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11z"></path><circle cx="12" cy="10" r="2.5"></circle></svg>
+        </div>
+        <span class="kicker">POINT 2</span>
+        <h3>친 자리에서 그대로 기록돼요</h3>
+        <p>타수를 올리는 순간의 GPS 위치가 샷으로 남아서, 실제로 어떻게 라운딩했는지 이동 경로와 샷 사이 거리(m)가 정확히 기록돼요.</p>
+        <p class="fine">거리는 직선 거리라 고저차(오르막·내리막)는 반영되지 않아요.</p>
+      </div>
+      <div class="feature tradeoff">
+        <div class="ico" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
+        </div>
+        <span class="kicker">알아둘 점</span>
+        <h3>타수를 임의로 조정할 수 없어요</h3>
+        <p>숫자만 따로 고치는 기능이 없어요. 기록이 실제 샷과 항상 같게 남는 대신, 잘못 눌렀다면 라운딩 중에 <strong>−</strong>로 마지막 샷을 지우고 다시 기록해야 해요.</p>
+        <p class="fine">끝난 라운드의 타수는 수정할 수 없어요.</p>
+      </div>
+    </div>
+  </section>
 
   <div class="install">
     <h2>0. 설치하기</h2>
@@ -580,7 +670,11 @@
         <span class="step-num">STEP 6 · 선택</span>
         <h2>갤럭시 워치 연동 (선택 사항)</h2>
         <p>폰만으로도 앱을 완전히 쓸 수 있어요. 워치 연동은 라운드 중 폰을 꺼내지 않고 손목에서 타수를 올리고 싶을 때만 필요한 선택 기능이에요.</p>
-        <p><strong>준비물</strong></p>
+        <div class="callout important">
+          <span class="label">중요</span><br>
+          <strong>워치로는 벌타를 기록할 수 없어요.</strong> 워치에는 OB·해저드 벌타 버튼이 없어서, 벌타는 반드시 <strong>폰</strong>에서 입력해야 해요. 폰에서 입력한 벌타는 해당 줄 타수에 포함돼 워치 숫자에도 보이지만, 워치에서 벌타를 추가하거나 취소할 수는 없어요 (벌타가 마지막 기록이면 워치의 −도 먹지 않아요).
+        </div>
+        <p style="margin-top: 18px;"><strong>준비물</strong></p>
         <ul>
           <li>Galaxy Watch (갤럭시 워치4 이후, Wear OS 3 이상) — 폰과 이미 페어링돼 있어야 해요 (갤럭시 웨어러블 앱으로 평소 하던 연결).</li>
           <li>워치용 apk — 릴리즈 Assets의 <strong>wear-debug.apk</strong>.</li>
