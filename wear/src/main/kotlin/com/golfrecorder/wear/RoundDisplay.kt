@@ -21,6 +21,19 @@ data class HoleSummary(val strokes: Int, val gradeName: String)
 fun holeSummary(strokes: Int, par: Int): HoleSummary =
     HoleSummary(strokes, if (strokes > 0) holeGradeName(strokes - par) else "-")
 
+/** 이 홀 총타수 = 그린까지 + 숏게임 + 퍼팅. */
+fun holeStrokes(state: RoundUiState): Int = state.strokesToGreen + state.strokesShortGame + state.strokesPutt
+
+/**
+ * 폰이 보낸 숏게임·퍼팅 값을 해석한 결과. [shortGameSupported]가 false면 구버전 폰이라 숏게임 키가 없었고,
+ * 그때 [putt]는 폰이 숏게임과 합쳐서 보낸 값이다(숏게임 줄은 0으로 두고 +/-는 비활성으로 둔다).
+ */
+data class StrokeSplit(val shortGame: Int, val putt: Int, val shortGameSupported: Boolean)
+
+/** [shortGame]은 상태에 숏게임 키가 없으면 null. */
+fun strokeSplit(shortGame: Int?, putt: Int): StrokeSplit =
+    StrokeSplit(shortGame = shortGame ?: 0, putt = putt, shortGameSupported = shortGame != null)
+
 /** 합계 = 현재 홀 이전까지의 파 대비 합 + (이 홀을 치기 시작했으면 이 홀의 파 대비). */
 fun runningTotal(scoreBefore: Int, holeStrokes: Int, par: Int): Int =
     scoreBefore + if (holeStrokes > 0) holeStrokes - par else 0

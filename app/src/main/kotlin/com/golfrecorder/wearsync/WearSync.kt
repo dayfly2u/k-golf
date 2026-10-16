@@ -31,8 +31,8 @@ object WearSync {
 
     const val ACTION_INCREMENT_TO_GREEN = "INCREMENT_TO_GREEN"
     const val ACTION_DECREMENT_TO_GREEN = "DECREMENT_TO_GREEN"
-    // 워치는 숏어프로치(칩)는 다루지 않고 퍼팅만 올린다 — 폰에서는 숏어프로치/퍼팅을
-    // 따로 입력할 수 있지만, 워치 화면은 작아서 퍼팅 하나만 남겼다.
+    const val ACTION_INCREMENT_SHORT_GAME = "INCREMENT_SHORT_GAME"
+    const val ACTION_DECREMENT_SHORT_GAME = "DECREMENT_SHORT_GAME"
     const val ACTION_INCREMENT_PUTT = "INCREMENT_PUTT"
     const val ACTION_DECREMENT_PUTT = "DECREMENT_PUTT"
     const val ACTION_NEXT_HOLE = "NEXT_HOLE"
@@ -42,6 +42,10 @@ object WearSync {
     const val KEY_HOLE_NUMBER = "holeNumber"
     const val KEY_PAR = "par"
     const val KEY_STROKES_TO_GREEN = "strokesToGreen"
+    /** 현재 홀의 숏게임(ShotPhase.SHORT_GAME) 타수. 이 키가 없으면(구버전 폰) 워치는 [KEY_STROKES_PUTT]를
+     * 숏게임+퍼팅 합으로 보고 숏게임 줄을 0·비활성으로 둔다. */
+    const val KEY_STROKES_SHORT_GAME = "strokesShortGame"
+    /** 현재 홀의 퍼팅(ShotPhase.PUTT) 타수 — 신버전 폰은 퍼팅만 보낸다(구버전 폰은 숏게임과 합산해서 보낸다). */
     const val KEY_STROKES_PUTT = "strokesPutt"
     const val KEY_HOLE_COUNT = "holeCount"
     /** DataItem은 내용이 바뀌지 않으면 재전송해도 워치의 onDataChanged가 다시 호출되지

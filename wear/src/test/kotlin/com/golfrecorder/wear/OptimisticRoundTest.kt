@@ -158,6 +158,63 @@ class OptimisticRoundTest {
     }
 
     @Test
+    fun `숏게임 입력도 서버 값에 얹히고 0에서 막힌다`() {
+        val withShort = server.copy(strokesShortGame = 1)
+        val result = displayRound(
+            withShort,
+            listOf(
+                act(WearSync.ACTION_INCREMENT_SHORT_GAME, 5),
+                act(WearSync.ACTION_INCREMENT_SHORT_GAME, 5),
+                act(WearSync.ACTION_DECREMENT_SHORT_GAME, 5),
+            ),
+        )
+        assertEquals(2, result.strokesShortGame)
+        assertEquals(3, result.strokesToGreen)
+        assertEquals(2, result.strokesPutt)
+
+        val fresh = server.copy(strokesShortGame = 0)
+        val floored = displayRound(
+            fresh,
+            listOf(act(WearSync.ACTION_DECREMENT_SHORT_GAME, 5), act(WearSync.ACTION_INCREMENT_SHORT_GAME, 5)),
+        )
+        assertEquals(1, floored.strokesShortGame)
+    }
+
+    @Test
+    fun `다음 홀로 넘어간 뒤 누른 숏게임은 그 홀에 쌓이고 이전 홀 줄은 0에서 시작한다`() {
+        val result = displayRound(
+            server.copy(strokesShortGame = 2),
+            listOf(
+                act(WearSync.ACTION_NEXT_HOLE, 5),
+                act(WearSync.ACTION_INCREMENT_SHORT_GAME, 6),
+            ),
+        )
+        assertEquals(6, result.holeNumber)
+        assertEquals(1, result.strokesShortGame)
+        assertEquals(0, result.strokesToGreen)
+        assertEquals(0, result.strokesPutt)
+    }
+
+    @Test
+    fun `숏게임 타수도 직전 홀 결과와 합계 기준에 들어간다`() {
+        // 5번 홀: 3 + 숏게임 1 + 퍼팅 2 = 6타(파 4 → +2). 6번 홀로 가면 합계 기준 = 3 + 2
+        val withShort = server.copy(strokesShortGame = 1)
+        val result = displayRound(withShort, listOf(act(WearSync.ACTION_NEXT_HOLE, 5)))
+        assertEquals(5, result.scoreBefore)
+        assertEquals(PreviousHole(strokes = 6, par = 4), result.previousHole)
+
+        // 6번 홀(파 5)에서 숏게임만 3번 누르고 7번 홀로 → 3타(−2): 합계 기준 = 3 + 2 + (3 − 5)
+        val twoHoles = displayRound(
+            withShort,
+            listOf(act(WearSync.ACTION_NEXT_HOLE, 5)) +
+                List(3) { act(WearSync.ACTION_INCREMENT_SHORT_GAME, 6) } +
+                act(WearSync.ACTION_NEXT_HOLE, 6),
+        )
+        assertEquals(3, twoHoles.scoreBefore)
+        assertEquals(PreviousHole(strokes = 3, par = 5), twoHoles.previousHole)
+    }
+
+    @Test
     fun `대기 목록은 시퀀스 이하만 확인으로 빼고 순서를 지킨다`() {
         val pending = PendingActions()
         pending.add(300, act(WearSync.ACTION_INCREMENT_PUTT, 5))

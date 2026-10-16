@@ -43,7 +43,7 @@ class PendingActions {
  * 입력이 그 홀 숫자에 쌓이는 게 보이고, 재연결되면 같은 순서로 폰에 반영된다.
  *
  * - 홀 번호: 서버 홀에서 시작해 ▶/◀를 순서대로 적용(1..holeCount 범위 밖은 폰과 같이 무시).
- * - 타수: 화면에 보이는 홀에서 눌린 입력만 더한다(감소는 폰처럼 0 아래로 안 내려가게 단계마다 0으로 막는다).
+ * - 타수(그린까지·숏게임·퍼팅): 화면에 보이는 홀에서 눌린 입력만 더한다(감소는 폰처럼 0 아래로 안 내려가게 단계마다 0으로 막는다).
  *   서버가 아는 현재 홀이 아닌 홀은 기존 타수를 모르므로 0에서 시작한다(재연결되면 서버 값으로 바로잡힌다).
  * - 파: 서버 홀/직전 홀은 서버가 준 값, 그 밖은 홀별 파 목록(`holePars`, 없으면 서버 홀의 파).
  * - 합계 기준값/직전 홀 결과: 홀을 넘어간 만큼 그 홀들의 (타수 − 파)를 더하거나 빼서 맞춘다(타수 0인 홀은 제외 — 폰과
@@ -60,7 +60,7 @@ fun displayRound(server: RoundUiState, pending: List<PendingAction>): RoundUiSta
         }
     }
 
-    val (toGreen, putt) = counters(server, pending, hole)
+    val (toGreen, shortGame, putt) = counters(server, pending, hole)
 
     var scoreBefore = server.scoreBefore
     for (k in server.holeNumber until hole) scoreBefore += contribution(server, pending, k)
@@ -77,40 +77,50 @@ fun displayRound(server: RoundUiState, pending: List<PendingAction>): RoundUiSta
         holeNumber = hole,
         par = parAt(server, hole),
         strokesToGreen = toGreen,
+        strokesShortGame = shortGame,
         strokesPutt = putt,
         scoreBefore = scoreBefore,
         previousHole = previousHole,
     )
 }
 
-/** [hole]의 (그린까지, 숏·퍼팅) 타수 — 서버 값(서버 홀일 때만)에 그 홀에서 누른 입력을 순서대로 얹는다. */
-private fun counters(server: RoundUiState, pending: List<PendingAction>, hole: Int): Pair<Int, Int> {
+/** [hole]의 (그린까지, 숏게임, 퍼팅) 타수 — 서버 값(서버 홀일 때만)에 그 홀에서 누른 입력을 순서대로 얹는다. */
+private fun counters(server: RoundUiState, pending: List<PendingAction>, hole: Int): Triple<Int, Int, Int> {
     var toGreen = if (hole == server.holeNumber) server.strokesToGreen else 0
+    var shortGame = if (hole == server.holeNumber) server.strokesShortGame else 0
     var putt = if (hole == server.holeNumber) server.strokesPutt else 0
     for (p in pending) {
         if (p.hole != hole) continue
         when (p.action) {
             WearSync.ACTION_INCREMENT_TO_GREEN -> toGreen++
             WearSync.ACTION_DECREMENT_TO_GREEN -> toGreen = (toGreen - 1).coerceAtLeast(0)
+            WearSync.ACTION_INCREMENT_SHORT_GAME -> shortGame++
+            WearSync.ACTION_DECREMENT_SHORT_GAME -> shortGame = (shortGame - 1).coerceAtLeast(0)
             WearSync.ACTION_INCREMENT_PUTT -> putt++
             WearSync.ACTION_DECREMENT_PUTT -> putt = (putt - 1).coerceAtLeast(0)
         }
     }
-    return toGreen to putt
+    return Triple(toGreen, shortGame, putt)
 }
 
 /** [hole]의 총타수. 서버가 아는 건 현재 홀과 바로 이전 홀뿐이라 그 밖의 홀은 입력으로 쌓인 것만 안다. */
 private fun totalAt(server: RoundUiState, pending: List<PendingAction>, hole: Int): Int {
     if (hole == server.holeNumber) {
-        val (toGreen, putt) = counters(server, pending, hole)
-        return toGreen + putt
+        val (toGreen, shortGame, putt) = counters(server, pending, hole)
+        return toGreen + shortGame + putt
     }
     var total = if (hole == server.holeNumber - 1) server.previousHole?.strokes ?: 0 else 0
     for (p in pending) {
         if (p.hole != hole) continue
         when (p.action) {
-            WearSync.ACTION_INCREMENT_TO_GREEN, WearSync.ACTION_INCREMENT_PUTT -> total++
-            WearSync.ACTION_DECREMENT_TO_GREEN, WearSync.ACTION_DECREMENT_PUTT -> total = (total - 1).coerceAtLeast(0)
+            WearSync.ACTION_INCREMENT_TO_GREEN,
+            WearSync.ACTION_INCREMENT_SHORT_GAME,
+            WearSync.ACTION_INCREMENT_PUTT,
+            -> total++
+            WearSync.ACTION_DECREMENT_TO_GREEN,
+            WearSync.ACTION_DECREMENT_SHORT_GAME,
+            WearSync.ACTION_DECREMENT_PUTT,
+            -> total = (total - 1).coerceAtLeast(0)
         }
     }
     return total

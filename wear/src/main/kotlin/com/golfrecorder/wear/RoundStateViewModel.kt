@@ -28,7 +28,10 @@ data class RoundUiState(
     val holeNumber: Int = 1,
     val par: Int = 4,
     val strokesToGreen: Int = 0,
+    val strokesShortGame: Int = 0,
     val strokesPutt: Int = 0,
+    /** 폰이 숏게임 타수를 따로 보내는지 — 구버전 폰이면 false(숏게임 줄은 0·비활성, [strokesPutt]는 숏게임 합산값). */
+    val shortGameSupported: Boolean = true,
     val holeCount: Int = 18,
     /** 최근에 GPS를 못 잡아 버튼 입력이 기록되지 않은 시각(epoch ms), 없으면 0. */
     val lastFailedAt: Long = 0L,
@@ -131,12 +134,22 @@ class RoundStateViewModel(application: Application) :
     }
 
     private fun applyDataMap(map: DataMap) {
+        val split = strokeSplit(
+            shortGame = if (map.containsKey(WearSync.KEY_STROKES_SHORT_GAME)) {
+                map.getInt(WearSync.KEY_STROKES_SHORT_GAME)
+            } else {
+                null
+            },
+            putt = map.getInt(WearSync.KEY_STROKES_PUTT, 0),
+        )
         val newServerState = RoundUiState(
             roundActive = map.getBoolean(WearSync.KEY_ROUND_ACTIVE, false),
             holeNumber = map.getInt(WearSync.KEY_HOLE_NUMBER, 1),
             par = map.getInt(WearSync.KEY_PAR, 4),
             strokesToGreen = map.getInt(WearSync.KEY_STROKES_TO_GREEN, 0),
-            strokesPutt = map.getInt(WearSync.KEY_STROKES_PUTT, 0),
+            strokesShortGame = split.shortGame,
+            strokesPutt = split.putt,
+            shortGameSupported = split.shortGameSupported,
             holeCount = map.getInt(WearSync.KEY_HOLE_COUNT, 18),
             lastFailedAt = map.getLong(WearSync.KEY_LAST_FAILED_AT, 0L),
             useWatchLocation = map.getBoolean(WearSync.KEY_USE_WATCH_LOCATION, false),
@@ -165,10 +178,12 @@ class RoundStateViewModel(application: Application) :
 
     private fun displayState(): RoundUiState = displayRound(serverState, pending.toList())
 
-    /** 좌표를 함께 보내야 하는 액션인지 — 타수를 실제로 "추가"하는 두 액션만 위치가
+    /** 좌표를 함께 보내야 하는 액션인지 — 타수를 실제로 "추가"하는 세 액션만 위치가
      * 필요하다(감소/홀 이동은 기록할 좌표가 없다). */
     private fun needsLocation(action: String): Boolean =
-        action == WearSync.ACTION_INCREMENT_TO_GREEN || action == WearSync.ACTION_INCREMENT_PUTT
+        action == WearSync.ACTION_INCREMENT_TO_GREEN ||
+            action == WearSync.ACTION_INCREMENT_SHORT_GAME ||
+            action == WearSync.ACTION_INCREMENT_PUTT
 
     fun sendAction(action: String) {
         // DataItem 큐에 넣는다 — MessageClient(옛 방식)는 그 순간 폰과 블루투스가

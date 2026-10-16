@@ -89,6 +89,26 @@ class RoundDisplayTest {
     }
 
     @Test
+    fun `new phone sends short game and putt separately`() {
+        assertEquals(StrokeSplit(shortGame = 1, putt = 3, shortGameSupported = true), strokeSplit(shortGame = 1, putt = 3))
+        // 숏게임이 0타여도 키가 있으면(0) 신버전 폰이다
+        assertEquals(StrokeSplit(shortGame = 0, putt = 2, shortGameSupported = true), strokeSplit(shortGame = 0, putt = 2))
+    }
+
+    @Test
+    fun `old phone without a short game key sends short plus putt as the putt value`() {
+        // 숏게임 줄은 0·비활성, 퍼팅 값은 합산값 그대로 — 이 홀 타수 합계는 어긋나지 않는다
+        assertEquals(StrokeSplit(shortGame = 0, putt = 4, shortGameSupported = false), strokeSplit(shortGame = null, putt = 4))
+    }
+
+    @Test
+    fun `hole strokes are the sum of to green, short game and putt`() {
+        val state = RoundUiState(strokesToGreen = 2, strokesShortGame = 1, strokesPutt = 2)
+        assertEquals(5, holeStrokes(state))
+        assertEquals(HoleSummary(5, "보기"), holeSummary(holeStrokes(state), par = 4))
+    }
+
+    @Test
     fun `hole move caption follows the direction`() {
         assertEquals("다음 홀로 이동", holeMoveCaption(HoleMoveDirection.NEXT))
         assertEquals("이전 홀로 이동", holeMoveCaption(HoleMoveDirection.PREVIOUS))

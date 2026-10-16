@@ -183,6 +183,8 @@ class RoundRecordingService : Service() {
         when (action) {
             WearSync.ACTION_INCREMENT_TO_GREEN -> incrementStroke(holeNumber, ShotPhase.TO_GREEN, watchLocation)
             WearSync.ACTION_DECREMENT_TO_GREEN -> decrementStroke(holeNumber, ShotPhase.TO_GREEN)
+            WearSync.ACTION_INCREMENT_SHORT_GAME -> incrementStroke(holeNumber, ShotPhase.SHORT_GAME, watchLocation)
+            WearSync.ACTION_DECREMENT_SHORT_GAME -> decrementStroke(holeNumber, ShotPhase.SHORT_GAME)
             WearSync.ACTION_INCREMENT_PUTT -> incrementStroke(holeNumber, ShotPhase.PUTT, watchLocation)
             WearSync.ACTION_DECREMENT_PUTT -> decrementStroke(holeNumber, ShotPhase.PUTT)
             WearSync.ACTION_NEXT_HOLE -> changeHole(holeNumber + 1)
@@ -261,13 +263,14 @@ class RoundRecordingService : Service() {
                     WearSync.KEY_STROKES_TO_GREEN,
                     StrokeCalculator.currentTotal(shots, penalties, ShotPhase.TO_GREEN),
                 )
-                // 워치 자체 버튼은 항상 PUTT으로만 기록하지만(위 ACTION_INCREMENT_PUTT
-                // 참고), 폰에서 숏어프로치를 따로 입력했을 수도 있으므로 워치 화면
-                // "숏/퍼팅" 숫자에는 둘을 합쳐서 보내야 폰 쪽 입력이 누락되지 않는다.
+                // 워치는 그린까지/숏게임/퍼팅 세 줄을 따로 보여준다(구버전 워치는 퍼팅 줄만 읽는다).
+                dataMap.putInt(
+                    WearSync.KEY_STROKES_SHORT_GAME,
+                    StrokeCalculator.currentTotal(shots, penalties, ShotPhase.SHORT_GAME),
+                )
                 dataMap.putInt(
                     WearSync.KEY_STROKES_PUTT,
-                    StrokeCalculator.currentTotal(shots, penalties, ShotPhase.SHORT_GAME) +
-                        StrokeCalculator.currentTotal(shots, penalties, ShotPhase.PUTT),
+                    StrokeCalculator.currentTotal(shots, penalties, ShotPhase.PUTT),
                 )
                 // 워치 "합계"와 "홀 이동" 화면용 — hole_records가 아니라 샷·벌타에서 구한다
                 // (WatchRoundSummaryCalculator 참고). 파는 위에서 읽은 코스 홀의 파.
