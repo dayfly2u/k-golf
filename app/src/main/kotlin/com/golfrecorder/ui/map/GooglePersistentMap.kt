@@ -114,7 +114,12 @@ fun PersistentGoogleMap(state: MapSlotState) {
     } else {
         emptyList()
     }
-    LaunchedEffect(googleMapState.value, cameraKey, center, fitPoints) {
+    // 현재 위치는 3초마다 바뀌므로 center를 effect 키로 그대로 쓰면 사용자가 직접 확대/이동해 둔
+    // 지도가 3초 안에 줌 고정값으로 되돌아간다. 따라가는 중에는 "따라가는 중"이라는 사실만 키로 둔다
+    // (자세한 이유는 PersistentKakaoMap의 같은 부분 주석 참고).
+    val followsCurrentLocation = googleRequest?.preferCurrentLocation == true && googleRequest.currentLocation != null
+    val centerKey = if (followsCurrentLocation) null else center
+    LaunchedEffect(googleMapState.value, cameraKey, followsCurrentLocation, centerKey, fitPoints) {
         val map = googleMapState.value ?: return@LaunchedEffect
         if (cameraKey == null) return@LaunchedEffect
         val lats = fitPoints.map { it.lat }

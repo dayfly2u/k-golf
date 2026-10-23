@@ -271,7 +271,13 @@ fun PersistentKakaoMap(state: MapSlotState) {
     } else {
         emptyList()
     }
-    LaunchedEffect(kakaoMapState.value, cameraKey, center, fitPoints) {
+    // 라이브 플레이는 현재 위치가 3초마다 바뀌므로 center를 그대로 effect 키로 쓰면 사용자가 직접
+    // 확대/이동해 둔 지도가 3초 안에 줌 고정값으로 되돌아간다. 현재 위치를 따라가는 동안에는
+    // "따라가는 중"이라는 사실만 키로 두고(처음 위치가 잡힌 순간 한 번만 이동), 이후 갱신은 무시한다.
+    // 홀 변경(cameraKey)·샷 변경(fitPoints)·"위치 조정" 버튼(recenterSignal)에서만 카메라를 다시 맞춘다.
+    val followsCurrentLocation = kakaoRequest?.preferCurrentLocation == true && kakaoRequest.currentLocation != null
+    val centerKey = if (followsCurrentLocation) null else center
+    LaunchedEffect(kakaoMapState.value, cameraKey, followsCurrentLocation, centerKey, fitPoints) {
         val map = kakaoMapState.value ?: return@LaunchedEffect
         if (cameraKey == null) return@LaunchedEffect
         val lats = fitPoints.map { it.lat }
