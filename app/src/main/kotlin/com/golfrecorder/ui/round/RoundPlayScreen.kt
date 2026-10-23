@@ -35,6 +35,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -136,6 +138,18 @@ class RoundPlayViewModel(
             }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    /** "드라이버 통계에서 제외"로 표시한 홀 번호들 — 홀 기록 화면의 스위치 상태. 끝난 라운드의
+     * 홀 리뷰에서도 이 스위치만은 바꿀 수 있다(타수가 아니라 통계 보정 표시라서). */
+    val driverExcludedHoles: StateFlow<Set<Int>> = roundRepository.getRoundWithHoleRecords(roundId)
+        .map { round ->
+            round?.holeRecords.orEmpty().filter { it.excludeFromDriverStats }.map { it.holeNumber }.toSet()
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
+
+    fun setDriverExcluded(holeNumber: Int, excluded: Boolean) {
+        viewModelScope.launch { roundRepository.setExcludeFromDriverStats(roundId, holeNumber, excluded) }
+    }
 
     var currentHoleNumber by mutableStateOf(initialHoleNumber)
         private set
@@ -373,6 +387,10 @@ fun RoundPlayScreen(
     val greenLat = currentHole?.greenLat
     val greenLng = currentHole?.greenLng
     val greenLocation = if (greenLat != null && greenLng != null) AppLatLng(greenLat, greenLng) else null
+    // 드라이버 통계는 파 4/5 홀의 티샷만 세므로 스위치도 그 홀에서만 보여준다.
+    val driverExcludedHoles by viewModel.driverExcludedHoles.collectAsStateWithLifecycle()
+    val driverExcluded = viewModel.currentHoleNumber in driverExcludedHoles
+    val showDriverExclude = par == 4 || par == 5
 
     var hasLocationPermission by remember { mutableStateOf(LocationCapture.hasPermission(context)) }
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -778,6 +796,13 @@ fun RoundPlayScreen(
                     PenaltyDisplayChip("OB ${obToGreenCount}", PenaltyColor.OB)
                     PenaltyDisplayChip("해저드 ${hazardToGreenCount}", PenaltyColor.HAZARD)
                 }
+                if (showDriverExclude) {
+                    DriverExcludeRow(
+                        excluded = driverExcluded,
+                        onChange = { viewModel.setDriverExcluded(viewModel.currentHoleNumber, it) },
+                        modifier = Modifier.padding(top = 10.dp),
+                    )
+                }
             } else {
                 Column(
                     modifier = Modifier.fillMaxWidth()
@@ -852,8 +877,54 @@ fun RoundPlayScreen(
                         modifier = Modifier.clickable { onRemovePenalty(ShotPhase.TO_GREEN, PenaltyType.HAZARD) },
                     )
                 }
+                if (showDriverExclude) {
+                    DriverExcludeRow(
+                        excluded = driverExcluded,
+                        onChange = { viewModel.setDriverExcluded(viewModel.currentHoleNumber, it) },
+                        modifier = Modifier.padding(top = 10.dp),
+                    )
+                }
             }
             Spacer(Modifier.height(16.dp))
         }
+    }
+}
+
+/** "드라이버 통계에서 제외" 스위치 한 줄 — 티샷 위치를 제대로 못 찍고 아무 곳에서 타수부터
+ * 올린 홀의 엉뚱한 티샷 거리가 평균·최장 거리에 들어가지 않게 한다. 벌타 카드와 같은 흰 카드. */
+@Composable
+private fun DriverExcludeRow(
+    excluded: Boolean,
+    onChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth()
+            .background(GolfTokens.CardBackground, RoundedCornerShape(16.dp))
+            .padding(start = 16.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                "드라이버 통계에서 제외",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = GolfTokens.TextPrimary,
+            )
+            Text(
+                "티샷 위치를 못 찍은 홀이면 켜세요",
+                fontSize = 11.sp,
+                color = GolfTokens.TextSecondary,
+            )
+        }
+        Switch(
+            checked = excluded,
+            onCheckedChange = onChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = GolfTokens.CardBackground,
+                checkedTrackColor = GolfTokens.FieldGreen,
+            ),
+        )
     }
 }

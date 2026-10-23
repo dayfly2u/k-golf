@@ -118,3 +118,12 @@ val MIGRATION_18_19 = object : Migration(18, 19) {
         db.execSQL("UPDATE holes SET greenLat = NULL, greenLng = NULL")
     }
 }
+
+/** 홀마다 "티샷 거리를 드라이버 통계에서 제외" 여부를 저장한다(티샷 위치를 제대로 못 찍은 홀용).
+ * 순수 컬럼 추가라 기존 데이터에는 영향이 없다 — 기존 홀은 전부 지금까지와 동일하게
+ * 통계에 포함(0)된다. */
+val MIGRATION_19_20 = object : Migration(19, 20) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE hole_records ADD COLUMN excludeFromDriverStats INTEGER NOT NULL DEFAULT 0")
+    }
+}

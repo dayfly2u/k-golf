@@ -155,8 +155,9 @@ class RoundSummaryViewModel(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val driverDistanceStats: StateFlow<DriverDistanceStats> =
-        combine(shotRepository.getShotsForRound(roundId), holeResults) { shots, holes ->
-            calculateDriverDistanceStats(shots, holes.associate { it.holeNumber to it.par })
+        combine(shotRepository.getShotsForRound(roundId), holeResults, roundWithRecords) { shots, holes, rwr ->
+            val excluded = rwr?.holeRecords.orEmpty().filter { it.excludeFromDriverStats }.map { it.holeNumber }.toSet()
+            calculateDriverDistanceStats(shots, holes.associate { it.holeNumber to it.par }, excluded)
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DriverDistanceStats(null, null))
 
     val penaltyCounts: StateFlow<Pair<Int, Int>> = penaltyRepository.getPenaltiesForRound(roundId)

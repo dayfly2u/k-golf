@@ -26,5 +26,9 @@ data class HoleRecordEntity(
     val strokesGreenToHoleOut: Int,
     /** strokesGreenToHoleOut 중 퍼팅(그린 위) 타수만 따로 — 숏어프로치는
      * strokesGreenToHoleOut - strokesPutt로 구한다(별도 컬럼 없이 파생). */
-    val strokesPutt: Int = 0
+    val strokesPutt: Int = 0,
+    /** true면 이 홀의 티샷 거리를 드라이버 평균·최장 통계에서 뺀다 — 티샷 위치를 제대로 못
+     * 찍고 아무 곳에서 타수부터 올린 홀의 엉뚱한 거리가 통계를 망치지 않게 하려는 사용자 지정
+     * 플래그. 타수·GIR·퍼팅 같은 다른 기록과는 무관하다. */
+    val excludeFromDriverStats: Boolean = false
 )

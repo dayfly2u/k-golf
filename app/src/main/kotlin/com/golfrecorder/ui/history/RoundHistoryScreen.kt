@@ -101,8 +101,13 @@ class RoundHistoryViewModel(
         }
 
     fun getDriverDistanceStats(roundId: Long): Flow<DriverDistanceStats> =
-        combine(shotRepository.getShotsForRound(roundId), getHoleResults(roundId)) { shots, holes ->
-            calculateDriverDistanceStats(shots, holes.associate { it.holeNumber to it.par })
+        combine(shotRepository.getShotsForRound(roundId), roundRepository.getRoundWithHoleRecords(roundId)) { shots, round ->
+            val records = round?.holeRecords.orEmpty()
+            calculateDriverDistanceStats(
+                shots,
+                records.associate { it.holeNumber to it.par },
+                records.filter { it.excludeFromDriverStats }.map { it.holeNumber }.toSet(),
+            )
         }
 
     /** 펼친 카드의 "벌타" 타일 — OB/해저드 건수 합. */

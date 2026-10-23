@@ -39,16 +39,33 @@ class RoundRepository(private val roundDao: RoundDao) {
         strokesToGreen: Int,
         strokesGreenToHoleOut: Int,
         strokesPutt: Int
-    ) = roundDao.upsertHoleRecord(
-        HoleRecordEntity(
-            roundId = roundId,
-            holeNumber = holeNumber,
-            par = par,
-            strokesToGreen = strokesToGreen,
-            strokesGreenToHoleOut = strokesGreenToHoleOut,
-            strokesPutt = strokesPutt
+    ) {
+        // 이미 있는 홀은 타수 컬럼만 갱신해서 excludeFromDriverStats 같은 다른 컬럼을 보존한다.
+        // 없으면 새로 넣고, 그 사이 다른 쪽이 먼저 넣어서 무시됐으면(-1) 한 번 더 갱신한다.
+        val updated = roundDao.updateHoleRecordStrokes(
+            roundId, holeNumber, par, strokesToGreen, strokesGreenToHoleOut, strokesPutt,
         )
-    )
+        if (updated == 0) {
+            val inserted = roundDao.insertHoleRecordIfAbsent(
+                HoleRecordEntity(
+                    roundId = roundId,
+                    holeNumber = holeNumber,
+                    par = par,
+                    strokesToGreen = strokesToGreen,
+                    strokesGreenToHoleOut = strokesGreenToHoleOut,
+                    strokesPutt = strokesPutt
+                )
+            )
+            if (inserted == -1L) {
+                roundDao.updateHoleRecordStrokes(
+                    roundId, holeNumber, par, strokesToGreen, strokesGreenToHoleOut, strokesPutt,
+                )
+            }
+        }
+    }
+
+    suspend fun setExcludeFromDriverStats(roundId: Long, holeNumber: Int, exclude: Boolean) =
+        roundDao.updateExcludeFromDriverStats(roundId, holeNumber, exclude)
 
     fun getRoundWithHoleRecords(roundId: Long): Flow<RoundWithHoleRecords?> =
         roundDao.getRoundWithHoleRecords(roundId)

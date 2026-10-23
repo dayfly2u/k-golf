@@ -31,10 +31,37 @@ interface RoundDao {
     )
     suspend fun updateRoundReview(roundId: Long, price: Int?, companions: String?, review: String?)
 
-    // roundId+holeNumber에 unique index가 걸려 있어서, 같은 홀을 다시 저장하면
-    // REPLACE로 덮어씀 (라운드 중 스코어 수정 흐름을 그대로 지원)
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsertHoleRecord(holeRecord: HoleRecordEntity)
+    // roundId+holeNumber에 unique index가 걸려 있다. 같은 홀을 다시 저장할 때 REPLACE로 행을
+    // 통째로 갈아끼우면 사용자가 켜 둔 excludeFromDriverStats처럼 타수와 무관한 컬럼이 기본값으로
+    // 되돌아가므로, 이미 있는 행은 타수 컬럼만 UPDATE하고(바뀐 행 수를 돌려준다) 없을 때만
+    // INSERT한다(RoundRepository.saveHoleRecord).
+    @Query(
+        """
+        UPDATE hole_records SET
+            par = :par,
+            strokesToGreen = :strokesToGreen,
+            strokesGreenToHoleOut = :strokesGreenToHoleOut,
+            strokesPutt = :strokesPutt
+        WHERE roundId = :roundId AND holeNumber = :holeNumber
+        """
+    )
+    suspend fun updateHoleRecordStrokes(
+        roundId: Long,
+        holeNumber: Int,
+        par: Int,
+        strokesToGreen: Int,
+        strokesGreenToHoleOut: Int,
+        strokesPutt: Int,
+    ): Int
+
+    /** 이미 같은 홀의 행이 있으면 아무것도 하지 않고 -1을 돌려준다. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertHoleRecordIfAbsent(holeRecord: HoleRecordEntity): Long
+
+    @Query(
+        "UPDATE hole_records SET excludeFromDriverStats = :exclude WHERE roundId = :roundId AND holeNumber = :holeNumber"
+    )
+    suspend fun updateExcludeFromDriverStats(roundId: Long, holeNumber: Int, exclude: Boolean)
 
     @Transaction
     @Query("SELECT * FROM rounds WHERE id = :roundId")

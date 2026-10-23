@@ -11,9 +11,16 @@ data class DriverDistanceStats(val avgMeters: Double?, val maxMeters: Double?)
  * shotIndex 순으로 정렬돼 있어야 한다(ShotDao.getShots/getShotsForRound가 이 순서를
  * 보장한다). 샷 위치는 "그 샷을 치기 전 서 있던 지점"을 기록하므로(사용자 확인),
  * 파4/5 홀의 1번째 "그린까지" 샷 위치에서 그 다음 기록된 샷 위치까지의 거리가
- * 곧 티샷이 날아간 거리다. */
-fun calculateDriverDistanceStats(shots: List<ShotEntity>, parByHole: Map<Int, Int>): DriverDistanceStats {
+ * 곧 티샷이 날아간 거리다.
+ * [excludedHoles]는 사용자가 "드라이버 통계에서 제외"로 표시한 홀 번호 — 티샷 위치를 제대로
+ * 못 찍은 홀의 엉뚱한 거리가 평균·최장에 들어가지 않게 건너뛴다. */
+fun calculateDriverDistanceStats(
+    shots: List<ShotEntity>,
+    parByHole: Map<Int, Int>,
+    excludedHoles: Set<Int> = emptySet(),
+): DriverDistanceStats {
     val distances = shots.groupBy { it.holeNumber }.mapNotNull { (holeNumber, holeShots) ->
+        if (holeNumber in excludedHoles) return@mapNotNull null
         val par = parByHole[holeNumber] ?: return@mapNotNull null
         if (par != 4 && par != 5) return@mapNotNull null
         if (holeShots.size < 2) return@mapNotNull null
