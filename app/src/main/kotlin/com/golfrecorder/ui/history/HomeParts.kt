@@ -330,7 +330,8 @@ internal fun RoundCardDetails(
             val girPercent = (holeResults.count { it.isStrictGreenInRegulation } * 100.0 / total).roundToInt()
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 StatTile("$girPercent%", "GIR")
-                StatTile("${holeResults.sumOf { it.strokesPutt }}", "퍼팅")
+                // 결과 화면의 "홀당 퍼팅"과 같은 값(총 퍼팅 / 기록된 홀 수).
+                StatTile("%.1f".format(holeResults.sumOf { it.strokesPutt }.toDouble() / total), "홀당 퍼팅")
                 StatTile(driverStats.avgMeters?.let { "${it.roundToInt()}m" } ?: "-", "드라이버")
                 StatTile("$penaltyCount", "벌타")
             }
