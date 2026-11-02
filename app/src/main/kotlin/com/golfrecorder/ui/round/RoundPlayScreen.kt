@@ -13,6 +13,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -347,7 +349,7 @@ class RoundPlayViewModelFactory(
         ) as T
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun RoundPlayScreen(
     viewModel: RoundPlayViewModel,
@@ -862,9 +864,12 @@ fun RoundPlayScreen(
                 // 기능이 있었으므로(onRemovePenalty) 없앨 수 없다 — 건수 칩을 탭하면
                 // 되돌리게 해서 기능은 유지하면서 화면은 깔끔하게 둔다. 0건이면 탭해도
                 // onRemovePenalty가 조용히 아무것도 안 한다(ViewModel이 이미 처리).
-                Row(
+                // 두 칩의 글자 폭 합이 한 줄 폭을 넘을 수 있어(좁은 폰·큰 글씨) FlowRow로 두어,
+                // 모자라면 칩 안 글자가 아니라 칩 통째로 다음 줄로 내려가게 한다.
+                FlowRow(
                     modifier = Modifier.fillMaxWidth().padding(start = 48.dp, top = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     PenaltyDisplayChip(
                         "OB ${obToGreenCount} · 탭해서 취소",

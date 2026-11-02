@@ -2,6 +2,7 @@ package com.golfrecorder.ui.common
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
@@ -39,8 +40,11 @@ fun PenaltyButton(text: String, color: PenaltyColor, onClick: () -> Unit, modifi
             contentColor = palette.text,
         ),
         border = BorderStroke(1.5.dp, palette.border),
+        // 버튼 셋이 한 줄에 weight(1f)로 나뉘는데 기본 좌우 여백(24dp)이면 "해저드 +1"이 들어갈
+        // 자리가 모자라 두 줄로 꺾이며 "+1"이 잘린다 — 여백을 줄이고 한 줄로 고정한다.
+        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
     ) {
-        Text(text, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+        Text(text, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, maxLines = 1, softWrap = false)
     }
 }
 
@@ -53,6 +57,8 @@ fun PenaltyDisplayChip(text: String, color: PenaltyColor, modifier: Modifier = M
         color = palette.text,
         fontWeight = FontWeight.SemiBold,
         fontSize = 13.sp,
+        maxLines = 1,
+        softWrap = false,
         modifier = modifier
             .background(palette.background, RoundedCornerShape(GolfTokens.ChipCorner))
             .padding(horizontal = 12.dp, vertical = 4.dp),
