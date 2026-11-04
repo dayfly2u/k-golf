@@ -3,11 +3,25 @@ package com.golfrecorder.data.repository
 import com.golfrecorder.data.local.dao.CourseDao
 import com.golfrecorder.data.local.entity.CourseEntity
 import com.golfrecorder.data.local.relation.CourseWithHoles
+import com.golfrecorder.domain.model.CourseSortMode
+import com.golfrecorder.domain.model.sortCourses
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 
-class CourseRepository(private val courseDao: CourseDao) {
+class CourseRepository(
+    private val courseDao: CourseDao,
+    private val sortPreference: CourseSortPreference,
+) {
 
-    fun getCourses(): Flow<List<CourseEntity>> = courseDao.getCourses()
+    /** 지금 고른 코스 정렬 방식 — 홈의 코스순도 이걸 따라간다. */
+    val sortMode: StateFlow<CourseSortMode> = sortPreference.mode
+
+    fun setSortMode(mode: CourseSortMode) = sortPreference.set(mode)
+
+    /** 코스 목록을 [sortMode] 방식으로 정렬해 흘려보낸다 — 코스 관리와 코스 선택이 같은 순서를 본다. */
+    fun getCourses(): Flow<List<CourseEntity>> =
+        combine(courseDao.getCourses(), sortPreference.mode) { courses, mode -> sortCourses(courses, mode) }
 
     fun getCourseWithHoles(courseId: Long): Flow<CourseWithHoles?> =
         courseDao.getCourseWithHoles(courseId)

@@ -9,6 +9,9 @@ data class RoundSummary(
     /** 코스 관리에서 놓은 순서([com.golfrecorder.data.local.entity.CourseEntity.sortOrder]) — 코스순 정렬용.
      * 코스가 없어진 라운드는 쿼리가 [Int.MAX_VALUE]를 채워 맨 뒤로 간다. */
     val courseSortOrder: Int = Int.MAX_VALUE,
+    /** 코스 별점([com.golfrecorder.data.local.entity.CourseEntity.rating]) — 코스순을 별점순으로 볼 때 쓴다.
+     * 별점을 안 매겼거나 코스가 없어진 라운드는 null. */
+    val courseRating: Double? = null,
     val price: Int?,
     val companions: String?,
     val review: String?,

@@ -60,6 +60,31 @@ class RoundSortTest {
     }
 
     @Test
+    fun `코스순을 별점순으로 보면 별점 높은 코스부터 묶이고 코스 안에서는 최근이 위`() {
+        // 코스 관리 순서: 가(0) → 나(1) → 다(2), 별점: 가 3.0 / 나 4.5 / 다 4.5 / 라 없음(3)
+        fun r(id: Long, playedAt: Long, courseId: Long, name: String, sortOrder: Int, rating: Double?) =
+            courseRound(id, playedAt, courseId, name, sortOrder).copy(courseRating = rating)
+        val rounds = listOf(
+            r(1, 100, 10, "가", 0, 3.0),
+            r(2, 200, 20, "나", 1, 4.5),
+            r(3, 300, 30, "다", 2, 4.5),
+            r(4, 400, 10, "가", 0, 3.0),
+            r(5, 500, 40, "라", 3, null),
+            r(6, 600, 30, "다", 2, 4.5),
+        )
+        // 4.5점 나·다는 놓은 순서(나→다), 다음 3.0점 가, 별점 없는 라는 맨 뒤
+        assertEquals(
+            listOf(2L, 6L, 3L, 4L, 1L, 5L),
+            ids(sortRounds(rounds, RoundSortMode.COURSE, CourseSortMode.RATING)),
+        )
+        // 같은 데이터를 내가 정한 순서로 보면 별점은 무시: 가 → 나 → 다 → 라
+        assertEquals(
+            listOf(4L, 1L, 2L, 6L, 3L, 5L),
+            ids(sortRounds(rounds, RoundSortMode.COURSE, CourseSortMode.MANUAL)),
+        )
+    }
+
+    @Test
     fun `코스순에서 코스가 없어진 라운드는 맨 뒤에 이름별로 묶인다`() {
         val rounds = listOf(
             courseRound(1, 100, courseId = null, name = "옛 코스 B", sortOrder = Int.MAX_VALUE),

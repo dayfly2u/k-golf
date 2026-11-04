@@ -35,11 +35,12 @@ fun sortRoundsByYear(
     rounds: List<RoundSummary>,
     mode: RoundSortMode,
     zone: ZoneId = ZoneId.systemDefault(),
+    courseSortMode: CourseSortMode = CourseSortMode.MANUAL,
 ): List<RoundSummary> =
     rounds.groupBy { roundYear(it, zone) }
         .toSortedMap(reverseOrder())
         .values
-        .flatMap { yearRounds -> sortRounds(yearRounds, mode) }
+        .flatMap { yearRounds -> sortRounds(yearRounds, mode, courseSortMode) }
 
 /** [year]가 null이면 전체를 그대로 돌려준다. */
 fun filterByYear(rounds: List<RoundSummary>, year: Int?, zone: ZoneId = ZoneId.systemDefault()): List<RoundSummary> =

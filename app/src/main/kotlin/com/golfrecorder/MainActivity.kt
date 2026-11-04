@@ -118,6 +118,7 @@ private fun AppRoot(container: AppContainer, mapSlotState: MapSlotState) {
                         container.roundRepository,
                         container.shotRepository,
                         container.penaltyRepository,
+                        container.courseRepository,
                     ),
                 )
                 RoundHistoryScreen(

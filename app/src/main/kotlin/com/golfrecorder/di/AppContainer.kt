@@ -5,6 +5,7 @@ import com.golfrecorder.BuildConfig
 import com.golfrecorder.data.local.AppDatabase
 import com.golfrecorder.data.remote.NetworkModule
 import com.golfrecorder.data.repository.CourseRepository
+import com.golfrecorder.data.repository.CourseSortPreference
 import com.golfrecorder.data.repository.CourseYoutubeLinkRepository
 import com.golfrecorder.data.repository.PenaltyRepository
 import com.golfrecorder.data.repository.RoundRepository
@@ -18,7 +19,7 @@ class AppContainer(context: Context) {
 
     val database: AppDatabase = AppDatabase.getInstance(context)
 
-    val courseRepository: CourseRepository = CourseRepository(database.courseDao())
+    val courseRepository: CourseRepository = CourseRepository(database.courseDao(), CourseSortPreference(context))
 
     val roundRepository: RoundRepository = RoundRepository(database.roundDao())
 

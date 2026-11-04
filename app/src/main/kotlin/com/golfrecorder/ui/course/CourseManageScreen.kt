@@ -53,10 +53,12 @@ import com.golfrecorder.data.local.entity.CourseEntity
 import com.golfrecorder.data.local.entity.CourseYoutubeLinkEntity
 import com.golfrecorder.data.repository.CourseRepository
 import com.golfrecorder.data.repository.CourseYoutubeLinkRepository
+import com.golfrecorder.domain.model.CourseSortMode
 import com.golfrecorder.ui.common.CourseRatingRow
 import com.golfrecorder.ui.common.GolfCard
 import com.golfrecorder.ui.common.MoreBelowIndicator
 import com.golfrecorder.ui.common.PrimaryCtaButton
+import com.golfrecorder.ui.common.SortToggle
 import com.golfrecorder.ui.common.dragElevation
 import com.golfrecorder.ui.common.dragHandle
 import com.golfrecorder.ui.common.VideoThumbnail
@@ -74,6 +76,11 @@ class CourseManageViewModel(
 ) : ViewModel() {
     val courses: StateFlow<List<CourseEntity>> = courseRepository.getCourses()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    /** 코스 정렬 방식(내가 정한 순서 / 별점순) — 마지막으로 고른 값이 남고 홈의 코스순도 이걸 따른다. */
+    val sortMode: StateFlow<CourseSortMode> = courseRepository.sortMode
+
+    fun setSortMode(mode: CourseSortMode) = courseRepository.setSortMode(mode)
 
     fun reorder(orderedCourses: List<CourseEntity>) {
         viewModelScope.launch { courseRepository.reorder(orderedCourses) }
@@ -107,6 +114,10 @@ fun CourseManageScreen(
     onBack: () -> Unit,
 ) {
     val courses by viewModel.courses.collectAsStateWithLifecycle()
+    val sortMode by viewModel.sortMode.collectAsStateWithLifecycle()
+    // 순서를 직접 끌어 바꾸는 건 '내가 정한 순서'일 때만 — 별점순에서는 화면 순서가 별점으로 정해지므로 끌어도
+    // 저장할 게 없고, 저장하면 사용자가 정해 둔 순서(sortOrder)를 별점 순서로 덮어쓰게 된다.
+    val manualOrder = sortMode == CourseSortMode.MANUAL
     var expandedCourseIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
     val context = LocalContext.current
 
@@ -158,8 +169,24 @@ fun CourseManageScreen(
         }
         Box(modifier = Modifier.padding(padding).fillMaxSize().background(GolfTokens.Background)) {
             Column(modifier = Modifier.fillMaxSize()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("코스 정렬", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = GolfTokens.TextPrimary)
+                    SortToggle(
+                        options = listOf(CourseSortMode.MANUAL to "내 순서", CourseSortMode.RATING to "별점순"),
+                        selected = sortMode,
+                        onSelect = viewModel::setSortMode,
+                    )
+                }
                 Text(
-                    "코스를 누르면 상세 리뷰가 펼쳐져요. ≡를 길게 눌러 순서를 바꿀 수 있어요.",
+                    if (manualOrder) {
+                        "코스를 누르면 상세 리뷰가 펼쳐져요. ≡를 길게 눌러 순서를 바꿀 수 있어요."
+                    } else {
+                        "별점이 높은 코스부터 보여요. 별점이 같으면 내 순서대로예요. 순서를 직접 바꾸려면 '내 순서'를 눌러요."
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = GolfTokens.TextSecondary,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
@@ -192,12 +219,14 @@ fun CourseManageScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                 ) {
                                     Row(modifier = Modifier.weight(1f)) {
-                                        Icon(
-                                            Icons.Filled.Menu,
-                                            contentDescription = "길게 눌러 순서 변경",
-                                            modifier = Modifier.dragHandle(index, dragState).padding(end = 12.dp),
-                                            tint = GolfTokens.TextSecondary,
-                                        )
+                                        if (manualOrder) {
+                                            Icon(
+                                                Icons.Filled.Menu,
+                                                contentDescription = "길게 눌러 순서 변경",
+                                                modifier = Modifier.dragHandle(index, dragState).padding(end = 12.dp),
+                                                tint = GolfTokens.TextSecondary,
+                                            )
+                                        }
                                         Column {
                                             Text(course.name, fontWeight = FontWeight.Bold, color = GolfTokens.TextPrimary)
                                             CourseRatingRow(rating = course.rating, difficulty = course.difficulty)

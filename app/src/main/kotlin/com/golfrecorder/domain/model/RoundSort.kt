@@ -10,20 +10,34 @@ enum class RoundSortMode { RECENT, SCORE, COURSE }
  * 동점이면 더 최근 라운드가 위다. 아직 안 끝났거나 기록이 없는 라운드는 지나온 홀 몫의 타수뿐이라 점수로
  * 줄 세울 수 없으므로 맨 뒤에 최근 순으로 둔다.
  *
- * 코스순은 코스 관리 화면에서 사용자가 놓은 코스 순서([RoundSummary.courseSortOrder])대로 같은 코스 라운드를
- * 묶고, 한 코스 안에서는 최근 라운드가 위다. 코스가 지워져 순서가 없는 라운드는 맨 뒤에 코스 이름별로 묶는다.
+ * 코스순은 코스 관리의 정렬 방식([courseSortMode])을 따라 같은 코스 라운드를 묶고, 한 코스 안에서는 최근 라운드가
+ * 위다. 내가 정한 순서면 사용자가 놓은 순서([RoundSummary.courseSortOrder]), 별점순이면 별점이 높은 코스부터
+ * (같은 별점끼리는 놓은 순서, 별점 없는 코스는 뒤). 코스가 지워져 순서가 없는 라운드는 맨 뒤에 코스 이름별로 묶는다.
+ * 코스 관리 목록의 순서([sortCourses])와 같은 규칙이어야 한다.
  */
-fun sortRounds(rounds: List<RoundSummary>, mode: RoundSortMode): List<RoundSummary> = when (mode) {
+fun sortRounds(
+    rounds: List<RoundSummary>,
+    mode: RoundSortMode,
+    courseSortMode: CourseSortMode = CourseSortMode.MANUAL,
+): List<RoundSummary> = when (mode) {
     RoundSortMode.RECENT -> rounds.sortedByDescending { it.playedAt }
     RoundSortMode.SCORE -> {
         val (scorable, rest) = rounds.partition { it.finishedAt != null && it.totalStrokes > 0 }
         scorable.sortedWith(compareBy({ it.totalStrokes }, { -it.playedAt })) +
             rest.sortedByDescending { it.playedAt }
     }
-    RoundSortMode.COURSE -> rounds.sortedWith(
-        compareBy<RoundSummary> { it.courseSortOrder }
-            .thenBy(String.CASE_INSENSITIVE_ORDER) { it.courseName }
-            .thenBy { it.courseId ?: Long.MAX_VALUE }
-            .thenByDescending { it.playedAt },
-    )
+    RoundSortMode.COURSE -> {
+        val byCourseOrder: Comparator<RoundSummary> = when (courseSortMode) {
+            CourseSortMode.MANUAL -> compareBy { it.courseSortOrder }
+            CourseSortMode.RATING ->
+                Comparator<RoundSummary> { a, b -> ratingDescNullsLast.compare(a.courseRating, b.courseRating) }
+                    .thenBy { it.courseSortOrder }
+        }
+        rounds.sortedWith(
+            byCourseOrder
+                .thenBy(String.CASE_INSENSITIVE_ORDER) { it.courseName }
+                .thenBy { it.courseId ?: Long.MAX_VALUE }
+                .thenByDescending { it.playedAt },
+        )
+    }
 }

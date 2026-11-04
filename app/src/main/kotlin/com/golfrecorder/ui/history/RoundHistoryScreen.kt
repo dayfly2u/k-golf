@@ -49,9 +49,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.golfrecorder.backup.BackupManager
 import com.golfrecorder.data.local.dto.RoundSummary
+import com.golfrecorder.data.repository.CourseRepository
 import com.golfrecorder.data.repository.PenaltyRepository
 import com.golfrecorder.data.repository.RoundRepository
 import com.golfrecorder.data.repository.ShotRepository
+import com.golfrecorder.domain.model.CourseSortMode
 import com.golfrecorder.domain.model.DriverDistanceStats
 import com.golfrecorder.domain.model.HoleResult
 import com.golfrecorder.domain.model.HomeListEntry
@@ -82,9 +84,13 @@ class RoundHistoryViewModel(
     private val roundRepository: RoundRepository,
     private val shotRepository: ShotRepository,
     private val penaltyRepository: PenaltyRepository,
+    courseRepository: CourseRepository,
 ) : ViewModel() {
     val rounds: StateFlow<List<RoundSummary>> = roundRepository.getRoundSummaries()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    /** 코스 관리에서 고른 코스 정렬 방식 — 홈의 코스순이 그대로 따른다. */
+    val courseSortMode: StateFlow<CourseSortMode> = courseRepository.sortMode
 
     // 리스트 행을 펼쳤을 때만(remember(round.roundId) 스코프) 구독되는 홀별/샷별
     // 상세 데이터 — 리스트 전체를 미리 불러오지 않고 펼친 라운드만 조회한다.
@@ -119,10 +125,11 @@ class RoundHistoryViewModelFactory(
     private val roundRepository: RoundRepository,
     private val shotRepository: ShotRepository,
     private val penaltyRepository: PenaltyRepository,
+    private val courseRepository: CourseRepository,
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T =
-        RoundHistoryViewModel(roundRepository, shotRepository, penaltyRepository) as T
+        RoundHistoryViewModel(roundRepository, shotRepository, penaltyRepository, courseRepository) as T
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -145,7 +152,10 @@ fun RoundHistoryScreen(
     val yearFilter = effectiveYearFilter(selectedYear, years)
     val visibleRounds = remember(rounds, yearFilter) { filterByYear(rounds, yearFilter) }
     // 연도별로 묶고(최신 연도부터) 그 안에서 최신순/점수순/코스순으로 정렬한다 — 점수순·코스순도 같은 연도 안에서만 줄 세운다.
-    val sortedRounds = remember(visibleRounds, sortMode) { sortRoundsByYear(visibleRounds, sortMode) }
+    val courseSortMode by viewModel.courseSortMode.collectAsStateWithLifecycle()
+    val sortedRounds = remember(visibleRounds, sortMode, courseSortMode) {
+        sortRoundsByYear(visibleRounds, sortMode, courseSortMode = courseSortMode)
+    }
     // 전체 보기에서는 정렬 방식과 상관없이, 기록이 한 해뿐이어도 연도 구분선을 넣는다. 연도를 고르면 한 해만 보이니 없다.
     val listEntries = remember(sortedRounds, yearFilter) {
         buildHomeListEntries(sortedRounds, withYearHeaders = yearFilter == null)
