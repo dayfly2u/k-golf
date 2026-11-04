@@ -249,7 +249,7 @@ internal fun RoundScoreBadge(round: RoundSummary) {
     }
 }
 
-/** 목록 정렬 토글 `최신순 | 점수순` — 회색 알약 트랙 안에서 선택된 쪽만 진녹색 알약으로 채운다. */
+/** 목록 정렬 토글 `최신순 | 점수순 | 코스순` — 회색 알약 트랙 안에서 선택된 쪽만 진녹색 알약으로 채운다. */
 @Composable
 internal fun RoundSortToggle(
     selected: RoundSortMode,
@@ -261,7 +261,11 @@ internal fun RoundSortToggle(
         modifier = modifier.clip(pill).background(GolfTokens.BadgePlain).padding(4.dp),
         horizontalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        listOf(RoundSortMode.RECENT to "최신순", RoundSortMode.SCORE to "점수순").forEach { (mode, label) ->
+        listOf(
+            RoundSortMode.RECENT to "최신순",
+            RoundSortMode.SCORE to "점수순",
+            RoundSortMode.COURSE to "코스순",
+        ).forEach { (mode, label) ->
             val on = mode == selected
             Box(
                 modifier = Modifier.height(36.dp)

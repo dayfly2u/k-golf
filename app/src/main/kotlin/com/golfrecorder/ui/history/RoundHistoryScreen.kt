@@ -135,7 +135,8 @@ fun RoundHistoryScreen(
 ) {
     val rounds by viewModel.rounds.collectAsStateWithLifecycle()
     var expandedRoundIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
-    // 화면을 돌려도 정렬이 유지되도록 rememberSaveable. 점수순은 단순 총타수 오름차순(sortRounds 참고).
+    // 화면을 돌려도 정렬이 유지되도록 rememberSaveable. 점수순은 단순 총타수 오름차순, 코스순은 코스 관리에서 놓은
+    // 코스 순서(sortRounds 참고).
     var sortMode by rememberSaveable { mutableStateOf(RoundSortMode.RECENT) }
     // 연도 필터 — 기본은 전체(null)이고, 기록이 2개년 이상일 때만 칩이 보인다. 선택은 화면 회전/뒤로 갔다 오기에서
     // 유지하되(rememberSaveable) 앱을 새로 열면 다시 전체. 고른 연도 기록이 사라졌으면 전체로 돌아간다.
@@ -143,7 +144,7 @@ fun RoundHistoryScreen(
     val years = remember(rounds) { roundYears(rounds) }
     val yearFilter = effectiveYearFilter(selectedYear, years)
     val visibleRounds = remember(rounds, yearFilter) { filterByYear(rounds, yearFilter) }
-    // 연도별로 묶고(최신 연도부터) 그 안에서 최신순/점수순으로 정렬한다 — 점수순도 같은 연도 안에서만 줄 세운다.
+    // 연도별로 묶고(최신 연도부터) 그 안에서 최신순/점수순/코스순으로 정렬한다 — 점수순·코스순도 같은 연도 안에서만 줄 세운다.
     val sortedRounds = remember(visibleRounds, sortMode) { sortRoundsByYear(visibleRounds, sortMode) }
     // 전체 보기에서는 정렬 방식과 상관없이, 기록이 한 해뿐이어도 연도 구분선을 넣는다. 연도를 고르면 한 해만 보이니 없다.
     val listEntries = remember(sortedRounds, yearFilter) {

@@ -87,6 +87,23 @@ class RoundYearsTest {
     }
 
     @Test
+    fun `코스순도 연도 묶음은 유지하고 각 연도 안에서만 코스 관리 순서로 묶는다`() {
+        // 코스 관리 순서: 코스 20(0) → 코스 10(1). 2025의 코스 20 라운드가 있어도 2026 목록 뒤에 온다.
+        fun courseRound(id: Long, year: Int, courseId: Long, sortOrder: Int, month: Int) =
+            round(id, year, month = month).copy(courseId = courseId, courseSortOrder = sortOrder)
+        val rounds = listOf(
+            courseRound(1, 2026, courseId = 10, sortOrder = 1, month = 3),
+            courseRound(2, 2025, courseId = 20, sortOrder = 0, month = 5),
+            courseRound(3, 2026, courseId = 20, sortOrder = 0, month = 4),
+            courseRound(4, 2026, courseId = 10, sortOrder = 1, month = 8),
+        )
+        assertEquals(
+            listOf(3L, 4L, 1L, 2L),
+            sortRoundsByYear(rounds, RoundSortMode.COURSE, seoul).map { it.roundId },
+        )
+    }
+
+    @Test
     fun `점수순 동점은 최근 라운드가 위, 안 끝난 라운드는 각 연도의 맨 뒤`() {
         val rounds = listOf(
             round(1, 2026, strokes = 90, month = 3),

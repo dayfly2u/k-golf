@@ -72,6 +72,7 @@ interface RoundDao {
         SELECT r.id AS roundId, r.courseId AS courseId, r.playedAt AS playedAt,
                r.finishedAt AS finishedAt,
                COALESCE(c.name, r.courseName) AS courseName,
+               COALESCE(c.sortOrder, 2147483647) AS courseSortOrder,
                r.price AS price, r.companions AS companions, r.review AS review,
                SUM(hr.strokesToGreen + hr.strokesGreenToHoleOut) AS totalStrokes,
                SUM(hr.par) AS totalPar,
