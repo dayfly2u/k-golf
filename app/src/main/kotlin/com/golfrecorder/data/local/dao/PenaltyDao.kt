@@ -22,6 +22,10 @@ interface PenaltyDao {
     @Query("SELECT * FROM penalties WHERE roundId = :roundId AND holeNumber = :holeNumber")
     fun getPenalties(roundId: Long, holeNumber: Int): Flow<List<PenaltyEntity>>
 
+    // 지금 저장된 값을 한 번만 읽는다 — 트랜잭션 안에서 읽고 바로 쓰는 용도.
+    @Query("SELECT * FROM penalties WHERE roundId = :roundId AND holeNumber = :holeNumber")
+    suspend fun getPenaltiesOnce(roundId: Long, holeNumber: Int): List<PenaltyEntity>
+
     @Query("SELECT * FROM penalties WHERE roundId = :roundId")
     fun getPenaltiesForRound(roundId: Long): Flow<List<PenaltyEntity>>
 }

@@ -8,3 +8,12 @@ package com.golfrecorder.domain.model
  */
 fun isStaleWatchAction(queuedHole: Int?, currentHole: Int): Boolean =
     queuedHole != null && queuedHole != currentHole
+
+/**
+ * 워치 큐 액션이 이 라운드가 시작되기 전에 눌린 것인지. [seq]는 워치가 버튼을 누른 시각(ms)이고
+ * [roundStartedAt]은 라운드를 만든 시각(rounds.playedAt)이다.
+ *
+ * 폰 서비스가 시작될 때 밀려 있던 큐를 훑어 처리하는데, 그중에는 지난 라운드에서 처리되지 못하고 남은 것도 있을
+ * 수 있다. 홀 번호만으로는 걸러지지 않는다(지난 라운드 1번 홀 입력 vs 새 라운드 1번 홀) — 시각으로 거른다.
+ */
+fun isWatchActionFromBeforeRound(seq: Long, roundStartedAt: Long): Boolean = seq < roundStartedAt

@@ -11,6 +11,7 @@ import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
+import androidx.room.withTransaction
 import com.golfrecorder.MainActivity
 import com.golfrecorder.di.AppContainer
 import com.golfrecorder.domain.model.LocationSource
@@ -18,12 +19,15 @@ import com.golfrecorder.domain.model.ShotPhase
 import com.golfrecorder.domain.model.StrokeCalculator
 import com.golfrecorder.domain.model.WatchRoundSummaryCalculator
 import com.golfrecorder.domain.model.isStaleWatchAction
+import com.golfrecorder.domain.model.isWatchActionFromBeforeRound
 import com.golfrecorder.location.LatLng as AppLatLng
 import com.golfrecorder.location.LocationCapture
 import com.golfrecorder.location.LocationTracker
 import com.golfrecorder.wearsync.WearSync
 import com.google.android.gms.wearable.DataClient
 import com.google.android.gms.wearable.DataEvent
+import com.google.android.gms.wearable.DataItem
+import com.google.android.gms.wearable.DataItemBuffer
 import com.google.android.gms.wearable.DataMapItem
 import com.google.android.gms.wearable.PutDataMapRequest
 import com.google.android.gms.wearable.Wearable
@@ -55,9 +59,21 @@ class RoundRecordingService : Service() {
     // 처리하기 위한 잠금 — onDataChanged가 여러 번 겹쳐 호출돼도 increment/decrement가
     // 뒤섞여 적용되지 않도록 한다.
     private val actionQueueMutex = Mutex()
+    // 이미 적용한 큐 시퀀스 — 같은 아이템이 "변경 이벤트"와 "시작할 때 밀린 것 훑기"([drainQueuedActions]) 양쪽으로
+    // 들어와도 타수가 두 번 올라가지 않게 한다. actionQueueMutex를 잡은 상태에서만 읽고 쓴다.
+    private val processedSeqs = mutableSetOf<Long>()
+
+    /** 워치가 큐에 넣은 액션 하나. DataItem 버퍼는 release()하면 못 읽으므로 필요한 값만 미리 꺼내 둔다. */
+    private data class QueuedAction(
+        val seq: Long,
+        val uri: android.net.Uri,
+        val action: String?,
+        val watchLocation: AppLatLng?,
+        val queuedHole: Int?,
+    )
 
     private val dataListener = DataClient.OnDataChangedListener { events ->
-        val pending = mutableListOf<Triple<Long, android.net.Uri, com.google.android.gms.wearable.DataMap>>()
+        val pending = mutableListOf<QueuedAction>()
         for (event in events) {
             if (event.type != DataEvent.TYPE_CHANGED) continue
             val uri = event.dataItem.uri
@@ -72,40 +88,88 @@ class RoundRecordingService : Service() {
                 )
                 continue
             }
-            if (!path.startsWith(WearSync.ACTION_QUEUE_PATH_PREFIX)) continue
-            val seq = path.substringAfterLast('/').toLongOrNull() ?: continue
-            pending.add(Triple(seq, uri, DataMapItem.fromDataItem(event.dataItem).dataMap))
+            toQueuedActionOrNull(event.dataItem)?.let(pending::add)
         }
         events.release()
         if (pending.isEmpty()) return@OnDataChangedListener
-        pending.sortBy { it.first }
-        serviceScope.launch {
-            actionQueueMutex.withLock {
-                for ((seq, uri, map) in pending) {
-                    val action = map.getString(WearSync.KEY_QUEUED_ACTION)
-                    if (action != null) {
-                        val hasLat = map.containsKey(WearSync.KEY_QUEUED_LAT)
-                        val hasLng = map.containsKey(WearSync.KEY_QUEUED_LNG)
-                        val watchLocation = if (hasLat && hasLng) {
-                            AppLatLng(map.getDouble(WearSync.KEY_QUEUED_LAT), map.getDouble(WearSync.KEY_QUEUED_LNG))
-                        } else {
-                            null
-                        }
-                        val queuedHole = if (map.containsKey(WearSync.KEY_QUEUED_HOLE)) {
-                            map.getInt(WearSync.KEY_QUEUED_HOLE)
-                        } else {
-                            null
-                        }
-                        handleAction(action, watchLocation, queuedHole, seq)
-                    }
-                    try {
-                        Wearable.getDataClient(this@RoundRecordingService).deleteDataItems(uri).await()
-                    } catch (e: Exception) {
-                        Log.e(TAG, "deleteDataItems FAILED uri=$uri", e)
-                    }
+        serviceScope.launch { processQueuedActions(pending) }
+    }
+
+    /** 큐 경로의 DataItem이면 [QueuedAction]으로 바꾸고, 아니면(상태·배터리 등) null. */
+    private fun toQueuedActionOrNull(item: DataItem): QueuedAction? {
+        val path = item.uri.path.orEmpty()
+        if (!path.startsWith(WearSync.ACTION_QUEUE_PATH_PREFIX)) return null
+        val seq = path.substringAfterLast('/').toLongOrNull() ?: return null
+        val map = DataMapItem.fromDataItem(item).dataMap
+        val hasLat = map.containsKey(WearSync.KEY_QUEUED_LAT)
+        val hasLng = map.containsKey(WearSync.KEY_QUEUED_LNG)
+        return QueuedAction(
+            seq = seq,
+            uri = item.uri,
+            action = map.getString(WearSync.KEY_QUEUED_ACTION),
+            watchLocation = if (hasLat && hasLng) {
+                AppLatLng(map.getDouble(WearSync.KEY_QUEUED_LAT), map.getDouble(WearSync.KEY_QUEUED_LNG))
+            } else {
+                null
+            },
+            queuedHole = if (map.containsKey(WearSync.KEY_QUEUED_HOLE)) map.getInt(WearSync.KEY_QUEUED_HOLE) else null,
+        )
+    }
+
+    /**
+     * 큐 아이템들을 시퀀스 순서대로 하나씩 적용하고 지운다.
+     *
+     * [roundStartedAt]을 주면(서비스 시작 때 밀린 것을 훑는 경우) 그 시각보다 먼저 눌린 아이템은 적용하지 않고
+     * 지우기만 한다 — 지난 라운드에서 처리되지 못하고 남은 입력이 새 라운드의 같은 번호 홀에 들어가는 걸 막는다.
+     */
+    private suspend fun processQueuedActions(items: List<QueuedAction>, roundStartedAt: Long? = null) {
+        if (items.isEmpty()) return
+        actionQueueMutex.withLock {
+            // 아직 어느 라운드인지 모르면(onStartCommand 전) 손대지 않는다. 예전에는 여기서 적용도 못 한 채 지워져
+            // 입력이 사라졌다 — 그대로 두면 라운드 정보가 들어온 뒤 drainQueuedActions()가 가져간다.
+            if (roundId <= 0 || courseId <= 0) return
+            for (item in items.sortedBy { it.seq }) {
+                if (roundStartedAt != null && isWatchActionFromBeforeRound(item.seq, roundStartedAt)) {
+                    Log.w(TAG, "drop watch action from before this round seq=${item.seq} action=${item.action}")
+                } else if (item.action != null && processedSeqs.add(item.seq)) {
+                    handleAction(item.action, item.watchLocation, item.queuedHole, item.seq)
+                }
+                try {
+                    Wearable.getDataClient(this@RoundRecordingService).deleteDataItems(item.uri).await()
+                } catch (e: Exception) {
+                    Log.e(TAG, "deleteDataItems FAILED uri=${item.uri}", e)
                 }
             }
         }
+    }
+
+    /**
+     * 서비스가 없던 사이 워치에서 눌러 쌓인 액션을 한 번 훑어서 처리한다.
+     *
+     * 리스너는 등록된 뒤에 "바뀐" 아이템만 알려준다. 폰 앱 프로세스가 죽어 있던 동안(메모리 부족, 강제 종료 등)
+     * 워치에서 누른 입력은 이미 동기화돼 폰에 와 있어도 변경 이벤트가 다시 나지 않아서, 라운드 화면을 다시 열어
+     * 서비스가 살아나도 영영 처리되지 않았다(워치 화면에는 반영된 것처럼 보이는데 폰에는 기록이 없는 상태).
+     */
+    private suspend fun drainQueuedActions() {
+        if (roundId <= 0) return
+        val roundStartedAt = container.roundRepository.getRoundWithHoleRecords(roundId).first()?.round?.playedAt
+            ?: return
+        val queued = mutableListOf<QueuedAction>()
+        var items: DataItemBuffer? = null
+        try {
+            items = Wearable.getDataClient(this).dataItems.await()
+            for (item in items) {
+                toQueuedActionOrNull(item)?.let(queued::add)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "drainQueuedActions FAILED", e)
+            return
+        } finally {
+            items?.release()
+        }
+        if (queued.isEmpty()) return
+        Log.d(TAG, "drainQueuedActions found=${queued.size}")
+        processQueuedActions(queued, roundStartedAt)
     }
 
     override fun onCreate() {
@@ -143,7 +207,11 @@ class RoundRecordingService : Service() {
         }
         roundId = intent?.getLongExtra(EXTRA_ROUND_ID, -1) ?: -1
         courseId = intent?.getLongExtra(EXTRA_COURSE_ID, -1) ?: -1
-        serviceScope.launch { pushState() }
+        serviceScope.launch {
+            pushState()
+            // 서비스가 없던 사이 워치에서 눌러 쌓인 입력이 있으면 지금 처리한다.
+            drainQueuedActions()
+        }
         return START_NOT_STICKY
     }
 
@@ -190,8 +258,41 @@ class RoundRecordingService : Service() {
             WearSync.ACTION_NEXT_HOLE -> changeHole(holeNumber + 1)
             WearSync.ACTION_PREV_HOLE -> changeHole(holeNumber - 1)
         }
+        // 타수가 바뀐 홀, 또는 방금 들어간 홀의 hole_records를 맞춘다(홀을 못 넘겼으면 지금 홀 그대로).
+        syncHoleRecord(container.roundRepository.getCurrentHoleNumber(roundId) ?: holeNumber)
         lastProcessedSeq = maxOf(lastProcessedSeq, seq)
         pushState()
+    }
+
+    /**
+     * [holeNumber]의 타수를 샷·벌타 기록에서 다시 구해 hole_records에 저장한다.
+     *
+     * 결과(요약)·기록 화면의 홀별 타수와 합계는 hole_records를 읽는데, 그 표는 폰의 라운드 화면
+     * (RoundPlayViewModel)이 열려 있을 때만 쓰였다. 라운드 화면에서 뒤로 나온 채(이 서비스는 계속 산다) 워치로만
+     * 치면 샷은 저장되는데 hole_records에는 그 홀이 없거나 옛 값으로 남아, 결과 화면에서 홀이 빠지거나 타수가
+     * 틀리게 보였다. 그래서 워치 입력을 처리할 때마다 여기서도 같은 계산(RoundPlayViewModel.loadHole과 동일)으로
+     * 써 둔다. 폰 화면이 열려 있으면 양쪽이 같은 값을 쓰게 되고, 저장은 타수 컬럼만 갱신하는 방식이라 해가 없다.
+     *
+     * 읽기와 쓰기를 한 트랜잭션으로 묶는 이유: 그 사이에 폰에서 타수를 바꾸면 여기서 읽은 옛 값이 폰이 쓴 새 값을
+     * 덮어쓸 수 있다.
+     */
+    private suspend fun syncHoleRecord(holeNumber: Int) {
+        try {
+            val par = container.courseRepository.getCourseWithHoles(courseId).first()
+                ?.holes?.find { it.holeNumber == holeNumber }?.par ?: 4
+            container.database.withTransaction {
+                // 그 사이 라운드가 지워졌으면 쓰지 않는다 — 없는 라운드에 쓰면 FK 위반으로 죽는다.
+                if (container.roundRepository.getCurrentHoleNumber(roundId) == null) return@withTransaction
+                val shots = container.shotRepository.getShotsOnce(roundId, holeNumber)
+                val penalties = container.penaltyRepository.getPenaltiesOnce(roundId, holeNumber)
+                val toGreen = StrokeCalculator.currentTotal(shots, penalties, ShotPhase.TO_GREEN)
+                val shortGame = StrokeCalculator.currentTotal(shots, penalties, ShotPhase.SHORT_GAME)
+                val putt = StrokeCalculator.currentTotal(shots, penalties, ShotPhase.PUTT)
+                container.roundRepository.saveHoleRecord(roundId, holeNumber, par, toGreen, shortGame + putt, putt)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "syncHoleRecord FAILED hole=$holeNumber", e)
+        }
     }
 
     private suspend fun incrementStroke(holeNumber: Int, phase: ShotPhase, watchLocation: AppLatLng?) {

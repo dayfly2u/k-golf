@@ -11,6 +11,9 @@ class PenaltyRepository(private val penaltyDao: PenaltyDao) {
     fun getPenalties(roundId: Long, holeNumber: Int): Flow<List<PenaltyEntity>> =
         penaltyDao.getPenalties(roundId, holeNumber)
 
+    suspend fun getPenaltiesOnce(roundId: Long, holeNumber: Int): List<PenaltyEntity> =
+        penaltyDao.getPenaltiesOnce(roundId, holeNumber)
+
     fun getPenaltiesForRound(roundId: Long): Flow<List<PenaltyEntity>> = penaltyDao.getPenaltiesForRound(roundId)
 
     suspend fun addPenalty(

@@ -10,6 +10,9 @@ class ShotRepository(private val shotDao: ShotDao) {
     fun getShots(roundId: Long, holeNumber: Int): Flow<List<ShotEntity>> =
         shotDao.getShots(roundId, holeNumber)
 
+    suspend fun getShotsOnce(roundId: Long, holeNumber: Int): List<ShotEntity> =
+        shotDao.getShotsOnce(roundId, holeNumber)
+
     fun getShotsForRound(roundId: Long): Flow<List<ShotEntity>> =
         shotDao.getShotsForRound(roundId)
 

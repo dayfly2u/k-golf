@@ -32,6 +32,10 @@ interface ShotDao {
     )
     fun getShots(roundId: Long, holeNumber: Int): Flow<List<ShotEntity>>
 
+    // 지금 저장된 값을 한 번만 읽는다(타수 합계용이라 순서는 상관없다) — 트랜잭션 안에서 읽고 바로 쓰는 용도.
+    @Query("SELECT * FROM shots WHERE roundId = :roundId AND holeNumber = :holeNumber")
+    suspend fun getShotsOnce(roundId: Long, holeNumber: Int): List<ShotEntity>
+
     // 라운드 결과 화면의 드라이버 비거리 통계용 — 홀별 순서는 getShots와 동일한
     // CASE phase 순서를 유지하고, 그 바깥을 holeNumber로 한 번 더 묶는다.
     @Query(

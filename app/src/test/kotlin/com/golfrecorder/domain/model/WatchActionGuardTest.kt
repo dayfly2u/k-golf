@@ -23,4 +23,15 @@ class WatchActionGuardTest {
     fun `홀 번호를 안 보낸 구버전 워치의 입력은 그대로 처리한다`() {
         assertFalse(isStaleWatchAction(queuedHole = null, currentHole = 7))
     }
+
+    @Test
+    fun `action pressed before the round started is from an earlier round`() {
+        assertTrue(isWatchActionFromBeforeRound(seq = 999L, roundStartedAt = 1_000L))
+    }
+
+    @Test
+    fun `action pressed at or after the round start belongs to this round`() {
+        assertFalse(isWatchActionFromBeforeRound(seq = 1_000L, roundStartedAt = 1_000L))
+        assertFalse(isWatchActionFromBeforeRound(seq = 5_000L, roundStartedAt = 1_000L))
+    }
 }
