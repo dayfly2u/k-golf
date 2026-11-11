@@ -47,14 +47,16 @@ class RoundRecordingService : Service() {
 
     private lateinit var container: AppContainer
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    private var roundId: Long = -1
-    private var courseId: Long = -1
+    // 아래 값들은 메인 스레드(onStartCommand)와 serviceScope의 여러 스레드가 함께 읽고 쓴다 — 다른 스레드가 쓴 값을
+    // 바로 보도록 @Volatile로 둔다.
+    @Volatile private var roundId: Long = -1
+    @Volatile private var courseId: Long = -1
     // 워치에서 누른 버튼이 GPS를 못 잡아 기록되지 않았을 때, 그 시각을 남겨뒀다가
     // pushState()에서 워치로 실어 보낸다(워치는 이 값이 바뀌면 진동으로 알려준다).
-    private var lastFailedAt: Long = 0L
+    @Volatile private var lastFailedAt: Long = 0L
     // 폰이 지금까지 처리한 워치 액션 중 가장 큰 큐 시퀀스 — pushState()에서 워치로 실어 보내, 워치가 "이 상태에는
     // 그 액션들이 이미 반영됐다"고 알게 한다(워치의 낙관적 표시와 겹쳐 이중으로 보이는 걸 막는다).
-    private var lastProcessedSeq: Long = 0L
+    @Volatile private var lastProcessedSeq: Long = 0L
     // 큐에 쌓인 DataItem들을 시퀀스(경로 접미사) 순서대로, 반드시 하나씩 순서대로
     // 처리하기 위한 잠금 — onDataChanged가 여러 번 겹쳐 호출돼도 increment/decrement가
     // 뒤섞여 적용되지 않도록 한다.

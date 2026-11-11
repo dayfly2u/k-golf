@@ -711,8 +711,14 @@ fun RoundPlayScreen(
                         provider = provider,
                         greenLocation = greenLocation,
                         currentLocation = fixedLocation,
-                        shots = shots.map { ShotPoint(ShotPhase.valueOf(it.phase), it.lat, it.lng) },
-                        penalties = penalties.map { PenaltyPoint(PenaltyType.valueOf(it.type), it.lat, it.lng) },
+                        // DB에 저장된 이름을 valueOf로 바로 바꾸면, 나중에 enum 이름을 바꾸거나 지웠을 때 예전
+                        // 라운드를 여는 순간 죽는다 — 모르는 값은 지도에서만 빼고 넘어간다.
+                        shots = shots.mapNotNull { shot ->
+                            ShotPhase.entries.firstOrNull { it.name == shot.phase }?.let { ShotPoint(it, shot.lat, shot.lng) }
+                        },
+                        penalties = penalties.mapNotNull { penalty ->
+                            PenaltyType.entries.firstOrNull { it.name == penalty.type }?.let { PenaltyPoint(it, penalty.lat, penalty.lng) }
+                        },
                         recenterSignal = recenterSignal,
                         preferCurrentLocation = !viewModel.isReview,
                         height = mapHeight,
