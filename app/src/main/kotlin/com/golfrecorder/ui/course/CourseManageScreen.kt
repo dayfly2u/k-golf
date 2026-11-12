@@ -1,5 +1,6 @@
 package com.golfrecorder.ui.course
 
+import com.golfrecorder.ui.common.dragContainer
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
@@ -194,7 +195,7 @@ fun CourseManageScreen(
                 Box(modifier = Modifier.fillMaxSize()) {
                     LazyColumn(
                         state = listState,
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier.fillMaxSize().dragContainer(dragState),
                         contentPadding = PaddingValues(
                             start = 16.dp,
                             end = 16.dp,
