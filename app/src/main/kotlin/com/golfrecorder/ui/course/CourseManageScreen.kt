@@ -183,7 +183,7 @@ fun CourseManageScreen(
                 }
                 Text(
                     if (manualOrder) {
-                        "코스를 누르면 상세 리뷰가 펼쳐져요. ≡를 길게 눌러 순서를 바꿀 수 있어요."
+                        "코스를 누르면 상세 리뷰가 펼쳐져요. ≡를 잡고 끌어 순서를 바꿀 수 있어요."
                     } else {
                         "별점이 높은 코스부터 보여요. 별점이 같으면 내 순서대로예요. 순서를 직접 바꾸려면 '내 순서'를 눌러요."
                     },
@@ -222,8 +222,9 @@ fun CourseManageScreen(
                                         if (manualOrder) {
                                             Icon(
                                                 Icons.Filled.Menu,
-                                                contentDescription = "길게 눌러 순서 변경",
-                                                modifier = Modifier.dragHandle(index, dragState).padding(end = 12.dp),
+                                                contentDescription = "끌어서 순서 변경",
+                                                // 뒤에 붙은 padding까지 터치 영역이다 — 아이콘(24dp)만으로는 잡기 어려워 위아래로 넓혔다.
+                                                modifier = Modifier.dragHandle(index, dragState).padding(top = 10.dp, bottom = 10.dp, end = 12.dp),
                                                 tint = GolfTokens.TextSecondary,
                                             )
                                         }
