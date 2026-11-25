@@ -138,6 +138,7 @@ fun RoundHistoryScreen(
     viewModel: RoundHistoryViewModel,
     onStartRound: () -> Unit,
     onManageCourses: () -> Unit,
+    onOpenTrend: () -> Unit,
     onRoundClick: (RoundSummary) -> Unit,
 ) {
     val rounds by viewModel.rounds.collectAsStateWithLifecycle()
@@ -224,6 +225,7 @@ fun RoundHistoryScreen(
                 selectedYear = yearFilter,
                 onSelectYear = { selectedYear = it },
                 onManageCourses = onManageCourses,
+                onOpenTrend = onOpenTrend,
             )
         },
         bottomBar = {

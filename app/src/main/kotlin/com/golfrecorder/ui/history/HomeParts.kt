@@ -40,6 +40,7 @@ import com.golfrecorder.domain.model.DriverDistanceStats
 import com.golfrecorder.domain.model.HoleResult
 import com.golfrecorder.domain.model.RoundAggregates
 import com.golfrecorder.domain.model.RoundSortMode
+import com.golfrecorder.domain.model.TREND_ROUND_COUNT
 import com.golfrecorder.domain.model.formatHandicap
 import com.golfrecorder.domain.model.formatToPar
 import com.golfrecorder.domain.model.hasYearFilter
@@ -149,7 +150,7 @@ internal fun YearDividerRow(year: Int, roundCount: Int, avgTotalStrokes: Double?
 }
 
 /** 시안 홈 헤더 — 로고(깃발 아이콘) + "K-Golf", 테두리 pill "코스 관리"(핀 아이콘), [years]가 2개년 이상이면 연도 칩 줄,
- * 그 아래 반투명 타일 3칸(평균 스코어/베스트스코어/핸디캡 추정). 타일은 전체 기록에 끝난 18홀 라운드가 있을 때만
+ * 그 아래 반투명 타일 3칸(평균 스코어/베스트스코어/핸디캡 추정)과 "최근 5경기 추이" 버튼. 타일은 전체 기록에 끝난 18홀 라운드가 있을 때만
  * ([showSummary]) 보이고, 선택한 연도에 그런 라운드가 없으면 평균/베스트스코어는 "-"([aggregates]가 null).
  * 핸디캡은 연도와 무관하게 최근 기록 기준이라 [handicap]을 그대로 쓴다. */
 @Composable
@@ -161,6 +162,7 @@ internal fun HomeHeader(
     selectedYear: Int?,
     onSelectYear: (Int?) -> Unit,
     onManageCourses: () -> Unit,
+    onOpenTrend: () -> Unit,
 ) {
     Column(
         modifier = Modifier.fillMaxWidth()
@@ -208,13 +210,38 @@ internal fun HomeHeader(
             YearChipRow(years = years, selectedYear = selectedYear, onSelect = onSelectYear)
         }
         if (showSummary) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                HeaderStat("평균 스코어", aggregates?.let { "%.1f".format(it.avgTotalStrokes) } ?: "-")
-                HeaderStat("베스트스코어", aggregates?.let { "${it.bestTotalStrokes}" } ?: "-")
-                // 추정 핸디캡(computeEstimatedHandicap) — 18홀 끝난 라운드가 3개 미만이면 "-".
-                HeaderStat("핸디캡(추정)", handicap?.let { formatHandicap(it) } ?: "-")
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    HeaderStat("평균 스코어", aggregates?.let { "%.1f".format(it.avgTotalStrokes) } ?: "-")
+                    HeaderStat("베스트스코어", aggregates?.let { "${it.bestTotalStrokes}" } ?: "-")
+                    // 추정 핸디캡(computeEstimatedHandicap) — 18홀 끝난 라운드가 3개 미만이면 "-".
+                    HeaderStat("핸디캡(추정)", handicap?.let { formatHandicap(it) } ?: "-")
+                }
+                TrendButton(onClick = onOpenTrend)
             }
         }
+    }
+}
+
+/** 헤더 타일 아래 한 줄 버튼 "최근 5경기 추이 ›" — "코스 관리" pill과 같은 반투명 흰 테두리.
+ * 연도 칩과 무관하게 전체 기록의 최근 경기로 그린다(핸디캡과 같음). */
+@Composable
+private fun TrendButton(onClick: () -> Unit) {
+    val pill = RoundedCornerShape(GolfTokens.ChipCorner)
+    Box(
+        modifier = Modifier.fillMaxWidth()
+            .height(GolfTokens.MinTouchTarget)
+            .clip(pill)
+            .border(1.dp, GolfTokens.CardBackground.copy(alpha = 0.35f), pill)
+            .clickable(role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            "최근 ${TREND_ROUND_COUNT}경기 추이 ›",
+            color = GolfTokens.CardBackground,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium,
+        )
     }
 }
 

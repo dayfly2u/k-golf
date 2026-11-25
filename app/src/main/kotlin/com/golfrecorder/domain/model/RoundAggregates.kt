@@ -9,11 +9,14 @@ data class RoundAggregates(val avgTotalStrokes: Double, val bestTotalStrokes: In
 
 private const val FULL_ROUND_HOLES = 18
 
+/** 끝난 18홀 라운드인가 — 홈 헤더 통계와 "최근 5경기 추이"가 같은 라운드만 센다. */
+internal fun RoundSummary.isFinishedFullRound(): Boolean = finishedAt != null && holesPlayed == FULL_ROUND_HOLES
+
 /** 스펙은 "전체 라운드 기준"이지만 끝나지 않은 라운드(중간에 홈으로 나간 라운드)는 지나온
  * 홀 몫의 타수만 있고, 끝난 9홀 라운드도 18홀과 타수 규모가 달라서 섞으면 평균이 낮아지고
  * "베스트스코어"가 말도 안 되게 작게 나온다 — 그래서 끝난 18홀 라운드만 센다. */
 fun computeRoundAggregates(rounds: List<RoundSummary>): RoundAggregates? {
-    val completed = rounds.filter { it.finishedAt != null && it.holesPlayed == FULL_ROUND_HOLES }
+    val completed = rounds.filter { it.isFinishedFullRound() }
     if (completed.isEmpty()) return null
     return RoundAggregates(
         avgTotalStrokes = completed.map { it.totalStrokes }.average(),

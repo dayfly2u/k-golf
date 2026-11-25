@@ -5,6 +5,8 @@ sealed interface Screen {
     data object Home : Screen
     data object CourseSelect : Screen
     data object CourseManage : Screen
+    /** 홈 헤더 "최근 5경기 추이" — 타수·드라이버 거리·홀당 퍼팅·GIR 그래프. */
+    data object RoundTrend : Screen
     data class CourseEdit(val courseId: Long?) : Screen
     /** [isReview]가 true면 이미 "완료"된 라운드를 리뷰하러 들어온 것 — 라이브 플레이가
      * 아니라 지금 서 있는 곳이 그 홀과 무관하므로 위치/입력 관련 UI를 끈다. 완료 전

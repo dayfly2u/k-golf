@@ -32,6 +32,9 @@ import com.golfrecorder.ui.course.CourseSelectViewModelFactory
 import com.golfrecorder.ui.history.RoundHistoryScreen
 import com.golfrecorder.ui.history.RoundHistoryViewModel
 import com.golfrecorder.ui.history.RoundHistoryViewModelFactory
+import com.golfrecorder.ui.history.RoundTrendScreen
+import com.golfrecorder.ui.history.RoundTrendViewModel
+import com.golfrecorder.ui.history.RoundTrendViewModelFactory
 import com.golfrecorder.ui.map.MapSlotState
 import com.golfrecorder.ui.map.PersistentCourseMap
 import com.golfrecorder.ui.navigation.Screen
@@ -125,8 +128,16 @@ private fun AppRoot(container: AppContainer, mapSlotState: MapSlotState) {
                     viewModel = vm,
                     onStartRound = { push(Screen.CourseSelect) },
                     onManageCourses = { push(Screen.CourseManage) },
+                    onOpenTrend = { push(Screen.RoundTrend) },
                     onRoundClick = { round -> push(Screen.RoundSummary(round.roundId, round.courseId)) },
                 )
+            }
+
+            is Screen.RoundTrend -> {
+                val vm = viewModel<RoundTrendViewModel>(
+                    factory = RoundTrendViewModelFactory(container.roundRepository, container.shotRepository),
+                )
+                RoundTrendScreen(viewModel = vm, onBack = { pop() })
             }
 
             is Screen.CourseSelect -> {
