@@ -59,6 +59,8 @@ class RoundTrendTest {
         val point = buildRoundTrendPoint(round(1, 100, strokes = 18), records, emptyList())
         assertEquals(6.0 / 4, point.puttsPerHole!!, 1e-9)
         assertEquals(50.0, point.girPercent!!, 1e-9)
+        // L-GIR은 숏어프로치가 있어도 그린까지 타수만 보므로 2번 홀도 들어간다 → 3/4
+        assertEquals(75.0, point.looseGirPercent!!, 1e-9)
         assertEquals(18, point.totalStrokes)
     }
 
@@ -71,6 +73,8 @@ class RoundTrendTest {
         val point = buildRoundTrendPoint(round(1, 100), records, emptyList())
         assertNull(point.puttsPerHole)
         assertNull(point.girPercent)
+        // L-GIR은 퍼팅 기록이 없어도 구한다 → 1번 홀만 → 50%
+        assertEquals(50.0, point.looseGirPercent!!, 1e-9)
     }
 
     @Test

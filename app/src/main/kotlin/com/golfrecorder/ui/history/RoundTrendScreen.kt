@@ -1,7 +1,11 @@
 package com.golfrecorder.ui.history
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -25,6 +29,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.TextStyle
@@ -91,27 +96,50 @@ class RoundTrendViewModelFactory(
         RoundTrendViewModel(roundRepository, shotRepository) as T
 }
 
-/** 그래프 하나 — [value]가 null인 라운드는 그 자리를 비운다. 점 위 숫자는 [format], 제목 옆 평균은 [averageFormat].
- * [lowerIsBetter]면 작은 값이 위로 가게 세로축을 뒤집는다 — 어느 그래프든 "위로 갈수록 잘한 것". */
+/** 그래프 안의 선 하나 — [label]은 선이 둘 이상일 때 범례에 쓴다. */
+private data class TrendSeries(
+    val label: String,
+    val value: (RoundTrendPoint) -> Double?,
+    val color: Color,
+)
+
+/** 그래프 하나 — 값이 null인 라운드는 그 자리를 비운다. 점 숫자는 [format], 평균은 [averageFormat].
+ * [lowerIsBetter]면 작은 값이 위로 가게 세로축을 뒤집는다 — 어느 그래프든 "위로 갈수록 잘한 것".
+ * 선이 둘이면 첫째 선의 숫자는 점 아래, 둘째 선의 숫자는 점 위에 단다(GIR ≤ L-GIR이라 둘째가 늘 위쪽). */
 private data class TrendMetric(
     val title: String,
-    val value: (RoundTrendPoint) -> Double?,
+    val series: List<TrendSeries>,
     val format: (Double) -> String,
     val averageFormat: (Double) -> String = format,
     val lowerIsBetter: Boolean = false,
 )
 
+private fun single(value: (RoundTrendPoint) -> Double?) = listOf(TrendSeries("", value, GolfTokens.FieldGreen))
+
 private val trendMetrics = listOf(
     TrendMetric(
         "타수",
-        value = { it.totalStrokes.toDouble() },
+        series = single { it.totalStrokes.toDouble() },
         format = { "${it.roundToInt()}" },
         averageFormat = { "%.1f".format(it) },
         lowerIsBetter = true,
     ),
-    TrendMetric("드라이버 거리", value = { it.driverAvgMeters }, format = { "${it.roundToInt()}m" }),
-    TrendMetric("홀당 퍼팅", value = { it.puttsPerHole }, format = { "%.1f".format(it) }, lowerIsBetter = true),
-    TrendMetric("GIR", value = { it.girPercent }, format = { "${it.roundToInt()}%" }),
+    TrendMetric("드라이버 거리", series = single { it.driverAvgMeters }, format = { "${it.roundToInt()}m" }),
+    TrendMetric(
+        "홀당 퍼팅",
+        series = single { it.puttsPerHole },
+        format = { "%.1f".format(it) },
+        lowerIsBetter = true,
+    ),
+    // GIR은 결과 화면처럼 엄격 GIR(녹색)과 L-GIR(파랑)을 같이 그린다.
+    TrendMetric(
+        "GIR",
+        series = listOf(
+            TrendSeries("GIR", { it.girPercent }, GolfTokens.FieldGreen),
+            TrendSeries("L-GIR", { it.looseGirPercent }, GolfTokens.HazardBorder),
+        ),
+        format = { "${it.roundToInt()}%" },
+    ),
 )
 
 private val dateFormat = SimpleDateFormat("M/d", Locale.KOREA)
@@ -188,8 +216,8 @@ private fun TrendRoundList(points: List<RoundTrendPoint>) {
 
 @Composable
 private fun TrendCard(metric: TrendMetric, points: List<RoundTrendPoint>) {
-    val values = points.map(metric.value)
-    val present = values.filterNotNull()
+    val seriesValues = metric.series.map { series -> points.map(series.value) }
+    val anyPresent = seriesValues.any { values -> values.any { it != null } }
     GolfCard {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -197,11 +225,32 @@ private fun TrendCard(metric: TrendMetric, points: List<RoundTrendPoint>) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(metric.title, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = GolfTokens.TextPrimary)
-            if (present.isNotEmpty()) {
-                Text("평균 ${metric.averageFormat(present.average())}", fontSize = 12.sp, color = GolfTokens.TextSecondary)
+            if (metric.series.size == 1) {
+                val present = seriesValues[0].filterNotNull()
+                if (present.isNotEmpty()) {
+                    Text("평균 ${metric.averageFormat(present.average())}", fontSize = 12.sp, color = GolfTokens.TextSecondary)
+                }
+            } else {
+                // 범례: ● GIR 평균 22%   ● L-GIR 평균 40%
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    metric.series.forEachIndexed { index, series ->
+                        val present = seriesValues[index].filterNotNull()
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Box(Modifier.size(8.dp).background(series.color, CircleShape))
+                            Text(
+                                buildString {
+                                    append(series.label)
+                                    if (present.isNotEmpty()) append(" 평균 ${metric.averageFormat(present.average())}")
+                                },
+                                fontSize = 12.sp,
+                                color = GolfTokens.TextSecondary,
+                            )
+                        }
+                    }
+                }
             }
         }
-        if (present.isEmpty()) {
+        if (!anyPresent) {
             Text(
                 "기록이 없어요",
                 fontSize = 13.sp,
@@ -211,7 +260,7 @@ private fun TrendCard(metric: TrendMetric, points: List<RoundTrendPoint>) {
             return@GolfCard
         }
         Spacer(Modifier.height(4.dp))
-        TrendChart(values, metric.format, metric.lowerIsBetter)
+        TrendChart(seriesValues.zip(metric.series.map { it.color }), metric.format, metric.lowerIsBetter)
         Row(modifier = Modifier.fillMaxWidth()) {
             points.forEach { point ->
                 Text(
@@ -226,11 +275,12 @@ private fun TrendCard(metric: TrendMetric, points: List<RoundTrendPoint>) {
     }
 }
 
-/** 점 [values].size개를 같은 간격(칸 가운데)에 놓는 꺾은선 — 아래 날짜 줄의 칸과 x 위치가 맞는다.
- * 세로 범위는 있는 값의 최소~최대(같으면 위아래로 1씩 띄움). null인 칸은 점 대신 "-"를 두고 선을 끊는다.
- * [lowerIsBetter]면 최소값이 맨 위에 온다. */
+/** 라운드 수만큼 같은 간격(칸 가운데)에 점을 놓는 꺾은선 — 아래 날짜 줄의 칸과 x 위치가 맞는다. [series]는 (값들, 선 색).
+ * 세로 범위는 모든 선의 있는 값 최소~최대(같으면 위아래로 1씩 띄움). null인 칸은 점을 빼고 선을 끊으며,
+ * 그 칸에 어느 선도 값이 없으면 "-"를 둔다. [lowerIsBetter]면 최소값이 맨 위에 온다.
+ * 선이 둘이면 첫째 선의 숫자는 점 아래, 둘째는 점 위. */
 @Composable
-private fun TrendChart(values: List<Double?>, format: (Double) -> String, lowerIsBetter: Boolean) {
+private fun TrendChart(series: List<Pair<List<Double?>, Color>>, format: (Double) -> String, lowerIsBetter: Boolean) {
     val textMeasurer = rememberTextMeasurer()
     val valueStyle = TextStyle(
         fontFamily = GolfFonts.NumberFontFamily,
@@ -239,17 +289,19 @@ private fun TrendChart(values: List<Double?>, format: (Double) -> String, lowerI
         color = GolfTokens.TextPrimary,
     )
     val missingStyle = TextStyle(fontSize = 13.sp, color = GolfTokens.TextSecondary)
-    Canvas(modifier = Modifier.fillMaxWidth().height(140.dp)) {
-        val present = values.filterNotNull()
+    val labelBelowFirst = series.size > 1
+    Canvas(modifier = Modifier.fillMaxWidth().height(if (labelBelowFirst) 170.dp else 140.dp)) {
+        val present = series.flatMap { (values, _) -> values.filterNotNull() }
         var low = present.min()
         var high = present.max()
         if (high - low < 1e-9) {
             low -= 1
             high += 1
         }
+        val count = series.first().first.size
         val plotTop = 30.dp.toPx() // 가장 높은 점 위 숫자가 들어갈 자리
-        val plotBottom = size.height - 10.dp.toPx()
-        val slot = size.width / values.size
+        val plotBottom = size.height - (if (labelBelowFirst) 30.dp else 10.dp).toPx() // 점 아래 숫자 자리
+        val slot = size.width / count
         fun x(i: Int) = slot * (i + 0.5f)
         fun y(v: Double): Float {
             val ratio = ((v - low) / (high - low)).toFloat() // 0 = 최소, 1 = 최대
@@ -260,35 +312,32 @@ private fun TrendChart(values: List<Double?>, format: (Double) -> String, lowerI
         listOf(plotTop, (plotTop + plotBottom) / 2, plotBottom).forEach { gridY ->
             drawLine(GolfTokens.Divider, Offset(0f, gridY), Offset(size.width, gridY), strokeWidth = 1.dp.toPx())
         }
-        for (i in 0 until values.lastIndex) {
-            val a = values[i] ?: continue
-            val b = values[i + 1] ?: continue
-            drawLine(
-                GolfTokens.FieldGreen,
-                Offset(x(i), y(a)),
-                Offset(x(i + 1), y(b)),
-                strokeWidth = 2.5.dp.toPx(),
-                cap = StrokeCap.Round,
-            )
-        }
-        values.forEachIndexed { i, v ->
-            if (v == null) {
+        for (i in 0 until count) {
+            if (series.all { (values, _) -> values[i] == null }) {
                 val dash = textMeasurer.measure("-", missingStyle)
                 drawText(
                     dash,
                     topLeft = Offset(x(i) - dash.size.width / 2f, (plotTop + plotBottom) / 2 - dash.size.height / 2f),
                 )
-                return@forEachIndexed
             }
-            val center = Offset(x(i), y(v))
-            val radius = 5.dp.toPx()
-            drawCircle(if (i == values.lastIndex) GolfTokens.Accent else GolfTokens.FieldGreen, radius, center)
-            drawCircle(GolfTokens.FieldGreen, radius, center, style = Stroke(2.dp.toPx()))
-            val label = textMeasurer.measure(format(v), valueStyle)
-            drawText(
-                label,
-                topLeft = Offset(center.x - label.size.width / 2f, center.y - 7.dp.toPx() - label.size.height),
-            )
+        }
+        series.forEachIndexed { seriesIndex, (values, color) ->
+            for (i in 0 until values.lastIndex) {
+                val a = values[i] ?: continue
+                val b = values[i + 1] ?: continue
+                drawLine(color, Offset(x(i), y(a)), Offset(x(i + 1), y(b)), strokeWidth = 2.5.dp.toPx(), cap = StrokeCap.Round)
+            }
+            val labelBelow = labelBelowFirst && seriesIndex == 0
+            values.forEachIndexed { i, v ->
+                if (v == null) return@forEachIndexed
+                val center = Offset(x(i), y(v))
+                val radius = 5.dp.toPx()
+                drawCircle(if (i == values.lastIndex) GolfTokens.Accent else color, radius, center)
+                drawCircle(color, radius, center, style = Stroke(2.dp.toPx()))
+                val label = textMeasurer.measure(format(v), valueStyle.copy(color = if (labelBelowFirst) color else GolfTokens.TextPrimary))
+                val labelTop = if (labelBelow) center.y + 7.dp.toPx() else center.y - 7.dp.toPx() - label.size.height
+                drawText(label, topLeft = Offset(center.x - label.size.width / 2f, labelTop))
+            }
         }
     }
 }

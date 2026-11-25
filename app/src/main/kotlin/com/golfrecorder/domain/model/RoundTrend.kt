@@ -21,6 +21,8 @@ data class RoundTrendPoint(
     /** 엄격 GIR(숏어프로치 없이 규정 타수 안에 그린) 비율, 0~100 — 퍼팅을 하나도 안 적은 라운드는
      * 그린 위 타수가 전부 숏어프로치로 잡혀 0%가 되므로 null. */
     val girPercent: Double?,
+    /** L-GIR(그린까지 타수만으로 판정, 결과 화면의 "L-GIR") 비율, 0~100 — 퍼팅 기록과 무관해서 홀 기록만 있으면 구한다. */
+    val looseGirPercent: Double? = null,
 )
 
 /** 끝난 18홀 라운드([isFinishedFullRound]) 중 최근 [count]개를 오래된 것부터 돌려준다 — 그래프의 왼쪽→오른쪽 순서.
@@ -45,12 +47,14 @@ fun buildRoundTrendPoint(
         holeRecords.associate { it.holeNumber to it.par },
         holeRecords.filter { it.excludeFromDriverStats }.map { it.holeNumber }.toSet(),
     )
-    val strictGirHoles = holeRecords.count { record ->
+    val results = holeRecords.map { record ->
         HoleResult(
             record.holeNumber, record.par, record.strokesToGreen, record.strokesGreenToHoleOut,
             strokesPutt = record.strokesPutt,
-        ).isStrictGreenInRegulation
+        )
     }
+    val strictGirHoles = results.count { it.isStrictGreenInRegulation }
+    val looseGirHoles = results.count { it.isGreenInRegulation }
     return RoundTrendPoint(
         roundId = round.roundId,
         playedAt = round.playedAt,
@@ -59,5 +63,6 @@ fun buildRoundTrendPoint(
         driverAvgMeters = driver.avgMeters,
         puttsPerHole = if (hasPutts) totalPutts.toDouble() / holes else null,
         girPercent = if (hasPutts) strictGirHoles * 100.0 / holes else null,
+        looseGirPercent = if (holes > 0) looseGirHoles * 100.0 / holes else null,
     )
 }
