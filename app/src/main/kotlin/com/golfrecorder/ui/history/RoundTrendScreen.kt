@@ -91,12 +91,14 @@ class RoundTrendViewModelFactory(
         RoundTrendViewModel(roundRepository, shotRepository) as T
 }
 
-/** 그래프 하나 — [value]가 null인 라운드는 그 자리를 비운다. 점 위 숫자는 [format], 제목 옆 평균은 [averageFormat]. */
+/** 그래프 하나 — [value]가 null인 라운드는 그 자리를 비운다. 점 위 숫자는 [format], 제목 옆 평균은 [averageFormat].
+ * [lowerIsBetter]면 작은 값이 위로 가게 세로축을 뒤집는다 — 어느 그래프든 "위로 갈수록 잘한 것". */
 private data class TrendMetric(
     val title: String,
     val value: (RoundTrendPoint) -> Double?,
     val format: (Double) -> String,
     val averageFormat: (Double) -> String = format,
+    val lowerIsBetter: Boolean = false,
 )
 
 private val trendMetrics = listOf(
@@ -105,9 +107,10 @@ private val trendMetrics = listOf(
         value = { it.totalStrokes.toDouble() },
         format = { "${it.roundToInt()}" },
         averageFormat = { "%.1f".format(it) },
+        lowerIsBetter = true,
     ),
     TrendMetric("드라이버 거리", value = { it.driverAvgMeters }, format = { "${it.roundToInt()}m" }),
-    TrendMetric("홀당 퍼팅", value = { it.puttsPerHole }, format = { "%.1f".format(it) }),
+    TrendMetric("홀당 퍼팅", value = { it.puttsPerHole }, format = { "%.1f".format(it) }, lowerIsBetter = true),
     TrendMetric("GIR", value = { it.girPercent }, format = { "${it.roundToInt()}%" }),
 )
 
@@ -154,7 +157,7 @@ fun RoundTrendScreen(viewModel: RoundTrendViewModel, onBack: () -> Unit) {
 private fun TrendRoundList(points: List<RoundTrendPoint>) {
     GolfCard {
         Text(
-            "끝난 18홀 라운드 ${points.size}경기 · 왼쪽이 오래된 경기, 노란 점이 가장 최근",
+            "끝난 18홀 라운드 ${points.size}경기 · 왼쪽이 오래된 경기, 노란 점이 가장 최근 · 위로 갈수록 잘한 기록",
             fontSize = 12.sp,
             color = GolfTokens.TextSecondary,
         )
@@ -208,7 +211,7 @@ private fun TrendCard(metric: TrendMetric, points: List<RoundTrendPoint>) {
             return@GolfCard
         }
         Spacer(Modifier.height(4.dp))
-        TrendChart(values, metric.format)
+        TrendChart(values, metric.format, metric.lowerIsBetter)
         Row(modifier = Modifier.fillMaxWidth()) {
             points.forEach { point ->
                 Text(
@@ -224,9 +227,10 @@ private fun TrendCard(metric: TrendMetric, points: List<RoundTrendPoint>) {
 }
 
 /** 점 [values].size개를 같은 간격(칸 가운데)에 놓는 꺾은선 — 아래 날짜 줄의 칸과 x 위치가 맞는다.
- * 세로 범위는 있는 값의 최소~최대(같으면 위아래로 1씩 띄움). null인 칸은 점 대신 "-"를 두고 선을 끊는다. */
+ * 세로 범위는 있는 값의 최소~최대(같으면 위아래로 1씩 띄움). null인 칸은 점 대신 "-"를 두고 선을 끊는다.
+ * [lowerIsBetter]면 최소값이 맨 위에 온다. */
 @Composable
-private fun TrendChart(values: List<Double?>, format: (Double) -> String) {
+private fun TrendChart(values: List<Double?>, format: (Double) -> String, lowerIsBetter: Boolean) {
     val textMeasurer = rememberTextMeasurer()
     val valueStyle = TextStyle(
         fontFamily = GolfFonts.NumberFontFamily,
@@ -247,7 +251,11 @@ private fun TrendChart(values: List<Double?>, format: (Double) -> String) {
         val plotBottom = size.height - 10.dp.toPx()
         val slot = size.width / values.size
         fun x(i: Int) = slot * (i + 0.5f)
-        fun y(v: Double) = plotBottom - ((v - low) / (high - low)).toFloat() * (plotBottom - plotTop)
+        fun y(v: Double): Float {
+            val ratio = ((v - low) / (high - low)).toFloat() // 0 = 최소, 1 = 최대
+            val upness = if (lowerIsBetter) 1f - ratio else ratio
+            return plotBottom - upness * (plotBottom - plotTop)
+        }
 
         listOf(plotTop, (plotTop + plotBottom) / 2, plotBottom).forEach { gridY ->
             drawLine(GolfTokens.Divider, Offset(0f, gridY), Offset(size.width, gridY), strokeWidth = 1.dp.toPx())
